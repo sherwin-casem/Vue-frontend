@@ -304,5 +304,3 @@ DOCKER_PASSWORD=your-docker-hub-password-or-token
 - **Pipeline logs**: Check GitHub Actions tab
 - **Documentation**: Refer to DEPLOYMENT.md
 - **Community**: GitHub Discussions for questions
-
-This CI/CD pipeline provides a robust, secure, and flexible foundation for deploying the OCPP Frontend while meeting specific customer requirements for error tolerance and deployment flexibility.

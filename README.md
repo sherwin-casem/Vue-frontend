@@ -376,39 +376,6 @@ Production deployment uses Nginx with:
 - Filtering and sorting
 - Grouping and aggregation
 
-### Planned Features
-
-- [ ] **Real-time WebSocket Integration**
-- [ ] **Advanced Reporting Module**
-- [ ] **Mobile-responsive Design**
-- [ ] **Tariff Management System**
-- [ ] **Energy Management Features**
-- [ ] **API Rate Limiting**
-- [ ] **Audit Logging**
-- [ ] **Advanced Analytics**
-
-## 🤝 Contributing
-
-### Development Workflow
-
-1. **Fork the Repository**
-2. **Create Feature Branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-3. **Make Changes**
-   - Follow Vue.js best practices
-   - Use TypeScript for type safety
-   - Add tests for new features
-4. **Commit Changes**
-   ```bash
-   git commit -m "feat: add your feature description"
-   ```
-5. **Push and Create PR**
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
 ### Code Standards
 
 - **Vue 3 Composition API** for new components
@@ -417,16 +384,10 @@ Production deployment uses Nginx with:
 - **Conventional Commits** for commit messages
 - **Component-based architecture**
 
-### Testing Guidelines
-
-- Unit tests for utilities and composables
-- Component tests for Vue components
-- Integration tests for stores
-- E2E tests for critical user flows
 
 ## 📄 License
 
-Proprietary - eh-systemhaus e.K.
+Proprietary - Fleet Velia
 
 ## 🆘 Support
 
