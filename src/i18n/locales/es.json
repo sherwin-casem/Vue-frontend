@@ -198,6 +198,7 @@
     "createError": "Error al crear el punto de carga. Por favor, inténtelo de nuevo.",
     "updateError": "Error al actualizar el punto de carga. Por favor, inténtelo de nuevo.",
     "deleteError": "Error al eliminar el punto de carga. Por favor, inténtelo de nuevo.",
+    "noChargePoints": "No se encontraron puntos de carga",
     "validation": {
       "ocppIdRequired": "El ID de la caja de carga OCPP es requerido",
       "ocppIdMinLength": "El ID de la caja de carga OCPP debe tener al menos 3 caracteres",
@@ -276,7 +277,8 @@
     "searchSchedulePeriods": "Buscar períodos programados",
     "createSchedulePeriod": "Crear período programado",
     "updateSchedulePeriod": "Actualizar período programado",
-    "manageProfiles": "Gestionar perfiles"
+    "manageProfiles": "Gestionar perfiles",
+    "noPeriods": "No se encontraron períodos programados"
   },
   "export": {
     "exportToPdf": "Exportar a PDF",

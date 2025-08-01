@@ -36,6 +36,7 @@
         :loading="sitesStore.loading"
         :table-key="'sites'"
         :enable-selection="true"
+        :show-expand="true"
         :selection-loading="selectionLoading"
         :delete-loading="deleteLoading"
         :delete-progress="deleteProgress"
@@ -121,6 +122,88 @@
               </template>
             </v-tooltip>
           </div>
+        </template>
+
+        <!-- Expanded row content for hierarchical data -->
+        <template v-slot:expanded-row="{ item }">
+          <tr>
+            <td :colspan="advancedHeaders.length" class="pa-0">
+              <div class="expanded-content-wrapper">
+                <TabbedChildView
+                  :tabs="[
+                    {
+                      key: 'chargePoints',
+                      title: $t('chargePoints.title'),
+                      icon: 'mdi-ev-station',
+                      count: getChargePointCount(item)
+                    }
+                  ]"
+                  :loading="isLoading(item)"
+                  :error="getError(item)"
+                  @refresh="() => loadChildren(item)"
+                >
+                  <template #chargePoints>
+                    <div v-if="getChargePoints(item)?.length" class="child-items-container">
+                      <v-row class="ma-0">
+                        <v-col
+                          v-for="chargePoint in getChargePoints(item)"
+                          :key="chargePoint.id"
+                          cols="12"
+                          sm="6"
+                          md="4"
+                          class="pa-2"
+                        >
+                          <v-card class="child-item-card" variant="outlined">
+                            <v-card-text class="pa-3">
+                              <div class="d-flex justify-space-between align-center mb-2">
+                                <div class="d-flex align-center">
+                                  <v-icon class="me-2" color="primary" size="small"
+                                    >mdi-ev-station</v-icon
+                                  >
+                                  <span class="text-subtitle-2 font-weight-medium">
+                                    {{ chargePoint.ocpp_charge_box_id }}
+                                  </span>
+                                </div>
+                                <v-chip
+                                  :color="getChargePointStatusColor(chargePoint.status)"
+                                  size="x-small"
+                                  variant="tonal"
+                                >
+                                  {{ $t(`status.${chargePoint.status?.toLowerCase()}`) }}
+                                </v-chip>
+                              </div>
+                              <div class="child-details">
+                                <div class="detail-item">
+                                  <v-icon size="x-small" class="me-1">mdi-factory</v-icon>
+                                  <span class="text-caption">{{ chargePoint.manufacturer }}</span>
+                                </div>
+                                <div class="detail-item">
+                                  <v-icon size="x-small" class="me-1">mdi-tag</v-icon>
+                                  <span class="text-caption">{{ chargePoint.model }}</span>
+                                </div>
+                                <div class="detail-item">
+                                  <v-icon size="x-small" class="me-1">mdi-power-plug</v-icon>
+                                  <span class="text-caption"
+                                    >{{ chargePoint.connector_count }} connectors</span
+                                  >
+                                </div>
+                              </div>
+                            </v-card-text>
+                          </v-card>
+                        </v-col>
+                      </v-row>
+                    </div>
+                    <div v-else class="empty-state text-center pa-6">
+                      <v-icon size="32" color="grey-lighten-1">mdi-ev-station-off</v-icon>
+                      <div class="text-body-2 text-medium-emphasis mt-2">
+                        {{ $t('chargePoints.noChargePoints') }}
+                      </div>
+                    </div>
+                  </template>
+                </TabbedChildView>
+              </div>
+            </td>
+          </tr>
         </template>
       </EnhancedDataGrid>
     </v-card>
@@ -266,10 +349,17 @@ import { useSitesStore } from '@/stores/sites'
 import SiteForm from '@/components/SiteForm.vue'
 
 import EnhancedDataGrid from '@/components/EnhancedDataGrid.vue'
+import TabbedChildView from '@/components/TabbedChildView.vue'
+import { useHierarchicalData } from '@/composables/useHierarchicalData'
+import { useChargePointsStore } from '@/stores/chargepoints'
+import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
 import type { Site, CreateSiteRequest, UpdateSiteRequest } from '@/types/sites'
+import type { ChargePoint } from '@/types/chargepoints'
 
 const sitesStore = useSitesStore()
+const chargePointsStore = useChargePointsStore()
 const { t, locale } = useI18n()
+const { formatDate, formatNumber } = useLocaleFormatting()
 
 const selectedSite = ref<Site | null>(null)
 const siteToDelete = ref<Site | null>(null)
@@ -284,6 +374,36 @@ const siteToView = ref<Site | null>(null)
 
 const successMessage = ref('')
 const showSuccessAlert = ref(false)
+
+// Hierarchical data management for charge points
+const {
+  expandedItems,
+  childrenData,
+  loadingStates,
+  errorStates,
+  toggleExpansion,
+  loadChildren,
+  hasChildren,
+  getChildren,
+  isLoading,
+  getError
+} = useHierarchicalData({
+  childDataFetcher: async (site: Site) => {
+    console.log('Loading charge points for site:', site.id)
+
+    // Ensure charge points data is loaded
+    if (chargePointsStore.chargePoints.length === 0) {
+      await chargePointsStore.fetchChargePoints()
+    }
+
+    // Get charge points for this site
+    const chargePoints = chargePointsStore.getChargePointsBySiteId(site.id || 0)
+    console.log('Found charge points:', chargePoints.length)
+
+    return { chargePoints }
+  },
+  childDataKey: 'id'
+})
 
 const expandedGroups = ref<string[]>([])
 
@@ -391,13 +511,26 @@ const filteredSites = computed(() => {
 })
 
 // Methods
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric'
-  })
+// Data retrieval methods for hierarchical view
+const getChargePoints = (site: Site) => {
+  return getChildren(site)?.chargePoints || []
+}
+
+const getChargePointCount = (site: Site) => {
+  return getChargePoints(site).length
+}
+
+const getChargePointStatusColor = (status: string): string => {
+  switch (status) {
+    case 'active':
+      return 'success'
+    case 'inactive':
+      return 'warning'
+    case 'faulty':
+      return 'error'
+    default:
+      return 'primary'
+  }
 }
 
 const openCreateDialog = (): void => {
@@ -1144,7 +1277,21 @@ const exportFilteredToCSV = async (filteredSites: Site[]): Promise<void> => {
 // Lifecycle
 onMounted(async () => {
   try {
-    await sitesStore.fetchSites()
+    // Load sites and charge points for hierarchical functionality
+    await Promise.all([
+      sitesStore.fetchSites(),
+      chargePointsStore.chargePoints.length === 0
+        ? chargePointsStore.fetchChargePoints()
+        : Promise.resolve()
+    ])
+
+    console.log(
+      'Initial data loaded - Sites:',
+      sitesStore.sites.length,
+      'Charge Points:',
+      chargePointsStore.chargePoints.length
+    )
+
     if (sitesStore.sites.length === 0 && !sitesStore.error) {
       showSuccessMessage(t('messages.sitesLoadedSuccess'))
     }
@@ -1373,5 +1520,222 @@ onMounted(async () => {
   .create-btn {
     width: 100%;
   }
+}
+
+/* Hierarchical View Styles */
+.hierarchical-view {
+  padding: 16px;
+}
+
+.site-row-container {
+  margin-bottom: 16px;
+}
+
+.site-parent-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px;
+  background: rgb(var(--v-theme-surface));
+  border-radius: 8px;
+  border: 1px solid rgb(var(--v-theme-outline));
+}
+
+.site-info {
+  flex: 1;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.site-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.site-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.site-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 0.875rem;
+}
+
+.location-icon {
+  color: rgb(var(--v-theme-primary));
+}
+
+.site-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.75rem;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.site-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.charge-points-section {
+  margin-top: 16px;
+}
+
+.charge-points-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.charge-point-card {
+  background: rgb(var(--v-theme-background));
+  border: 1px solid rgb(var(--v-theme-outline));
+  border-radius: 8px;
+  padding: 16px;
+  transition: box-shadow 0.2s ease;
+}
+
+.charge-point-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.charge-point-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.charge-point-id {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.charge-point-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.detail-row v-icon {
+  color: rgb(var(--v-theme-primary));
+}
+
+.charge-point-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+}
+
+.empty-message {
+  margin: 8px 0 0 0;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 0.875rem;
+}
+
+.view-toggle-btn {
+  margin-right: 8px;
+}
+
+@media (max-width: 768px) {
+  .charge-points-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-parent-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .site-actions {
+    align-self: flex-end;
+  }
+}
+
+/* Hierarchical expanded content styles */
+.expanded-content-wrapper {
+  background: rgb(var(--v-theme-surface-container));
+  border-radius: 0 0 8px 8px;
+}
+
+.child-items-container {
+  background: transparent;
+}
+
+.child-item-card {
+  transition: all 0.2s ease;
+  border: 1px solid rgb(var(--v-theme-outline));
+  background: rgb(var(--v-theme-surface));
+}
+
+.child-item-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  border-color: rgb(var(--v-theme-primary));
+}
+
+.child-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.empty-state {
+  text-align: center;
+  padding: 32px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+/* Dark theme improvements */
+.v-theme--dark .expanded-content-wrapper {
+  background: rgb(var(--v-theme-surface-container));
+}
+
+.v-theme--dark .child-item-card {
+  background: rgb(var(--v-theme-surface-bright));
+  border-color: rgb(var(--v-theme-outline-variant));
+}
+
+.v-theme--dark .child-item-card:hover {
+  background: rgb(var(--v-theme-surface-container-high));
 }
 </style>

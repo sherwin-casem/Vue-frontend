@@ -36,37 +36,37 @@ export const useSchedulePeriodsStore = defineStore('schedulePeriods', {
   getters: {
     getSchedulePeriodById:
       (state) =>
-        (id: number): SchedulePeriod | undefined => {
-          return state.schedulePeriods.find((period) => period.id === id)
-        },
+      (id: number): SchedulePeriod | undefined => {
+        return state.schedulePeriods.find((period) => period.id === id)
+      },
 
     filteredSchedulePeriods:
       (state) =>
-        (filters: SchedulePeriodFilters): SchedulePeriod[] => {
-          let filtered = [...state.schedulePeriods]
+      (filters: SchedulePeriodFilters): SchedulePeriod[] => {
+        let filtered = [...state.schedulePeriods]
 
-          if (filters.search) {
-            const searchTerm = filters.search?.toLowerCase()
-            filtered = filtered.filter(
-              (period) =>
-                period.limit.toString().includes(searchTerm) ||
-                period.start_period_in_seconds.toString().includes(searchTerm) ||
-                period.number_phases.toString().includes(searchTerm)
-            )
-          }
+        if (filters.search) {
+          const searchTerm = filters.search?.toLowerCase()
+          filtered = filtered.filter(
+            (period) =>
+              period.limit.toString().includes(searchTerm) ||
+              period.start_period_in_seconds.toString().includes(searchTerm) ||
+              period.number_phases.toString().includes(searchTerm)
+          )
+        }
 
-          if (filters.charging_profile_id) {
-            filtered = filtered.filter(
-              (period) => period.charging_profile_id === filters.charging_profile_id
-            )
-          }
+        if (filters.charging_profile_id) {
+          filtered = filtered.filter(
+            (period) => period.charging_profile_id === filters.charging_profile_id
+          )
+        }
 
-          if (filters.number_phases) {
-            filtered = filtered.filter((period) => period.number_phases === filters.number_phases)
-          }
+        if (filters.number_phases) {
+          filtered = filtered.filter((period) => period.number_phases === filters.number_phases)
+        }
 
-          return filtered
-        },
+        return filtered
+      },
 
     uniquePhases: (state): number[] => {
       return [...new Set(state.schedulePeriods.map((period) => period.number_phases))].sort(
@@ -76,11 +76,23 @@ export const useSchedulePeriodsStore = defineStore('schedulePeriods', {
 
     periodsByChargingProfile:
       (state) =>
-        (chargingProfileId: number): SchedulePeriod[] => {
-          return state.schedulePeriods.filter(
-            (period) => period.charging_profile_id === chargingProfileId
-          )
-        }
+      (chargingProfileId: number): SchedulePeriod[] => {
+        return state.schedulePeriods.filter(
+          (period) => period.charging_profile_id === chargingProfileId
+        )
+      },
+
+    getSchedulePeriodsByProfileId:
+      (state) =>
+      (chargingProfileId: number): SchedulePeriod[] => {
+        return state.schedulePeriods.filter(
+          (period) => period.charging_profile_id === chargingProfileId
+        )
+      },
+
+    allSchedulePeriods: (state): SchedulePeriod[] => {
+      return [...state.schedulePeriods]
+    }
   },
 
   actions: {
@@ -96,7 +108,9 @@ export const useSchedulePeriodsStore = defineStore('schedulePeriods', {
         if (response.data && response.data.schedule_periods) {
           this.schedulePeriods = response.data.schedule_periods
         } else if (response.data && !response.data.error) {
-          this.schedulePeriods = Array.isArray(response.data.schedule_periods) ? response.data.schedule_periods : []
+          this.schedulePeriods = Array.isArray(response.data.schedule_periods)
+            ? response.data.schedule_periods
+            : []
         } else {
           throw new Error(response.data?.error || 'Failed to fetch schedule periods')
         }

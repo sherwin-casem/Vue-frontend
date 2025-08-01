@@ -93,7 +93,9 @@
     "expandAll": "Expand All",
     "collapseAll": "Collapse All",
     "selectColumnsToGroup": "Select columns to group by",
-    "groupingByFields": "Grouping by {count} field(s)"
+    "groupingByFields": "Grouping by {count} field(s)",
+    "noItems":"No Items",
+    "noItemsDescription":"0 Items found here"
   },
   "validation": {
     "fieldRequired": "This field is required",
@@ -110,7 +112,9 @@
     "connectors": "Connectors",
     "chargingProfiles": "Charging Profiles",
     "schedulePeriods": "Schedule Periods",
-    "logout": "Logout"
+    "logout": "Logout",
+    "hierarchicalView": "Hierarchical View",
+    "flatView": "Flat View"
   },
   "auth": {
     "login": "Login",
@@ -194,6 +198,7 @@
     "createError": "Failed to create charge point. Please try again.",
     "updateError": "Failed to update charge point. Please try again.",
     "deleteError": "Failed to delete charge point. Please try again.",
+    "noChargePoints": "No charge points found",
     "validation": {
       "ocppIdRequired": "OCPP Charge Box ID is required",
       "ocppIdMinLength": "OCPP Charge Box ID must be at least 3 characters",
@@ -437,6 +442,18 @@
       "connectorNumberMax": "Connector number must be 10 or less",
       "maxPowerMin": "Max power must be greater than 0",
       "maxPowerMax": "Max power must be 500 kW or less"
+    },
+    "noConnectors": "No connectors found",
+    "status": {
+      "Available": "Available",
+      "Preparing": "Preparing",
+      "Charging": "Charging",
+      "SuspendedEVSE": "Suspended EVSE",
+      "SuspendedEV": "Suspended EV",
+      "Finishing": "Finishing",
+      "Reserved": "Reserved",
+      "Unavailable": "Unavailable",
+      "Faulted": "Faulted"
     }
   },
   "chargingProfiles": {
@@ -492,7 +509,12 @@
       "validToAfterFrom": "Valid To must be after Valid From",
       "durationPositive": "Duration must be greater than 0",
       "minChargingRatePositive": "Min charging rate must be greater than 0"
-    }
+    },
+    "noProfiles": "No charging profiles found",
+    "untitled": "Untitled Profile",
+    "purposeTxDefault": "Transaction Default",
+    "purposeTxProfile": "Transaction Profile",
+    "purposeTxMaxProfile": "Transaction Max Profile"
   },
   "schedulePeriods": {
     "title": "Schedule Periods Management",
@@ -531,6 +553,7 @@
     "createError": "Failed to create schedule period. Please try again.",
     "updateError": "Failed to update schedule period. Please try again.",
     "deleteError": "Failed to delete schedule period. Please try again.",
+    "noPeriods": "No schedule periods found",
     "validation": {
       "startPeriodMin": "Start period must be 0 or greater",
       "startPeriodMax": "Start period must be within 24 hours (86400 seconds)",

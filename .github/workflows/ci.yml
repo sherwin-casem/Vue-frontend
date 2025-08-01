@@ -47,6 +47,9 @@ jobs:
     needs: build-and-test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
 
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -119,8 +122,8 @@ jobs:
       - name: Extract Release Version
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION="${GITHUB_REF#refs/tags/}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "major_minor=${VERSION%.*}" >> $GITHUB_OUTPUT
 
       - name: Build and Push Production Image
@@ -135,25 +138,19 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:stable
           platforms: linux/amd64,linux/arm64
 
-      - name: Upload Deployment Package
-        uses: actions/upload-artifact@v4
-        with:
-          name: deployment-package-${{ steps.version.outputs.version }}
-          path: deployment-package/
+      - name: Prepare Deployment Package
+        run: |
+          mkdir -p deployment-package
+          echo "Build artifact for version ${{ steps.version.outputs.version }}" > deployment-package/README.md
 
       - name: Create Release Archive
         run: |
           tar -czf ocpp-frontend-${{ steps.version.outputs.version }}-deployment.tar.gz -C deployment-package .
 
       - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./ocpp-frontend-${{ steps.version.outputs.version }}-deployment.tar.gz
-          asset_name: ocpp-frontend-${{ steps.version.outputs.version }}-deployment.tar.gz
-          asset_content_type: application/gzip
+          files: ocpp-frontend-${{ steps.version.outputs.version }}-deployment.tar.gz
 
   security-scan:
     name: Security Scan
@@ -165,7 +162,7 @@ jobs:
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }}
           format: 'sarif'
           output: 'trivy-results.sarif'
 
@@ -184,7 +181,8 @@ jobs:
     steps:
       - name: Notify Deployment Status
         run: |
-          if [ "${{ needs.docker-build-and-push.result }}" == "success" ]; then
+          echo "Job result: ${{ needs.docker-build-and-push.result }}"
+          if [ "${{ needs.docker-build-and-push.result }}" = "success" ]; then
             echo "✅ Deployment successful!"
             echo "🐳 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
             echo "🔗 Pull command: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"

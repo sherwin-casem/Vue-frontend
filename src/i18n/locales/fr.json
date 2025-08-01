@@ -193,6 +193,7 @@
     "createError": "Échec de la création du point de charge. Veuillez réessayer.",
     "updateError": "Échec de la mise à jour du point de charge. Veuillez réessayer.",
     "deleteError": "Échec de la suppression du point de charge. Veuillez réessayer.",
+    "noChargePoints": "Aucun point de charge trouvé",
     "validation": {
       "ocppIdRequired": "L'ID de la boîte de charge OCPP est requis",
       "ocppIdMinLength": "L'ID de la boîte de charge OCPP doit contenir au moins 3 caractères",
@@ -271,7 +272,8 @@
     "searchSchedulePeriods": "Rechercher des périodes planifiées",
     "createSchedulePeriod": "Créer une période planifiée",
     "updateSchedulePeriod": "Mettre à jour la période planifiée",
-    "manageProfiles": "Gérer les profils"
+    "manageProfiles": "Gérer les profils",
+    "noPeriods": "Aucune période planifiée trouvée"
   },
   "export": {
     "exportToPdf": "Exporter en PDF",

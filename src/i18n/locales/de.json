@@ -200,6 +200,7 @@
     "createError": "Fehler beim Erstellen der Ladestation. Bitte versuchen Sie es erneut.",
     "updateError": "Fehler beim Aktualisieren der Ladestation. Bitte versuchen Sie es erneut.",
     "deleteError": "Fehler beim Löschen der Ladestation. Bitte versuchen Sie es erneut.",
+    "noChargePoints": "Keine Ladestationen gefunden",
     "validation": {
       "ocppIdRequired": "OCPP Charge Box ID ist erforderlich",
       "ocppIdMinLength": "OCPP Charge Box ID muss mindestens 3 Zeichen haben",
@@ -452,6 +453,7 @@
     "createError": "Fehler beim Erstellen des Zeitplans. Bitte versuchen Sie es erneut.",
     "updateError": "Fehler beim Aktualisieren des Zeitplans. Bitte versuchen Sie es erneut.",
     "deleteError": "Fehler beim Löschen des Zeitplans. Bitte versuchen Sie es erneut.",
+    "noPeriods": "Keine Zeitpläne gefunden",
     "validation": {
       "startPeriodMin": "Start-Zeitraum muss 0 oder größer sein",
       "startPeriodMax": "Start-Zeitraum muss innerhalb von 24 Stunden (86400 Sekunden) liegen",

@@ -36,40 +36,40 @@ export const useConnectorsStore = defineStore('connectors', {
   getters: {
     getConnectorById:
       (state) =>
-        (id: number): Connector | undefined => {
-          return state.connectors.find((connector) => connector.id === id)
-        },
+      (id: number): Connector | undefined => {
+        return state.connectors.find((connector) => connector.id === id)
+      },
 
     filteredConnectors:
       (state) =>
-        (filters: ConnectorFilters): Connector[] => {
-          let filtered = [...state.connectors]
+      (filters: ConnectorFilters): Connector[] => {
+        let filtered = [...state.connectors]
 
-          if (filters.search) {
-            const searchTerm = filters.search?.toLowerCase()
-            filtered = filtered.filter(
-              (connector) =>
-                connector.type?.toLowerCase().includes(searchTerm) ||
-                connector.connector_number.toString().includes(searchTerm)
-            )
-          }
+        if (filters.search) {
+          const searchTerm = filters.search?.toLowerCase()
+          filtered = filtered.filter(
+            (connector) =>
+              connector.type?.toLowerCase().includes(searchTerm) ||
+              connector.connector_number.toString().includes(searchTerm)
+          )
+        }
 
-          if (filters.status) {
-            filtered = filtered.filter((connector) => connector.status === filters.status)
-          }
+        if (filters.status) {
+          filtered = filtered.filter((connector) => connector.status === filters.status)
+        }
 
-          if (filters.type) {
-            filtered = filtered.filter((connector) => connector.type === filters.type)
-          }
+        if (filters.type) {
+          filtered = filtered.filter((connector) => connector.type === filters.type)
+        }
 
-          if (filters.charge_point_id) {
-            filtered = filtered.filter(
-              (connector) => connector.charge_point_id === filters.charge_point_id
-            )
-          }
+        if (filters.charge_point_id) {
+          filtered = filtered.filter(
+            (connector) => connector.charge_point_id === filters.charge_point_id
+          )
+        }
 
-          return filtered
-        },
+        return filtered
+      },
 
     uniqueStatuses: (state): string[] => {
       return [...new Set(state.connectors.map((connector) => connector.status))].sort()
@@ -81,9 +81,19 @@ export const useConnectorsStore = defineStore('connectors', {
 
     connectorsByChargePoint:
       (state) =>
-        (chargePointId: number): Connector[] => {
-          return state.connectors.filter((connector) => connector.charge_point_id === chargePointId)
-        }
+      (chargePointId: number): Connector[] => {
+        return state.connectors.filter((connector) => connector.charge_point_id === chargePointId)
+      },
+
+    getConnectorsByChargePointId:
+      (state) =>
+      (chargePointId: number): Connector[] => {
+        return state.connectors.filter((connector) => connector.charge_point_id === chargePointId)
+      },
+
+    allConnectors: (state): Connector[] => {
+      return [...state.connectors]
+    }
   },
 
   actions: {

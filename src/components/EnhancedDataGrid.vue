@@ -279,6 +279,7 @@
         :items="filteredAndSortedItems"
         :loading="loading"
         :show-select="enableSelection"
+        :show-expand="showExpand"
         :item-key="itemKeyField"
         return-object
         class="enhanced-data-table"
@@ -483,6 +484,11 @@
           </slot>
         </template>
 
+        <!-- Expanded row slot -->
+        <template v-if="showExpand" #expanded-row="{ item }">
+          <slot name="expanded-row" v-bind="{ item }" />
+        </template>
+
         <!-- Forward all other slots -->
         <template v-for="(_, slot) in $slots" #[slot]="scope">
           <slot :name="slot" v-bind="scope" />
@@ -603,6 +609,7 @@ interface Props {
   selectionLoading?: boolean
   deleteLoading?: boolean
   deleteProgress?: number
+  showExpand?: boolean
 }
 
 interface DataGridColumn {
@@ -639,7 +646,8 @@ const props = withDefaults(defineProps<Props>(), {
   enableSelection: true,
   selectionLoading: false,
   deleteLoading: false,
-  deleteProgress: 0
+  deleteProgress: 0,
+  showExpand: false
 })
 
 const emit = defineEmits<Emits>()
@@ -663,7 +671,6 @@ const showSettings = ref(false)
 // Column management
 const visibleColumns = ref<string[]>([])
 const columnOrder = ref<DataGridColumn[]>([])
-
 
 // Filtering
 const columnFilters = ref<Record<string, string>>({})

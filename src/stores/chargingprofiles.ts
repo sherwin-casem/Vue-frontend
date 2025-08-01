@@ -36,25 +36,25 @@ export const useChargingProfilesStore = defineStore('chargingProfiles', {
   getters: {
     getChargingProfileById:
       (state) =>
-        (id: number): ChargingProfile | undefined => {
-          return state.chargingProfiles.find((profile) => profile.id === id)
-        },
+      (id: number): ChargingProfile | undefined => {
+        return state.chargingProfiles.find((profile) => profile.id === id)
+      },
 
     filteredChargingProfiles:
       (state) =>
-        (filters: ChargingProfileFilters): ChargingProfile[] => {
-          let filtered = [...state.chargingProfiles]
+      (filters: ChargingProfileFilters): ChargingProfile[] => {
+        let filtered = [...state.chargingProfiles]
 
-          if (filters.search) {
-            const searchTerm = filters.search?.toLowerCase()
-            filtered = filtered.filter(
-              (profile) =>
-                profile.description?.toLowerCase().includes(searchTerm) ||
-                profile.note?.toLowerCase().includes(searchTerm) ||
-                profile.charging_profile_purpose?.toLowerCase().includes(searchTerm) ||
-                profile.charging_profile_kind?.toLowerCase().includes(searchTerm)
-            )
-          }
+        if (filters.search) {
+          const searchTerm = filters.search?.toLowerCase()
+          filtered = filtered.filter(
+            (profile) =>
+              profile.description?.toLowerCase().includes(searchTerm) ||
+              profile.note?.toLowerCase().includes(searchTerm) ||
+              profile.charging_profile_purpose?.toLowerCase().includes(searchTerm) ||
+              profile.charging_profile_kind?.toLowerCase().includes(searchTerm)
+          )
+        }
 
         if (filters.charge_point_id) {
           filtered = filtered.filter(
@@ -62,8 +62,8 @@ export const useChargingProfilesStore = defineStore('chargingProfiles', {
           )
         }
 
-          return filtered
-        },
+        return filtered
+      },
 
     uniquePurposes: (state): string[] => {
       return [
@@ -79,9 +79,25 @@ export const useChargingProfilesStore = defineStore('chargingProfiles', {
 
     profilesByChargePoint:
       (state) =>
-        (chargePointId: number): ChargingProfile[] => {
-          return state.chargingProfiles.filter((profile) => profile.charge_point_id === chargePointId)
-        }
+      (chargePointId: number): ChargingProfile[] => {
+        return state.chargingProfiles.filter((profile) => profile.charge_point_id === chargePointId)
+      },
+
+    chargingProfilesByChargePoint:
+      (state) =>
+      (chargePointId: number): ChargingProfile[] => {
+        return state.chargingProfiles.filter((profile) => profile.charge_point_id === chargePointId)
+      },
+
+    getChargingProfilesByChargePointId:
+      (state) =>
+      (chargePointId: number): ChargingProfile[] => {
+        return state.chargingProfiles.filter((profile) => profile.charge_point_id === chargePointId)
+      },
+
+    allChargingProfiles: (state): ChargingProfile[] => {
+      return [...state.chargingProfiles]
+    }
   },
 
   actions: {

@@ -55,12 +55,180 @@
 
     <!-- Data Grid -->
     <v-card class="data-grid-card" elevation="2">
+      <!-- Hierarchical View -->
+      <div v-if="false" class="hierarchical-view">
+        <div
+          v-for="profile in filteredChargingProfiles"
+          :key="profile.id"
+          class="profile-row-container"
+        >
+          <ExpandableDataRow
+            :item="profile"
+            :has-children="true"
+            :loading="isLoading(profile)"
+            @toggle="() => toggleExpansion(profile)"
+          >
+            <template #parent="{ item, expanded }">
+              <div class="profile-parent-content">
+                <div class="profile-info">
+                  <div class="profile-header">
+                    <h3 class="profile-description">
+                      {{ item.description || $t('chargingProfiles.untitled') }}
+                    </h3>
+                    <div class="profile-chips">
+                      <v-chip
+                        :color="getPurposeColor(item.charging_profile_purpose)"
+                        size="small"
+                        variant="tonal"
+                      >
+                        {{ $t(`chargingProfiles.purpose${item.charging_profile_purpose}`) }}
+                      </v-chip>
+                      <v-chip
+                        :color="getKindColor(item.charging_profile_kind)"
+                        size="small"
+                        variant="outlined"
+                      >
+                        {{ $t(`chargingProfiles.kind${item.charging_profile_kind}`) }}
+                      </v-chip>
+                    </div>
+                  </div>
+                  <div class="profile-details">
+                    <div class="detail-row">
+                      <v-icon size="small" class="detail-icon">mdi-ev-station</v-icon>
+                      <span>{{ getChargePointName(item.charge_point_id) }}</span>
+                    </div>
+                    <div class="detail-row">
+                      <v-icon size="small" class="detail-icon">mdi-layers</v-icon>
+                      <span>{{ $t('chargingProfiles.stackLevel') }}: {{ item.stack_level }}</span>
+                    </div>
+                    <div class="detail-row">
+                      <v-icon size="small" class="detail-icon">mdi-calendar</v-icon>
+                      <span
+                        >{{ formatDateTime(item.valid_from) }} -
+                        {{ formatDateTime(item.valid_to) }}</span
+                      >
+                    </div>
+                    <div v-if="item.duration_in_seconds" class="detail-row">
+                      <v-icon size="small" class="detail-icon">mdi-clock</v-icon>
+                      <span>{{ formatDuration(item.duration_in_seconds) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="profile-actions">
+                  <v-btn
+                    icon="mdi-clock-outline"
+                    variant="text"
+                    color="info"
+                    size="small"
+                    @click.stop="manageSchedulePeriods(item)"
+                  />
+                  <v-btn
+                    icon="mdi-eye"
+                    variant="text"
+                    color="info"
+                    size="small"
+                    @click.stop="openDetailDialog(item)"
+                  />
+                  <v-btn
+                    icon="mdi-pencil"
+                    variant="text"
+                    color="primary"
+                    size="small"
+                    @click.stop="openEditDialog(item)"
+                  />
+                  <v-btn
+                    icon="mdi-delete"
+                    variant="text"
+                    color="error"
+                    size="small"
+                    @click.stop="openDeleteDialog(item)"
+                  />
+                </div>
+              </div>
+            </template>
+
+            <template #children>
+              <div class="schedule-periods-section">
+                <TabbedChildView
+                  :tabs="[
+                    {
+                      key: 'schedulePeriods',
+                      title: $t('schedulePeriods.title'),
+                      icon: 'mdi-clock-outline',
+                      count: getChildren(profile)?.length || 0
+                    }
+                  ]"
+                  :loading="isLoading(profile)"
+                  :error="getError(profile)"
+                  @refresh="() => loadChildren(profile)"
+                >
+                  <template #schedulePeriods>
+                    <div v-if="getChildren(profile)?.length" class="schedule-periods-grid">
+                      <div
+                        v-for="period in getChildren(profile)"
+                        :key="period.id"
+                        class="schedule-period-card"
+                      >
+                        <div class="period-header">
+                          <h4 class="period-title">
+                            {{ $t('schedulePeriods.period') }} {{ period.start_period }}
+                          </h4>
+                          <v-chip color="primary" size="small" variant="tonal">
+                            {{ period.power_limit }} {{ period.power_limit_unit || 'A' }}
+                          </v-chip>
+                        </div>
+                        <div class="period-details">
+                          <div class="detail-row">
+                            <v-icon size="small">mdi-clock-start</v-icon>
+                            <span
+                              >{{ $t('schedulePeriods.startPeriod') }}:
+                              {{ period.start_period }}s</span
+                            >
+                          </div>
+                          <div class="detail-row">
+                            <v-icon size="small">mdi-lightning-bolt</v-icon>
+                            <span
+                              >{{ period.power_limit }} {{ period.power_limit_unit || 'A' }}</span
+                            >
+                          </div>
+                          <div v-if="period.phase_to_use" class="detail-row">
+                            <v-icon size="small">mdi-sine-wave</v-icon>
+                            <span
+                              >{{ $t('schedulePeriods.phase') }}: {{ period.phase_to_use }}</span
+                            >
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-else class="empty-state">
+                      <v-icon size="large" color="grey">mdi-clock-outline</v-icon>
+                      <p class="empty-message">{{ $t('schedulePeriods.noPeriods') }}</p>
+                      <v-btn
+                        color="primary"
+                        variant="tonal"
+                        prepend-icon="mdi-plus"
+                        @click="addSchedulePeriodToProfile(profile)"
+                        class="add-period-btn"
+                      >
+                        {{ $t('schedulePeriods.addPeriod') }}
+                      </v-btn>
+                    </div>
+                  </template>
+                </TabbedChildView>
+              </div>
+            </template>
+          </ExpandableDataRow>
+        </div>
+      </div>
+
+      <!-- Standard Data Grid View -->
       <EnhancedDataGrid
         :columns="advancedHeaders"
         :items="filteredChargingProfiles"
         :loading="chargingProfilesStore.loading"
         :table-key="'charging-profiles'"
         :enable-selection="true"
+        :show-expand="true"
         :selection-loading="selectionLoading"
         :delete-loading="deleteLoading"
         :delete-progress="deleteProgress"
@@ -188,6 +356,80 @@
               </template>
             </v-tooltip>
           </div>
+        </template>
+
+        <!-- Expanded row content for hierarchical data -->
+        <template v-slot:expanded-row="{ item }">
+          <tr>
+            <td :colspan="advancedHeaders.length" class="pa-0">
+              <div class="expanded-content-wrapper">
+                <TabbedChildView
+                  :tabs="[
+                    {
+                      key: 'schedulePeriods',
+                      title: $t('schedulePeriods.title'),
+                      icon: 'mdi-clock-outline',
+                      count: getSchedulePeriodsCount(item)
+                    }
+                  ]"
+                  :loading="isLoading(item)"
+                  :error="getError(item)"
+                  @refresh="() => loadChildren(item)"
+                >
+                  <template #schedulePeriods>
+                    <div v-if="getSchedulePeriods(item)?.length" class="child-items-container">
+                      <v-row class="ma-0">
+                        <v-col
+                          v-for="period in getSchedulePeriods(item)"
+                          :key="period.id"
+                          cols="12"
+                          sm="6"
+                          md="4"
+                          class="pa-2"
+                        >
+                          <v-card class="child-item-card" variant="outlined">
+                            <v-card-text class="pa-3">
+                              <div class="d-flex justify-space-between align-center mb-2">
+                                <div class="d-flex align-center">
+                                  <v-icon class="me-2" color="primary" size="small"
+                                    >mdi-clock-outline</v-icon
+                                  >
+                                  <span class="text-subtitle-2 font-weight-medium">
+                                    {{ $t('schedulePeriods.period') }} {{ period.start_period }}
+                                  </span>
+                                </div>
+                                <v-chip color="info" size="x-small" variant="tonal">
+                                  {{ period.limit }} {{ period.limit_unit || 'A' }}
+                                </v-chip>
+                              </div>
+                              <div class="child-details">
+                                <div v-if="period.number_phases" class="detail-item">
+                                  <v-icon size="x-small" class="me-1">mdi-numeric</v-icon>
+                                  <span class="text-caption"
+                                    >{{ period.number_phases }} phases</span
+                                  >
+                                </div>
+                                <div v-if="period.phase_to_use" class="detail-item">
+                                  <v-icon size="x-small" class="me-1">mdi-sine-wave</v-icon>
+                                  <span class="text-caption">Phase {{ period.phase_to_use }}</span>
+                                </div>
+                              </div>
+                            </v-card-text>
+                          </v-card>
+                        </v-col>
+                      </v-row>
+                    </div>
+                    <div v-else class="empty-state text-center pa-6">
+                      <v-icon size="32" color="grey-lighten-1">mdi-clock-outline</v-icon>
+                      <div class="text-body-2 text-medium-emphasis mt-2">
+                        {{ $t('schedulePeriods.noPeriods') }}
+                      </div>
+                    </div>
+                  </template>
+                </TabbedChildView>
+              </div>
+            </td>
+          </tr>
         </template>
       </EnhancedDataGrid>
     </v-card>
@@ -413,16 +655,22 @@ import { useRouter } from 'vue-router'
 import { useChargingProfilesStore } from '@/stores/chargingprofiles'
 import { useChargePointsStore } from '@/stores/chargepoints'
 import EnhancedDataGrid from '@/components/EnhancedDataGrid.vue'
+import ExpandableDataRow from '@/components/ExpandableDataRow.vue'
+import TabbedChildView from '@/components/TabbedChildView.vue'
 import ChargingProfileForm from '@/components/ChargingProfileForm.vue'
+import { useHierarchicalData } from '@/composables/useHierarchicalData'
+import { useSchedulePeriodsStore } from '@/stores/scheduleperiods'
 import type {
   ChargingProfile,
   CreateChargingProfileRequest,
   UpdateChargingProfileRequest,
   ChargingProfileFilters
 } from '@/types/chargingprofiles'
+import type { SchedulePeriod } from '@/types/scheduleperiods'
 
 const chargingProfilesStore = useChargingProfilesStore()
 const chargePointsStore = useChargePointsStore()
+const schedulePeriodsStore = useSchedulePeriodsStore()
 const { t, locale } = useI18n()
 const router = useRouter()
 
@@ -443,6 +691,28 @@ const batchToolbarRef = ref()
 const batchDeleteLoading = ref(false)
 const batchDeleteProgress = ref(0)
 const currentDeleteIndex = ref(0)
+
+// Set up hierarchical data management for schedule periods
+const {
+  expandedItems,
+  childrenData,
+  loadingStates,
+  errorStates,
+  toggleExpansion,
+  loadChildren,
+  hasChildren,
+  getChildren,
+  isLoading,
+  getError
+} = useHierarchicalData({
+  childDataFetcher: async (profile: ChargingProfile) => {
+    if (schedulePeriodsStore.schedulePeriods.length === 0) {
+      await schedulePeriodsStore.fetchSchedulePeriods()
+    }
+    return schedulePeriodsStore.getSchedulePeriodsByProfileId(profile.id || 0)
+  },
+  childDataKey: 'id'
+})
 
 // Filters
 const filters = reactive<ChargingProfileFilters>({
@@ -630,6 +900,15 @@ const formatDuration = (seconds: number): string => {
     return `${hours}h ${minutes}m`
   }
   return `${minutes}m`
+}
+
+// Data retrieval methods for hierarchical view
+const getSchedulePeriods = (profile: ChargingProfile) => {
+  return getChildren(profile)?.schedulePeriods || []
+}
+
+const getSchedulePeriodsCount = (profile: ChargingProfile) => {
+  return getSchedulePeriods(profile).length
 }
 
 const navigateToSchedulePeriods = (): void => {
@@ -1421,6 +1700,12 @@ const exportFilteredToCSV = async (filteredProfiles: any[]): Promise<void> => {
   }
 }
 
+// Additional helper methods
+const addSchedulePeriodToProfile = (profile: ChargingProfile) => {
+  // Navigate to schedule periods with profile filter and create action
+  router.push(`/schedule-periods?profile=${profile.id}&action=create`)
+}
+
 // Lifecycle
 onMounted(async () => {
   try {
@@ -1428,6 +1713,9 @@ onMounted(async () => {
       chargingProfilesStore.fetchChargingProfiles(),
       chargePointsStore.chargePoints.length === 0
         ? chargePointsStore.fetchChargePoints()
+        : Promise.resolve(),
+      schedulePeriodsStore.schedulePeriods.length === 0
+        ? schedulePeriodsStore.fetchSchedulePeriods()
         : Promise.resolve()
     ])
   } catch (error) {
@@ -1581,6 +1869,139 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+/* Hierarchical View Styles */
+.hierarchical-view {
+  padding: 16px;
+}
+
+.profile-row-container {
+  margin-bottom: 16px;
+}
+
+.profile-parent-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px;
+  background: rgb(var(--v-theme-surface));
+  border-radius: 8px;
+  border: 1px solid rgb(var(--v-theme-outline));
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-description {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.profile-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 0.875rem;
+}
+
+.detail-icon {
+  color: rgb(var(--v-theme-primary));
+}
+
+.profile-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.schedule-periods-section {
+  margin-top: 16px;
+}
+
+.schedule-periods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.schedule-period-card {
+  background: rgb(var(--v-theme-background));
+  border: 1px solid rgb(var(--v-theme-outline));
+  border-radius: 8px;
+  padding: 16px;
+  transition: box-shadow 0.2s ease;
+}
+
+.schedule-period-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.period-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.period-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.period-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+}
+
+.empty-message {
+  margin: 8px 0 16px 0;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 0.875rem;
+}
+
+.add-period-btn {
+  margin-top: 8px;
+}
+
+.view-toggle-btn {
+  margin-right: 8px;
+}
+
 @media (max-width: 960px) {
   .charging-profiles-container {
     padding: 16px;
@@ -1596,5 +2017,79 @@ onMounted(async () => {
     font-size: 1.75rem;
     text-align: center;
   }
+
+  .schedule-periods-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-parent-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .profile-actions {
+    align-self: flex-end;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+/* Hierarchical expanded content styles */
+.expanded-content-wrapper {
+  background: rgb(var(--v-theme-surface-container));
+  border-radius: 0 0 8px 8px;
+}
+
+.child-items-container {
+  background: transparent;
+}
+
+.child-item-card {
+  transition: all 0.2s ease;
+  border: 1px solid rgb(var(--v-theme-outline));
+  background: rgb(var(--v-theme-surface));
+}
+
+.child-item-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  border-color: rgb(var(--v-theme-primary));
+}
+
+.child-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.empty-state {
+  text-align: center;
+  padding: 32px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+/* Dark theme improvements */
+.v-theme--dark .expanded-content-wrapper {
+  background: rgb(var(--v-theme-surface-container));
+}
+
+.v-theme--dark .child-item-card {
+  background: rgb(var(--v-theme-surface-bright));
+  border-color: rgb(var(--v-theme-outline-variant));
+}
+
+.v-theme--dark .child-item-card:hover {
+  background: rgb(var(--v-theme-surface-container-high));
 }
 </style>

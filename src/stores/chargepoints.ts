@@ -39,6 +39,12 @@ export const useChargePointsStore = defineStore('chargepoints', {
         return state.chargePoints.find((cp) => cp.id === id)
       },
 
+    getChargePointsBySiteId:
+      (state) =>
+      (siteId: number): ChargePoint[] => {
+        return state.chargePoints.filter((cp) => cp.site_id === siteId)
+      },
+
     // Return all charge points without filtering
     allChargePoints: (state): ChargePoint[] => {
       return [...state.chargePoints]

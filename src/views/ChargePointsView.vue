@@ -40,6 +40,7 @@
         :loading="chargePointsStore.loading"
         :table-key="'chargepoints'"
         :enable-selection="true"
+        :show-expand="true"
         @row-click="handleRowClick"
         @selection-change="handleSelectionChange"
         @export-selected="handleExportSelected"
@@ -133,6 +134,150 @@
               </template>
             </v-tooltip>
           </div>
+        </template>
+
+        <!-- Expanded row content for hierarchical data -->
+        <template v-slot:expanded-row="{ item }">
+          <tr>
+            <td :colspan="advancedHeaders.length" class="pa-0">
+              <div class="expanded-content-wrapper">
+                <TabbedChildView
+                  :tabs="[
+                    {
+                      key: 'connectors',
+                      title: $t('connectors.title'),
+                      icon: 'mdi-power-plug',
+                      count: getConnectorCount(item)
+                    },
+                    {
+                      key: 'profiles',
+                      title: $t('chargingProfiles.title'),
+                      icon: 'mdi-chart-line',
+                      count: getProfileCount(item)
+                    }
+                  ]"
+                  :loading="isLoading(item)"
+                  :error="getError(item)"
+                  @refresh="() => loadChildren(item)"
+                >
+                  <template #connectors>
+                    <div v-if="getConnectors(item)?.length" class="child-items-container">
+                      <v-row class="ma-0">
+                        <v-col
+                          v-for="connector in getConnectors(item)"
+                          :key="connector.id"
+                          cols="12"
+                          sm="6"
+                          md="4"
+                          class="pa-2"
+                        >
+                          <v-card class="child-item-card" variant="outlined">
+                            <v-card-text class="pa-3">
+                              <div class="d-flex justify-space-between align-center mb-2">
+                                <div class="d-flex align-center">
+                                  <v-icon class="me-2" color="primary" size="small"
+                                    >mdi-power-plug</v-icon
+                                  >
+                                  <span class="text-subtitle-2 font-weight-medium">
+                                    {{ $t('connectors.connector') }} {{ connector.connector_id }}
+                                  </span>
+                                </div>
+                                <v-chip
+                                  :color="getConnectorStatusColor(connector.status)"
+                                  size="x-small"
+                                  variant="tonal"
+                                >
+                                  {{ connector.status }}
+                                </v-chip>
+                              </div>
+                              <div class="child-details">
+                                <div class="detail-item">
+                                  <v-icon size="x-small" class="me-1">mdi-lightning-bolt</v-icon>
+                                  <span class="text-caption">{{ connector.connector_type }}</span>
+                                </div>
+                                <div class="detail-item">
+                                  <v-icon size="x-small" class="me-1">mdi-speedometer</v-icon>
+                                  <span class="text-caption">{{ connector.power_rating }} kW</span>
+                                </div>
+                              </div>
+                            </v-card-text>
+                          </v-card>
+                        </v-col>
+                      </v-row>
+                    </div>
+                    <div v-else class="empty-state text-center pa-6">
+                      <v-icon size="32" color="grey-lighten-1">mdi-power-plug-off</v-icon>
+                      <div class="text-body-2 text-medium-emphasis mt-2">
+                        {{ $t('connectors.noConnectors') }}
+                      </div>
+                    </div>
+                  </template>
+
+                  <template #profiles>
+                    <div v-if="getProfiles(item)?.length" class="child-items-container">
+                      <v-row class="ma-0">
+                        <v-col
+                          v-for="profile in getProfiles(item)"
+                          :key="profile.id"
+                          cols="12"
+                          sm="6"
+                          md="4"
+                          class="pa-2"
+                        >
+                          <v-card class="child-item-card" variant="outlined">
+                            <v-card-text class="pa-3">
+                              <div class="d-flex justify-space-between align-center mb-2">
+                                <div class="d-flex align-center">
+                                  <v-icon class="me-2" color="primary" size="small"
+                                    >mdi-chart-line</v-icon
+                                  >
+                                  <span class="text-subtitle-2 font-weight-medium">
+                                    {{ profile.description || $t('chargingProfiles.untitled') }}
+                                  </span>
+                                </div>
+                                <v-chip
+                                  :color="getPurposeColor(profile.charging_profile_purpose)"
+                                  size="x-small"
+                                  variant="tonal"
+                                >
+                                  {{
+                                    $t(
+                                      `chargingProfiles.purpose${profile.charging_profile_purpose}`
+                                    )
+                                  }}
+                                </v-chip>
+                              </div>
+                              <div class="child-details">
+                                <div class="detail-item">
+                                  <v-icon size="x-small" class="me-1">mdi-layers</v-icon>
+                                  <span class="text-caption">
+                                    {{ $t('chargingProfiles.stackLevel') }}:
+                                    {{ profile.stack_level }}
+                                  </span>
+                                </div>
+                                <div class="detail-item">
+                                  <v-icon size="x-small" class="me-1">mdi-calendar</v-icon>
+                                  <span class="text-caption">{{
+                                    formatDateTime(profile.valid_from)
+                                  }}</span>
+                                </div>
+                              </div>
+                            </v-card-text>
+                          </v-card>
+                        </v-col>
+                      </v-row>
+                    </div>
+                    <div v-else class="empty-state text-center pa-6">
+                      <v-icon size="32" color="grey-lighten-1">mdi-chart-line-variant</v-icon>
+                      <div class="text-body-2 text-medium-emphasis mt-2">
+                        {{ $t('chargingProfiles.noProfiles') }}
+                      </div>
+                    </div>
+                  </template>
+                </TabbedChildView>
+              </div>
+            </td>
+          </tr>
         </template>
       </EnhancedDataGrid>
     </v-card>
@@ -325,14 +470,22 @@ import { useSitesStore } from '@/stores/sites'
 import ChargePointForm from '@/components/ChargePointForm.vue'
 
 import EnhancedDataGrid from '@/components/EnhancedDataGrid.vue'
+import TabbedChildView from '@/components/TabbedChildView.vue'
+import { useHierarchicalData } from '@/composables/useHierarchicalData'
+import { useConnectorsStore } from '@/stores/connectors'
+import { useChargingProfilesStore } from '@/stores/chargingprofiles'
 import type {
   ChargePoint,
   CreateChargePointRequest,
   UpdateChargePointRequest
 } from '@/types/chargepoints'
+import type { Connector } from '@/types/connectors'
+import type { ChargingProfile } from '@/types/chargingprofiles'
 
 const chargePointsStore = useChargePointsStore()
 const sitesStore = useSitesStore()
+const connectorsStore = useConnectorsStore()
+const chargingProfilesStore = useChargingProfilesStore()
 const { t, locale } = useI18n()
 const { formatDate, formatNumber } = useLocaleFormatting()
 
@@ -347,6 +500,45 @@ const showDetailDialog = ref(false)
 
 const successMessage = ref('')
 const showSuccessAlert = ref(false)
+
+// Hierarchical data management
+
+// Set up hierarchical data management for connectors
+const {
+  expandedItems,
+  childrenData,
+  loadingStates,
+  errorStates,
+  toggleExpansion,
+  loadChildren,
+  hasChildren,
+  getChildren,
+  isLoading,
+  getError
+} = useHierarchicalData({
+  childDataFetcher: async (chargePoint: ChargePoint) => {
+    console.log('Loading children for charge point:', chargePoint.id)
+
+    // Ensure data is loaded
+    await Promise.all([
+      connectorsStore.connectors.length === 0
+        ? connectorsStore.fetchConnectors()
+        : Promise.resolve(),
+      chargingProfilesStore.chargingProfiles.length === 0
+        ? chargingProfilesStore.fetchChargingProfiles()
+        : Promise.resolve()
+    ])
+
+    // Get connectors and profiles for this charge point
+    const connectors = connectorsStore.getConnectorsByChargePointId(chargePoint.id || 0)
+    const profiles = chargingProfilesStore.getChargingProfilesByChargePointId(chargePoint.id || 0)
+
+    console.log('Found connectors:', connectors.length, 'profiles:', profiles.length)
+
+    return { connectors, profiles }
+  },
+  childDataKey: 'id'
+})
 
 // Table headers
 interface TableHeader {
@@ -1184,14 +1376,87 @@ const exportFilteredToCSV = async (filteredChargePoints: ChargePoint[]): Promise
   }
 }
 
+// Data retrieval methods for hierarchical view
+const getConnectors = (chargePoint: ChargePoint) => {
+  return getChildren(chargePoint)?.connectors || []
+}
+
+const getProfiles = (chargePoint: ChargePoint) => {
+  return getChildren(chargePoint)?.profiles || []
+}
+
+const getConnectorCount = (chargePoint: ChargePoint) => {
+  return getConnectors(chargePoint).length
+}
+
+const getProfileCount = (chargePoint: ChargePoint) => {
+  return getProfiles(chargePoint).length
+}
+
+// Additional helper methods
+const getConnectorStatusColor = (status: string): string => {
+  switch (status) {
+    case 'Available':
+      return 'success'
+    case 'Preparing':
+      return 'warning'
+    case 'Charging':
+      return 'info'
+    case 'Finishing':
+      return 'warning'
+    case 'Faulted':
+      return 'error'
+    default:
+      return 'grey'
+  }
+}
+
+const getPurposeColor = (purpose: string): string => {
+  switch (purpose) {
+    case 'TxDefault':
+      return 'primary'
+    case 'TxProfile':
+      return 'success'
+    case 'TxMaxProfile':
+      return 'warning'
+    default:
+      return 'grey'
+  }
+}
+
+const formatDateTime = (dateString: string): string => {
+  const date = new Date(dateString)
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 // Lifecycle
 onMounted(async () => {
   try {
-    // Load both charge points and sites
+    // Load charge points, sites, connectors, and profiles
     await Promise.all([
       chargePointsStore.fetchChargePoints(),
-      sitesStore.sites.length === 0 ? sitesStore.fetchSites() : Promise.resolve()
+      sitesStore.sites.length === 0 ? sitesStore.fetchSites() : Promise.resolve(),
+      connectorsStore.connectors.length === 0
+        ? connectorsStore.fetchConnectors()
+        : Promise.resolve(),
+      chargingProfilesStore.chargingProfiles.length === 0
+        ? chargingProfilesStore.fetchChargingProfiles()
+        : Promise.resolve()
     ])
+    console.log(
+      'Initial data loaded - Charge Points:',
+      chargePointsStore.chargePoints.length,
+      'Connectors:',
+      connectorsStore.connectors.length,
+      'Profiles:',
+      chargingProfilesStore.chargingProfiles.length
+    )
   } catch (error) {
     console.error('Failed to load data:', error)
     showErrorMessage(t('messages.loadError', { item: t('chargePoints.title') }))
@@ -1332,6 +1597,124 @@ onMounted(async () => {
   width: 100%;
 }
 
+/* Hierarchical Data Table Styles */
+.hierarchical-data-table {
+  background: transparent;
+}
+
+.hierarchical-table {
+  background: transparent;
+}
+
+.hierarchical-table :deep(.v-data-table__wrapper) {
+  background: rgb(var(--v-theme-surface));
+  border-radius: 8px;
+}
+
+.hierarchical-table :deep(.v-data-table-header) {
+  background: rgb(var(--v-theme-surface-variant));
+}
+
+.hierarchical-table :deep(.v-data-table-header th) {
+  background: rgb(var(--v-theme-surface-variant));
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-weight: 600;
+  border-bottom: 1px solid rgb(var(--v-theme-outline));
+}
+
+.hierarchical-table :deep(.v-data-table__tr:hover) {
+  background: rgb(var(--v-theme-surface-bright)) !important;
+}
+
+.expanded-row {
+  background: rgb(var(--v-theme-surface-container)) !important;
+}
+
+.expanded-content {
+  background: rgb(var(--v-theme-surface-container));
+  border-radius: 0 0 8px 8px;
+}
+
+.child-items-grid {
+  background: transparent;
+}
+
+.child-item-card {
+  transition: all 0.2s ease;
+  border: 1px solid rgb(var(--v-theme-outline));
+  background: rgb(var(--v-theme-surface));
+}
+
+.child-item-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  border-color: rgb(var(--v-theme-primary));
+}
+
+.child-item-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.empty-state-container {
+  background: rgb(var(--v-theme-surface-container-low));
+  border-radius: 8px;
+  margin: 16px;
+}
+
+.site-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-icon {
+  color: rgb(var(--v-theme-primary));
+}
+
+.actions-cell {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.view-toggle-btn {
+  margin-right: 8px;
+}
+
+/* Dark theme improvements */
+.v-theme--dark .hierarchical-table :deep(.v-data-table__wrapper) {
+  background: rgb(var(--v-theme-surface));
+}
+
+.v-theme--dark .hierarchical-table :deep(.v-data-table-header th) {
+  background: rgb(var(--v-theme-surface-container-high));
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.v-theme--dark .child-item-card {
+  background: rgb(var(--v-theme-surface-bright));
+  border-color: rgb(var(--v-theme-outline-variant));
+}
+
+.v-theme--dark .child-item-card:hover {
+  background: rgb(var(--v-theme-surface-container-high));
+  border-color: rgb(var(--v-theme-primary));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.v-theme--dark .empty-state-container {
+  background: rgb(var(--v-theme-surface-container));
+}
+
 @media (max-width: 960px) {
   .chargepoints-container {
     padding: 16px;
@@ -1346,6 +1729,20 @@ onMounted(async () => {
   .page-title {
     font-size: 1.75rem;
     text-align: center;
+  }
+
+  .connectors-grid,
+  .profiles-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .charge-point-parent-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .charge-point-actions {
+    align-self: flex-end;
   }
 }
 </style>
