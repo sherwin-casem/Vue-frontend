@@ -9,8 +9,8 @@ on:
     types: [published]
 
 env:
-  REGISTRY: docker.io
-  IMAGE_NAME: ocpp-frontend
+  REGISTRY: ghcr.io
+  IMAGE_NAME: apple02624/ocpp-frontend
   NODE_VERSION: 18
 
 jobs:
@@ -33,7 +33,6 @@ jobs:
 
       - name: Build Application
         run: npm run build
-        continue-on-error: false
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -110,12 +109,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Release Version
         id: version
@@ -136,55 +135,13 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:stable
           platforms: linux/amd64,linux/arm64
 
-      - name: Create Deployment Package
-        run: |
-          mkdir -p deployment-package
-          cp Dockerfile deployment-package/
-          cp nginx.conf deployment-package/
-          cp docker-compose.yml deployment-package/ 2>/dev/null || echo "version: '3.8'
-          services:
-            ocpp-frontend:
-              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-              container_name: ocpp-frontend
-              restart: unless-stopped
-              ports:
-                - \"8080:80\"
-              environment:
-                - VUE_APP_API_BASE_URL=\${VUE_APP_API_BASE_URL:-https://your-backend-server/api/v1}
-                - VUE_APP_API_LOGIN_ENDPOINT=\${VUE_APP_API_LOGIN_ENDPOINT:-/auth/login}
-                - VUE_APP_API_LOGOUT_ENDPOINT=\${VUE_APP_API_LOGOUT_ENDPOINT:-/auth/logout}
-                - VUE_APP_API_ME_ENDPOINT=\${VUE_APP_API_ME_ENDPOINT:-/auth/me}
-                - NODE_ENV=\${NODE_ENV:-development}
-          " > deployment-package/docker-compose.yml
-          cp DEPLOYMENT.md deployment-package/
-          echo "# Deployment Instructions
-
-          ## Quick Start
-          1. Copy the deployment package to your server
-          2. Update environment variables in docker-compose.yml:
-             - VUE_APP_API_BASE_URL=https://your-backend-url/fleet/ocpp/v1
-             - VUE_APP_API_LOGIN_ENDPOINT=/auth/login
-             - VUE_APP_API_LOGOUT_ENDPOINT=/auth/logout
-             - VUE_APP_API_ME_ENDPOINT=/auth/me
-             - NODE_ENV=production
-          3. Run: docker-compose up -d
-          4. Access application at http://your-server:8080
-
-          ## Image Information
-          - **Image**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-          - **Release**: ${{ github.event.release.tag_name }}
-          - **Build Date**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
-
-          For detailed instructions, see DEPLOYMENT.md
-          " > deployment-package/README.txt
-
       - name: Upload Deployment Package
         uses: actions/upload-artifact@v4
         with:
           name: deployment-package-${{ steps.version.outputs.version }}
           path: deployment-package/
 
-      - name: Create Release Assets
+      - name: Create Release Archive
         run: |
           tar -czf ocpp-frontend-${{ steps.version.outputs.version }}-deployment.tar.gz -C deployment-package .
 
@@ -234,4 +191,3 @@ jobs:
           else
             echo "❌ Deployment failed!"
             echo "Check the workflow logs for details."
-          fi
