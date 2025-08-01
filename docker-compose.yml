@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   ocpp-frontend:
-    image: docker.io/occp-frontend:latest
+    image: docker.io/ocpp-frontend:latest
     container_name: ocpp-frontend
     restart: unless-stopped
     ports:

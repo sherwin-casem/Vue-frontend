@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# OCCP Frontend - VirtualBox Deployment Script
-# This script automates the deployment of OCCP Frontend on Debian-based VirtualBox
+# OCPP Frontend - VirtualBox Deployment Script
+# This script automates the deployment of OCPP Frontend on Debian-based VirtualBox
 
 set -e
 
@@ -13,8 +13,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-DOCKER_IMAGE="docker.io/occp-frontend:latest"
-CONTAINER_NAME="occp-frontend"
+DOCKER_IMAGE="docker.io/ocpp-frontend:latest"
+CONTAINER_NAME="ocpp-frontend"
 FRONTEND_PORT="${FRONTEND_PORT:-8080}"
 API_URL="${VUE_APP_API_BASE_URL:-https://your-backend-server/api/v1}"
 LOGIN_ENDPOINT="${VUE_APP_API_LOGIN_ENDPOINT:-/auth/login}"
@@ -122,7 +122,7 @@ pull_image() {
 }
 
 start_container() {
-    log_info "Starting OCCP Frontend container..."
+    log_info "Starting OCPP Frontend container..."
     
     docker run -d \
         --name $CONTAINER_NAME \
@@ -164,7 +164,7 @@ verify_deployment() {
 show_deployment_info() {
     echo
     echo "=================================================="
-    log_success "OCCP Frontend Deployment Complete!"
+    log_success "OCPP Frontend Deployment Complete!"
     echo "=================================================="
     echo
     echo "🌐 Frontend URL: http://$(hostname -I | awk '{print $1}'):$FRONTEND_PORT"
@@ -196,7 +196,7 @@ show_usage() {
     echo "Options:"
     echo "  -p, --port PORT         Frontend port (default: 8080)"
     echo "  -a, --api-url URL       Backend API URL (default: https://your-backend-server/api/v1)"
-    echo "  -i, --image IMAGE       Docker image (default: docker.io/occp-frontend:latest)"
+    echo "  -i, --image IMAGE       Docker image (default: docker.io/ocpp-frontend:latest)"
     echo "  -h, --help              Show this help message"
     echo
     echo "Environment Variables:"
@@ -244,7 +244,7 @@ done
 # Main deployment process
 main() {
     echo "=================================================="
-    echo "🚀 OCCP Frontend VirtualBox Deployment"
+    echo "🚀 OCPP Frontend VirtualBox Deployment"
     echo "=================================================="
     echo
     

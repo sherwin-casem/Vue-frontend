@@ -1,4 +1,4 @@
-# OCCP Frontend - Project Status & Implementation Summary
+# OCPP Frontend - Project Status & Implementation Summary
 
 ## 📋 Current Implementation Status
 
@@ -147,7 +147,7 @@ Release Creation → GitHub Actions → Production Build → Security Scan → V
 
 ```bash
 # Quick deployment with automated script
-wget https://raw.githubusercontent.com/your-org/occp-frontend/main/deploy-vbox.sh
+wget https://raw.githubusercontent.com/your-org/ocpp-frontend/main/deploy-vbox.sh
 export VUE_APP_API_BASE_URL=https://your-backend-server/api/v1
 export VUE_APP_API_LOGIN_ENDPOINT=/auth/login
 export VUE_APP_API_LOGOUT_ENDPOINT=/auth/logout
@@ -160,8 +160,8 @@ export NODE_ENV=development
 
 ```bash
 # Complete stack deployment
-git clone https://github.com/your-org/occp-frontend.git
-cd occp-frontend
+git clone https://github.com/your-org/ocpp-frontend.git
+cd ocpp-frontend
 cp .env.example .env
 # Edit .env with configuration
 docker-compose up -d
@@ -172,14 +172,14 @@ docker-compose up -d
 ```bash
 # Direct Docker container deployment
 docker run -d \
-  --name occp-frontend \
+  --name ocpp-frontend \
   -p 8080:80 \
   -e VUE_APP_API_BASE_URL=https://your-backend-server/api/v1 \
   -e VUE_APP_API_LOGIN_ENDPOINT=/auth/login \
   -e VUE_APP_API_LOGOUT_ENDPOINT=/auth/logout \
   -e VUE_APP_API_ME_ENDPOINT=/auth/me \
   -e NODE_ENV=development \
-  docker.io/occp-frontend:latest
+  docker.io/ocpp-frontend:latest
 ```
 
 ## 🌐 Environment Configuration
@@ -321,7 +321,7 @@ docker run -d \
 
 ### Troubleshooting
 
-- **Container logs**: `docker logs occp-frontend`
+- **Container logs**: `docker logs ocpp-frontend`
 - **Health checks**: Built-in container health monitoring
 - **Network testing**: Backend connectivity validation
 - **Performance monitoring**: Container resource usage
@@ -334,7 +334,7 @@ docker run -d \
 
 ## 🎉 Summary
 
-The OCCP Frontend project is **production-ready** with:
+The OCPP Frontend project is **production-ready** with:
 
 ✅ **Complete containerization** with Docker
 ✅ **Automated CI/CD pipeline** with GitHub Actions  

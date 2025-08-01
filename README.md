@@ -14,8 +14,8 @@ npm run serve
 ### Production (Docker)
 
 ```bash
-docker pull docker.io/occp-frontend:latest
-docker run -p 8080:80 -e VUE_APP_API_BASE_URL=https://your-backend:5401/fleet/occp/v1 -e VUE_APP_API_LOGIN_ENDPOINT=/auth/login -e VUE_APP_API_LOGOUT_ENDPOINT=/auth/logout -e VUE_APP_API_ME_ENDPOINT=/auth/me docker.io/occp-frontend:latest
+docker pull docker.io/ocpp-frontend:latest
+docker run -p 8080:80 -e VUE_APP_API_BASE_URL=https://your-backend:5401/fleet/ocpp/v1 -e VUE_APP_API_LOGIN_ENDPOINT=/auth/login -e VUE_APP_API_LOGOUT_ENDPOINT=/auth/logout -e VUE_APP_API_ME_ENDPOINT=/auth/me docker.io/ocpp-frontend:latest
 ```
 
 ### Production (Docker Compose)
@@ -73,7 +73,7 @@ This project provides a comprehensive web-based interface for managing electric 
 ## 📁 Project Structure
 
 ```
-occp-frontend/
+ocpp-frontend/
 ├── .github/workflows/       # CI/CD pipeline configuration
 │   └── ci.yml               # GitHub Actions workflow
 ├── public/                  # Static assets
@@ -129,8 +129,8 @@ occp-frontend/
 1. **Clone the Repository**
 
 ```bash
-git clone https://github.com/your-org/occp-frontend.git
-cd occp-frontend
+git clone https://github.com/your-org/ocpp-frontend.git
+cd ocpp-frontend
 ```
 
 2. **Install Dependencies**
@@ -181,8 +181,8 @@ npm run build:type-check
 
 ```bash
 # 1. Clone and configure
-git clone https://github.com/your-org/occp-frontend.git
-cd occp-frontend
+git clone https://github.com/your-org/ocpp-frontend.git
+cd ocpp-frontend
 cp .env.example .env
 
 # 2. Update .env file with your configuration
@@ -193,37 +193,37 @@ docker-compose up -d
 
 # 4. Verify deployment
 docker-compose ps
-docker-compose logs -f occp-frontend
+docker-compose logs -f ocpp-frontend
 ```
 
 #### Option 2: Standalone Docker Container
 
 ```bash
 # Pull latest image
-docker pull docker.io/occp-frontend:latest
+docker pull docker.io/ocpp-frontend:latest
 
 # Run container
 docker run -d \
-  --name occp-frontend \
+  --name ocpp-frontend \
   --restart unless-stopped \
   -p 8080:80 \
   -e VITE_API_BASE_URL=http://your-backend:8000/api \
   -e VITE_WS_URL=ws://your-backend:8000/ws \
-  docker.io/occp-frontend:latest
+  docker.io/ocpp-frontend:latest
 ```
 
 #### Option 3: Build from Source
 
 ```bash
 # Build image
-docker build -t occp-frontend:local .
+docker build -t ocpp-frontend:local .
 
 # Run container
 docker run -d \
-  --name occp-frontend \
+  --name ocpp-frontend \
   --restart unless-stopped \
   -p 8080:80 \
-  occp-frontend:local
+  ocpp-frontend:local
 ```
 
 ### VirtualBox Deployment
@@ -431,8 +431,8 @@ Proprietary - eh-systemhaus e.K.
 ## 🆘 Support
 
 - **Documentation**: [DEPLOYMENT.md](./DEPLOYMENT.md)
-- **Issues**: [GitHub Issues](https://github.com/your-org/occp-frontend/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/occp-frontend/discussions)
+- **Issues**: [GitHub Issues](https://github.com/your-org/ocpp-frontend/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-org/ocpp-frontend/discussions)
 
 ---
 

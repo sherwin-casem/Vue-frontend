@@ -1,8 +1,8 @@
-# CI/CD Pipeline Summary - OCCP Frontend
+# CI/CD Pipeline Summary - OCPP Frontend
 
 ## 📋 Overview
 
-This document provides a comprehensive summary of the Continuous Integration and Continuous Deployment (CI/CD) pipeline implemented for the OCCP Frontend project using GitHub Actions.
+This document provides a comprehensive summary of the Continuous Integration and Continuous Deployment (CI/CD) pipeline implemented for the OCPP Frontend project using GitHub Actions.
 
 ## 🔄 Current CI/CD Workflow
 
@@ -138,22 +138,22 @@ The pipeline respects customer requirements by:
 ### Docker Images
 
 **Registry**: Docker Hub (`docker.io`)
-**Image Name**: `occp-frontend`
+**Image Name**: `ocpp-frontend`
 
 **Available Tags**:
 
 ```bash
 # Latest stable version
-docker pull docker.io/occp-frontend:latest
+docker pull docker.io/ocpp-frontend:latest
 
 # Specific version
-docker pull docker.io/occp-frontend:v1.0.0
+docker pull docker.io/ocpp-frontend:v1.0.0
 
 # Development version
-docker pull docker.io/occp-frontend:develop
+docker pull docker.io/ocpp-frontend:develop
 
 # Commit-specific
-docker pull docker.io/occp-frontend:main-abc1234
+docker pull docker.io/ocpp-frontend:main-abc1234
 ```
 
 ### Deployment Packages
@@ -305,4 +305,4 @@ DOCKER_PASSWORD=your-docker-hub-password-or-token
 - **Documentation**: Refer to DEPLOYMENT.md
 - **Community**: GitHub Discussions for questions
 
-This CI/CD pipeline provides a robust, secure, and flexible foundation for deploying the OCCP Frontend while meeting specific customer requirements for error tolerance and deployment flexibility.
+This CI/CD pipeline provides a robust, secure, and flexible foundation for deploying the OCPP Frontend while meeting specific customer requirements for error tolerance and deployment flexibility.

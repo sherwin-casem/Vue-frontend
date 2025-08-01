@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: occp-frontend
+  IMAGE_NAME: ocpp-frontend
   NODE_VERSION: 18
 
 jobs:

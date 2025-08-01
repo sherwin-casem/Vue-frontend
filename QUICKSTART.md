@@ -1,6 +1,6 @@
 # Quick Start Guide - VirtualBox Deployment
 
-This guide helps you quickly deploy the OCCP Frontend on a Debian VirtualBox with your backend.
+This guide helps you quickly deploy the OCPP Frontend on a Debian VirtualBox with your backend.
 
 ## 🚀 Option 1: Automated Deployment
 
@@ -14,7 +14,7 @@ This guide helps you quickly deploy the OCCP Frontend on a Debian VirtualBox wit
 
 ```bash
 # 1. Download the deployment script
-wget https://raw.githubusercontent.com/your-org/occp-frontend/main/deploy-vbox.sh
+wget https://raw.githubusercontent.com/your-org/ocpp-frontend/main/deploy-vbox.sh
 chmod +x deploy-vbox.sh
 
 # 2. Run deployment (replace with your backend URL)
@@ -46,12 +46,12 @@ sudo reboot
 
 ```bash
 # Stop any existing container
-docker stop occp-frontend 2>/dev/null || true
-docker rm occp-frontend 2>/dev/null || true
+docker stop ocpp-frontend 2>/dev/null || true
+docker rm ocpp-frontend 2>/dev/null || true
 
 # Pull and run the latest image
 docker run -d \
-  --name occp-frontend \
+  --name ocpp-frontend \
   --restart unless-stopped \
   -p 8080:80 \
   -e VUE_APP_API_BASE_URL=https://your-backend-server/api/v1 \
@@ -59,7 +59,7 @@ docker run -d \
   -e VUE_APP_API_LOGOUT_ENDPOINT=/auth/logout \
   -e VUE_APP_API_ME_ENDPOINT=/auth/me \
   -e NODE_ENV=development \
-  docker.io/occp-frontend:latest
+  docker.io/ocpp-frontend:latest
 ```
 
 ### Step 3: Verify Deployment
@@ -69,7 +69,7 @@ docker run -d \
 docker ps
 
 # View logs
-docker logs occp-frontend
+docker logs ocpp-frontend
 
 # Test access
 curl http://localhost:8080
@@ -81,11 +81,11 @@ curl http://localhost:8080
 
 ```bash
 # Create project directory
-mkdir occp-frontend && cd occp-frontend
+mkdir ocpp-frontend && cd ocpp-frontend
 
 # Download configuration files
-wget https://raw.githubusercontent.com/your-org/occp-frontend/main/docker-compose.yml
-wget https://raw.githubusercontent.com/your-org/occp-frontend/main/.env.example
+wget https://raw.githubusercontent.com/your-org/ocpp-frontend/main/docker-compose.yml
+wget https://raw.githubusercontent.com/your-org/ocpp-frontend/main/.env.example
 
 # Copy and edit environment file
 cp .env.example .env
@@ -171,41 +171,41 @@ After successful deployment:
 docker ps
 
 # Stop frontend
-docker stop occp-frontend
+docker stop ocpp-frontend
 
 # Start frontend
-docker start occp-frontend
+docker start ocpp-frontend
 
 # Restart frontend
-docker restart occp-frontend
+docker restart ocpp-frontend
 
 # Remove container
-docker rm -f occp-frontend
+docker rm -f ocpp-frontend
 
 # View logs
-docker logs -f occp-frontend
+docker logs -f ocpp-frontend
 ```
 
 ### Update to Latest Version
 
 ```bash
 # Pull latest image
-docker pull docker.io/occp-frontend:latest
+docker pull docker.io/ocpp-frontend:latest
 
 # Stop and remove old container
-docker stop occp-frontend
-docker rm occp-frontend
+docker stop ocpp-frontend
+docker rm ocpp-frontend
 
 # Start new container (same command as deployment)
 docker run -d \
-  --name occp-frontend \
+  --name ocpp-frontend \
   --restart unless-stopped \
   -p 8080:80 \
   -e VUE_APP_API_BASE_URL=https://your-backend-server/api/v1 \
   -e VUE_APP_API_LOGIN_ENDPOINT=/auth/login \
   -e VUE_APP_API_LOGOUT_ENDPOINT=/auth/logout \
   -e VUE_APP_API_ME_ENDPOINT=/auth/me \
-  docker.io/occp-frontend:latest
+  docker.io/ocpp-frontend:latest
 ```
 
 ## 🚨 Troubleshooting
@@ -237,7 +237,7 @@ curl http://YOUR_BACKEND_IP:8000/api/health
 sudo systemctl status docker
 
 # Check container logs
-docker logs occp-frontend
+docker logs ocpp-frontend
 
 # Check available disk space
 df -h
@@ -274,12 +274,12 @@ sudo ufw enable
 ```bash
 # Run with limited resources
 docker run -d \
-  --name occp-frontend \
+  --name ocpp-frontend \
   --memory="512m" \
   --cpus="0.5" \
   --restart unless-stopped \
   -p 8080:80 \
-  docker.io/occp-frontend:latest
+  docker.io/ocpp-frontend:latest
 ```
 
 ## 📞 Support
@@ -287,7 +287,7 @@ docker run -d \
 If you encounter issues:
 
 1. Check the detailed [DEPLOYMENT.md](./DEPLOYMENT.md) guide
-2. Review container logs: `docker logs occp-frontend`
+2. Review container logs: `docker logs ocpp-frontend`
 3. Verify backend connectivity
 4. Check VirtualBox network settings
 5. Ensure proper environment variables
