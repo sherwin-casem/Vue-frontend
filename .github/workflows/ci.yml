@@ -1,84 +1,237 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline - OCPP Frontend
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, develop]
   pull_request:
-    branches: [main, master]
+    branches: [main]
+  release:
+    types: [published]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: occp-frontend
+  NODE_VERSION: 18
 
 jobs:
-  lint-and-build:
+  build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      # Setup Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      # Install dependencies
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm ci
 
-      # Lint and auto-fix
-      - name: Run ESLint with auto-fix
-        if: false
-        run: npx eslint . --ext .vue,.js,.ts --fix || true
-
-      # Commit auto-fix if any
-      - name: Commit lint fixes (if any)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
-          git add .
-          git diff --quiet && git diff --staged --quiet || git commit -m "chore(lint): auto-fix lint issues"
-          git push
-
-      # Build the app
-      - name: Build
+      - name: Build Application
         run: npm run build
+        continue-on-error: false
 
-      # Upload build artifacts
-      - name: Upload build artifacts
+      - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: build-files
           path: dist/
+          retention-days: 1
 
-  docker:
-    needs: lint-and-build
-    if: github.event_name != 'pull_request'
+  docker-build-and-push:
+    name: Docker Build and Push
     runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
+      - name: Log in to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
         with:
           context: .
-          push: false
-          tags: ocpp-frontend:latest
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Generate Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image** | \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tags** | \`${{ steps.meta.outputs.tags }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Workflow** | [\`${{ github.run_id }}\`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |" >> $GITHUB_STEP_SUMMARY
+
+  release-production:
+    name: Production Release
+    runs-on: ubuntu-latest
+    needs: [build-and-test, docker-build-and-push]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment: production
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract Release Version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "major_minor=${VERSION%.*}" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Production Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.major_minor }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:stable
+          platforms: linux/amd64,linux/arm64
+
+      - name: Create Deployment Package
+        run: |
+          mkdir -p deployment-package
+          cp Dockerfile deployment-package/
+          cp nginx.conf deployment-package/
+          cp docker-compose.yml deployment-package/ 2>/dev/null || echo "version: '3.8'
+          services:
+            ocpp-frontend:
+              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+              container_name: ocpp-frontend
+              restart: unless-stopped
+              ports:
+                - \"8080:80\"
+              environment:
+                - VUE_APP_API_BASE_URL=\${VUE_APP_API_BASE_URL:-https://your-backend-server/api/v1}
+                - VUE_APP_API_LOGIN_ENDPOINT=\${VUE_APP_API_LOGIN_ENDPOINT:-/auth/login}
+                - VUE_APP_API_LOGOUT_ENDPOINT=\${VUE_APP_API_LOGOUT_ENDPOINT:-/auth/logout}
+                - VUE_APP_API_ME_ENDPOINT=\${VUE_APP_API_ME_ENDPOINT:-/auth/me}
+                - NODE_ENV=\${NODE_ENV:-development}
+          " > deployment-package/docker-compose.yml
+          cp DEPLOYMENT.md deployment-package/
+          echo "# Deployment Instructions
+
+          ## Quick Start
+          1. Copy the deployment package to your server
+          2. Update environment variables in docker-compose.yml:
+             - VUE_APP_API_BASE_URL=https://your-backend-url/fleet/ocpp/v1
+             - VUE_APP_API_LOGIN_ENDPOINT=/auth/login
+             - VUE_APP_API_LOGOUT_ENDPOINT=/auth/logout
+             - VUE_APP_API_ME_ENDPOINT=/auth/me
+             - NODE_ENV=production
+          3. Run: docker-compose up -d
+          4. Access application at http://your-server:8080
+
+          ## Image Information
+          - **Image**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+          - **Release**: ${{ github.event.release.tag_name }}
+          - **Build Date**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+
+          For detailed instructions, see DEPLOYMENT.md
+          " > deployment-package/README.txt
+
+      - name: Upload Deployment Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-package-${{ steps.version.outputs.version }}
+          path: deployment-package/
+
+      - name: Create Release Assets
+        run: |
+          tar -czf ocpp-frontend-${{ steps.version.outputs.version }}-deployment.tar.gz -C deployment-package .
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./ocpp-frontend-${{ steps.version.outputs.version }}-deployment.tar.gz
+          asset_name: ocpp-frontend-${{ steps.version.outputs.version }}-deployment.tar.gz
+          asset_content_type: application/gzip
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: docker-build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy Scan Results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  notify-deployment:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [docker-build-and-push]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Notify Deployment Status
+        run: |
+          if [ "${{ needs.docker-build-and-push.result }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+            echo "🐳 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            echo "🔗 Pull command: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          else
+            echo "❌ Deployment failed!"
+            echo "Check the workflow logs for details."
+          fi

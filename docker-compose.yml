@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  ocpp-frontend:
+    image: docker.io/occp-frontend:latest
+    container_name: ocpp-frontend
+    restart: unless-stopped
+    ports:
+      - '${FRONTEND_PORT:-8080}:80'
+    environment:
+      # API Configuration
+      - VUE_APP_API_BASE_URL=${VUE_APP_API_BASE_URL:-https://your-backend-server/api/v1}
+      - VUE_APP_API_LOGIN_ENDPOINT=${VUE_APP_API_LOGIN_ENDPOINT:-/auth/login}
+      - VUE_APP_API_LOGOUT_ENDPOINT=${VUE_APP_API_LOGOUT_ENDPOINT:-/auth/logout}
+      - VUE_APP_API_ME_ENDPOINT=${VUE_APP_API_ME_ENDPOINT:-/auth/me}
+
+      # Build Configuration
+      - NODE_ENV=${NODE_ENV:-development}
+    networks:
+      - ocpp-network
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:80']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  ocpp-network:
+    driver: bridge
