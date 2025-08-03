@@ -8,11 +8,15 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import './assets/css/variables.css'
+import '@progress/kendo-theme-default/dist/all.css'
 import { translationDevPlugin, vTranslatable } from './plugins/translationDev'
-// Import Kendo UI licensing
-import './plugins/kendo-license'
+
 // Fix ResizeObserver errors that cause performance issues
 import './utils/resizeObserverFix'
+import installKendoLicense from './plugins/kendo-license'
+
+// Install Kendo license
+installKendoLicense()
 
 const vuetify = createVuetify({
   components,

@@ -1,1378 +1,591 @@
 <template>
-  <div class="sites-container">
-    <v-alert
-      v-if="showSuccessAlert"
-      type="success"
-      class="success-alert"
-      closable
-      @click:close="hideSuccessMessage"
-    >
-      {{ successMessage }}
-    </v-alert>
+  <div class="sites-view">
+    <v-container fluid>
+      <v-row>
+        <v-col>
+          <h1 class="page-title">{{ $t('sites.title') }}</h1>
 
-    <v-alert
-      v-if="sitesStore.error"
-      type="error"
-      class="error-alert"
-      closable
-      @click:close="sitesStore.clearError()"
-    >
-      {{ sitesStore.error }}
-    </v-alert>
+          <!-- Global Search and Actions -->
+          <div class="grid-toolbar">
+            <v-text-field
+              v-model="globalSearch"
+              :label="$t('common.search')"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="compact"
+              clearable
+              style="max-width: 300px"
+              @input="onGlobalSearchChange"
+            />
 
-    <div class="header-section">
-      <h1 class="page-title">{{ $t('sites.title') }}</h1>
-      <div class="header-actions">
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog" class="create-btn">
-          {{ $t('sites.addSite') }}
-        </v-btn>
-      </div>
-    </div>
+            <div class="toolbar-actions">
+              <v-btn
+                v-if="selectedItems.length > 0"
+                color="error"
+                variant="outlined"
+                @click="deleteSelected"
+                :disabled="loading"
+              >
+                <v-icon left>mdi-delete</v-icon>
+                {{ $t('common.deleteSelected') }} ({{ selectedItems.length }})
+              </v-btn>
 
-    <v-card class="data-grid-card" elevation="2">
-      <EnhancedDataGrid
-        :columns="advancedHeaders"
-        :items="filteredSites"
-        :loading="sitesStore.loading"
-        :table-key="'sites'"
-        :enable-selection="true"
-        :show-expand="true"
-        :selection-loading="selectionLoading"
-        :delete-loading="deleteLoading"
-        :delete-progress="deleteProgress"
-        @row-click="handleRowClick"
-        @selection-change="handleSelectionChange"
-        @export-selected="handleExportSelected"
-        @delete-selected="handleDeleteSelected"
-      >
-        <template v-slot:item.country="{ item }">
-          <div class="country-cell">
-            <v-icon class="country-icon" size="small">mdi-flag</v-icon>
-            {{ item.country }}
-          </div>
-        </template>
-
-        <!-- <template v-slot:item.note="{ item }">
-          <div class="note-cell">
-            <span v-if="item.note && item.note.length > 30">
-              <v-tooltip :text="item.note">
+              <v-menu v-if="selectedItems.length > 0" location="bottom">
                 <template v-slot:activator="{ props }">
-                  <span v-bind="props">{{ item.note.substring(0, 30) }}...</span>
+                  <v-btn color="primary" variant="outlined" :disabled="loading" v-bind="props">
+                    <v-icon left>mdi-export</v-icon>
+                    {{ $t('common.export') }}
+                    <v-icon right>mdi-chevron-down</v-icon>
+                  </v-btn>
                 </template>
-              </v-tooltip>
-            </span>
-            <span v-else>{{ item.note || '-' }}</span>
+                <v-list>
+                  <v-list-item @click="exportSelected('xlsx')">
+                    <v-list-item-title>Export to Excel</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="exportSelected('pdf')">
+                    <v-list-item-title>Export to PDF</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+
+              <v-btn color="primary" @click="showCreateDialog = true" :disabled="loading">
+                <v-icon left>mdi-plus</v-icon>
+                {{ $t('sites.create') }}
+              </v-btn>
+            </div>
           </div>
-        </template> -->
 
-        <template v-slot:item.created_at="{ item }">
-          <span v-if="item.created_at">
-            {{ formatDate(item.created_at) }}
-          </span>
-          <span v-else>-</span>
-        </template>
-
-        <template v-slot:item.actions="{ item }">
-          <div class="actions-cell">
-            <v-tooltip :text="$t('tooltips.viewDetails')" location="top">
-              <template v-slot:activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  icon
-                  variant="text"
-                  color="info"
-                  size="small"
-                  @click="openDetailDialog(item)"
-                  :aria-label="$t('tooltips.viewDetails')"
-                >
-                  <v-icon>mdi-eye</v-icon>
-                </v-btn>
+          <!-- Kendo Grid -->
+          <div class="grid-container">
+            <Grid
+              ref="gridRef"
+              :style="{ height: '600px' }"
+              :data-items="processedData"
+              :columns="columns"
+              :sortable="true"
+              :groupable="true"
+              :reorderable="true"
+              :pageable="pageableConfig"
+              :filterable="false"
+              :selected-field="'selected'"
+              :detail="detailTemplate"
+              :expand-field="'expanded'"
+              :take="take"
+              :skip="skip"
+              :total="total"
+              :group="group"
+              :sort="sort"
+              :filter="filter"
+              :loader="loading"
+              @datastatechange="onDataStateChange"
+              @expandchange="onExpandChange"
+              @selectionchange="onSelectionChange"
+            >
+              <!-- Select All Checkbox Template -->
+              <template #selectAllTemplate="{ props }">
+                <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" />
               </template>
-            </v-tooltip>
 
-            <v-tooltip :text="$t('tooltips.editItem')" location="top">
-              <template v-slot:activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  icon
-                  variant="text"
-                  color="primary"
-                  size="small"
-                  @click="openEditDialog(item)"
-                  :aria-label="$t('tooltips.editItem')"
-                >
-                  <v-icon>mdi-pencil</v-icon>
-                </v-btn>
+              <!-- Checkbox Template -->
+              <template #checkboxTemplate="{ props }">
+                <input
+                  type="checkbox"
+                  :checked="props.dataItem?.selected || false"
+                  @change="props.dataItem && toggleSelection(props.dataItem)"
+                />
               </template>
-            </v-tooltip>
 
-            <v-tooltip :text="$t('tooltips.deleteItem')" location="top">
-              <template v-slot:activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  icon
-                  variant="text"
-                  color="error"
-                  size="small"
-                  @click="openDeleteDialog(item)"
-                  :aria-label="$t('tooltips.deleteItem')"
-                >
-                  <v-icon>mdi-delete</v-icon>
-                </v-btn>
+              <!-- Actions Template -->
+              <template #actionsTemplate="{ props }">
+                <div v-if="props.dataItem" class="actions-cell">
+                  <v-btn
+                    icon="mdi-eye"
+                    size="small"
+                    variant="text"
+                    @click="viewItem(props.dataItem)"
+                  />
+                  <v-btn
+                    icon="mdi-pencil"
+                    size="small"
+                    variant="text"
+                    @click="editItem(props.dataItem)"
+                  />
+                  <v-btn
+                    icon="mdi-delete"
+                    size="small"
+                    variant="text"
+                    color="error"
+                    @click="deleteItem(props.dataItem)"
+                  />
+                </div>
               </template>
-            </v-tooltip>
+
+              <!-- Master-Detail Template -->
+              <template #detailTemplate="{ props }">
+                <div class="detail-container">
+                  <h3>{{ $t('chargePoints.title') }} for {{ props.dataItem.name }}</h3>
+                  <Grid
+                    :data-items="getChargePointsForSite(props.dataItem.site_id)"
+                    :columns="chargePointColumns"
+                    :sortable="true"
+                    :pageable="{ pageSize: 5 }"
+                    style="margin: 20px"
+                  />
+                </div>
+              </template>
+            </Grid>
           </div>
-        </template>
+        </v-col>
+      </v-row>
+    </v-container>
 
-        <!-- Expanded row content for hierarchical data -->
-        <template v-slot:expanded-row="{ item }">
-          <tr>
-            <td :colspan="advancedHeaders.length" class="pa-0">
-              <div class="expanded-content-wrapper">
-                <TabbedChildView
-                  :tabs="[
-                    {
-                      key: 'chargePoints',
-                      title: $t('chargePoints.title'),
-                      icon: 'mdi-ev-station',
-                      count: getChargePointCount(item)
-                    }
-                  ]"
-                  :loading="isLoading(item)"
-                  :error="getError(item)"
-                  @refresh="() => loadChildren(item)"
-                >
-                  <template #chargePoints>
-                    <div v-if="getChargePoints(item)?.length" class="child-items-container">
-                      <v-row class="ma-0">
-                        <v-col
-                          v-for="chargePoint in getChargePoints(item)"
-                          :key="chargePoint.id"
-                          cols="12"
-                          sm="6"
-                          md="4"
-                          class="pa-2"
-                        >
-                          <v-card class="child-item-card" variant="outlined">
-                            <v-card-text class="pa-3">
-                              <div class="d-flex justify-space-between align-center mb-2">
-                                <div class="d-flex align-center">
-                                  <v-icon class="me-2" color="primary" size="small"
-                                    >mdi-ev-station</v-icon
-                                  >
-                                  <span class="text-subtitle-2 font-weight-medium">
-                                    {{ chargePoint.ocpp_charge_box_id }}
-                                  </span>
-                                </div>
-                                <v-chip
-                                  :color="getChargePointStatusColor(chargePoint.status)"
-                                  size="x-small"
-                                  variant="tonal"
-                                >
-                                  {{ $t(`status.${chargePoint.status?.toLowerCase()}`) }}
-                                </v-chip>
-                              </div>
-                              <div class="child-details">
-                                <div class="detail-item">
-                                  <v-icon size="x-small" class="me-1">mdi-factory</v-icon>
-                                  <span class="text-caption">{{ chargePoint.manufacturer }}</span>
-                                </div>
-                                <div class="detail-item">
-                                  <v-icon size="x-small" class="me-1">mdi-tag</v-icon>
-                                  <span class="text-caption">{{ chargePoint.model }}</span>
-                                </div>
-                                <div class="detail-item">
-                                  <v-icon size="x-small" class="me-1">mdi-power-plug</v-icon>
-                                  <span class="text-caption"
-                                    >{{ chargePoint.connector_count }} connectors</span
-                                  >
-                                </div>
-                              </div>
-                            </v-card-text>
-                          </v-card>
-                        </v-col>
-                      </v-row>
-                    </div>
-                    <div v-else class="empty-state text-center pa-6">
-                      <v-icon size="32" color="grey-lighten-1">mdi-ev-station-off</v-icon>
-                      <div class="text-body-2 text-medium-emphasis mt-2">
-                        {{ $t('chargePoints.noChargePoints') }}
-                      </div>
-                    </div>
-                  </template>
-                </TabbedChildView>
-              </div>
-            </td>
-          </tr>
-        </template>
-      </EnhancedDataGrid>
-    </v-card>
-
-    <v-dialog v-model="showFormDialog" max-width="600px" persistent>
-      <SiteForm
-        :site="selectedSite"
-        :loading="sitesStore.loading"
-        @submit="handleFormSubmit"
-        @cancel="closeFormDialog"
-      />
-    </v-dialog>
-
-    <!-- Site Detail Dialog -->
-    <v-dialog v-model="showDetailDialog" max-width="700px">
-      <v-card class="site-detail-dialog">
-        <v-card-title class="detail-title">
-          <v-icon color="info" start>mdi-information</v-icon>
-          {{ $t('sites.siteDetails') }}
+    <!-- Create/Edit Dialog -->
+    <v-dialog v-model="showCreateDialog" max-width="600px">
+      <v-card>
+        <v-card-title>
+          {{ editingItem ? $t('sites.edit') : $t('sites.create') }}
         </v-card-title>
-
         <v-card-text>
-          <v-container v-if="siteToView">
-            <v-row>
-              <v-col cols="12" sm="6">
-                <v-list density="compact">
-                  <v-list-item>
-                    <v-list-item-title class="label">{{ $t('sites.siteId') }}:</v-list-item-title>
-                    <v-list-item-subtitle class="value">{{
-                      siteToView.site_id || 'N/A'
-                    }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label">{{ $t('sites.siteName') }}:</v-list-item-title>
-                    <v-list-item-subtitle class="value">{{ siteToView.name }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label">{{ $t('sites.address') }}:</v-list-item-title>
-                    <v-list-item-subtitle class="value">{{
-                      siteToView.address
-                    }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label"
-                      >{{ $t('sites.postalCode') }}:</v-list-item-title
-                    >
-                    <v-list-item-subtitle class="value">{{
-                      siteToView.postal_code
-                    }}</v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </v-col>
-
-              <v-col cols="12" sm="6">
-                <v-list density="compact">
-                  <v-list-item>
-                    <v-list-item-title class="label">{{ $t('sites.city') }}:</v-list-item-title>
-                    <v-list-item-subtitle class="value">{{ siteToView.city }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label">{{ $t('sites.country') }}:</v-list-item-title>
-                    <v-list-item-subtitle class="value">{{
-                      siteToView.country
-                    }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label">{{ $t('common.created') }}:</v-list-item-title>
-                    <v-list-item-subtitle class="value">
-                      {{ siteToView.created_at ? formatDate(siteToView.created_at) : 'N/A' }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label">{{ $t('common.updated') }}:</v-list-item-title>
-                    <v-list-item-subtitle class="value">
-                      {{ siteToView.updated_at ? formatDate(siteToView.updated_at) : 'N/A' }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </v-col>
-            </v-row>
-
-            <v-row v-if="siteToView.note">
-              <v-col cols="12">
-                <v-divider class="my-4" />
-                <h4 class="note-title">{{ $t('common.notes') }}:</h4>
-                <p class="note-content">{{ siteToView.note }}</p>
-              </v-col>
-            </v-row>
-          </v-container>
+          <SiteForm :site="editingItem" @save="onSaveSite" @cancel="onCancelDialog" />
         </v-card-text>
-
-        <v-card-actions class="detail-actions">
-          <v-spacer />
-          <v-btn variant="text" @click="closeDetailDialog">
-            {{ $t('common.close') }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            class="pl-4 pr-4"
-            variant="flat"
-            v-if="siteToView"
-            @click="() => {
-              openEditDialog(siteToView!)
-              closeDetailDialog()
-            }"
-          >
-            <v-icon start>mdi-pencil</v-icon>
-            {{ $t('sites.editSite') }}
-          </v-btn>
-        </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="showDeleteDialog" max-width="400px">
-      <v-card class="delete-dialog">
-        <v-card-title class="delete-title">
-          <v-icon color="error" start>mdi-delete</v-icon>
-          {{ $t('sites.deleteSite') }}
-        </v-card-title>
-
+    <!-- View Dialog -->
+    <v-dialog v-model="showViewDialog" max-width="600px">
+      <v-card>
+        <v-card-title>{{ $t('sites.view') }}</v-card-title>
         <v-card-text>
-          {{ $t('sites.confirmDelete', { name: siteToDelete?.name }) }}
+          <div v-if="viewingItem">
+            <v-row>
+              <v-col cols="6">
+                <strong>{{ $t('sites.name') }}:</strong> {{ viewingItem.name }}
+              </v-col>
+              <v-col cols="6">
+                <strong>{{ $t('sites.city') }}:</strong> {{ viewingItem.city }}
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="12">
+                <strong>{{ $t('sites.address') }}:</strong> {{ viewingItem.address }}
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="6">
+                <strong>{{ $t('sites.country') }}:</strong> {{ viewingItem.country }}
+              </v-col>
+              <v-col cols="6">
+                <strong>{{ $t('sites.postalCode') }}:</strong> {{ viewingItem.postal_code }}
+              </v-col>
+            </v-row>
+            <v-row v-if="viewingItem.note">
+              <v-col cols="12">
+                <strong>{{ $t('sites.note') }}:</strong> {{ viewingItem.note }}
+              </v-col>
+            </v-row>
+          </div>
         </v-card-text>
-
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="closeDeleteDialog" :disabled="sitesStore.loading">
-            {{ $t('common.cancel') }}
-          </v-btn>
-          <v-btn color="error" variant="flat" @click="confirmDelete" :loading="sitesStore.loading">
-            {{ $t('common.delete') }}
-          </v-btn>
+          <v-btn @click="showViewDialog = false">{{ $t('common.close') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Simple Loading -->
+    <v-progress-linear v-if="loading" indeterminate color="primary" />
+
+    <!-- Error Snackbar -->
+    <v-snackbar v-model="errorSnackbar" color="error" timeout="5000">
+      {{ error }}
+      <template v-slot:actions>
+        <v-btn variant="text" @click="errorSnackbar = false">
+          {{ $t('common.close') }}
+        </v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { ref, computed, onMounted, watch } from 'vue'
+import { Grid } from '@progress/kendo-vue-grid'
+import { process } from '@progress/kendo-data-query'
 import { useSitesStore } from '@/stores/sites'
-import SiteForm from '@/components/SiteForm.vue'
-
-import EnhancedDataGrid from '@/components/EnhancedDataGrid.vue'
-import TabbedChildView from '@/components/TabbedChildView.vue'
-import { useHierarchicalData } from '@/composables/useHierarchicalData'
 import { useChargePointsStore } from '@/stores/chargepoints'
-import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
-import type { Site, CreateSiteRequest, UpdateSiteRequest } from '@/types/sites'
+import SiteForm from '@/components/SiteForm.vue'
+import type { Site } from '@/types/sites'
 import type { ChargePoint } from '@/types/chargepoints'
+import { saveAs } from 'file-saver'
+import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
+// Stores
 const sitesStore = useSitesStore()
 const chargePointsStore = useChargePointsStore()
-const { t, locale } = useI18n()
-const { formatDate, formatNumber } = useLocaleFormatting()
 
-const selectedSite = ref<Site | null>(null)
-const siteToDelete = ref<Site | null>(null)
-const selectedSites = ref<Site[]>([])
-const selectionLoading = ref(false)
-const deleteLoading = ref(false)
-const deleteProgress = ref(0)
-const showFormDialog = ref(false)
-const showDeleteDialog = ref(false)
-const showDetailDialog = ref(false)
-const siteToView = ref<Site | null>(null)
+// Reactive data
+const gridRef = ref()
+const globalSearch = ref('')
+const selectedItems = ref<Site[]>([])
+const showCreateDialog = ref(false)
+const showViewDialog = ref(false)
+const editingItem = ref<Site | null>(null)
+const viewingItem = ref<Site | null>(null)
+const errorSnackbar = ref(false)
 
-const successMessage = ref('')
-const showSuccessAlert = ref(false)
-
-// Hierarchical data management for charge points
-const {
-  expandedItems,
-  childrenData,
-  loadingStates,
-  errorStates,
-  toggleExpansion,
-  loadChildren,
-  hasChildren,
-  getChildren,
-  isLoading,
-  getError
-} = useHierarchicalData({
-  childDataFetcher: async (site: Site) => {
-    console.log('Loading charge points for site:', site.id)
-
-    // Ensure charge points data is loaded
-    if (chargePointsStore.chargePoints.length === 0) {
-      await chargePointsStore.fetchChargePoints()
-    }
-
-    // Get charge points for this site
-    const chargePoints = chargePointsStore.getChargePointsBySiteId(site.id || 0)
-    console.log('Found charge points:', chargePoints.length)
-
-    return { chargePoints }
-  },
-  childDataKey: 'id'
-})
-
-const expandedGroups = ref<string[]>([])
-
-interface TableHeader {
-  title: string
-  key: string
-  sortable: boolean
-  width?: string
-}
-
-const headers = computed((): TableHeader[] => [
-  { title: t('sites.siteId'), key: 'site_id', sortable: true, width: '80px' },
-  { title: t('sites.siteName'), key: 'name', sortable: true },
-  { title: t('sites.address'), key: 'address', sortable: true },
-  { title: t('sites.postalCode'), key: 'postal_code', sortable: true },
-  { title: t('sites.city'), key: 'city', sortable: true },
-  { title: t('sites.country'), key: 'country', sortable: true },
-  { title: t('common.note'), key: 'note', sortable: false },
-  { title: t('common.created'), key: 'created_at', sortable: true },
-  { title: t('common.actions'), key: 'actions', sortable: false, width: '160px' }
-])
-
-// Force reactivity key for translations
-const translationKey = ref(0)
-
-// Watch for locale changes to force header re-computation
-watch(locale, () => {
-  translationKey.value++
-})
-
-const advancedHeaders = computed(() => {
-  translationKey.value
-  return [
-    {
-      key: 'site_id',
-      title: t('sites.siteId'),
-      width: 80,
-
-      sortable: true,
-      type: 'number' as const
-    },
-    {
-      key: 'name',
-      title: t('sites.siteName'),
-
-      sortable: true,
-      type: 'text' as const
-    },
-    {
-      key: 'address',
-      title: t('sites.address'),
-
-      sortable: true,
-      type: 'text' as const
-    },
-    {
-      key: 'postal_code',
-      title: t('sites.postalCode'),
-
-      sortable: true,
-      type: 'text' as const
-    },
-    {
-      key: 'city',
-      title: t('sites.city'),
-
-      sortable: true,
-      type: 'text' as const
-    },
-    {
-      key: 'country',
-      title: t('sites.country'),
-
-      sortable: true,
-      type: 'text' as const
-    },
-    {
-      key: 'note',
-      title: t('common.note'),
-
-      sortable: false,
-      type: 'text' as const
-    },
-    {
-      key: 'created_at',
-      title: t('common.created'),
-
-      sortable: true,
-      type: 'date' as const
-    },
-    {
-      key: 'actions',
-      title: t('common.actions'),
-      width: 160,
-      sortable: false,
-      filterable: false,
-      type: 'text' as const
-    }
-  ]
-})
+// Grid state
+const take = ref(10)
+const skip = ref(0)
+const group = ref([])
+const sort = ref([])
+const filter = ref({ logic: 'and' as const, filters: [] })
 
 // Computed properties
-const filteredSites = computed(() => {
-  return sitesStore.allSites
+const loading = computed(() => sitesStore.loading || chargePointsStore.loading)
+const error = computed(() => sitesStore.error || chargePointsStore.error)
+const sites = computed(() => sitesStore.allSites)
+const total = computed(() => sites.value.length)
+const isAllSelected = computed(
+  () => sites.value.length > 0 && selectedItems.value.length === sites.value.length
+)
+
+// Grid configuration
+const pageableConfig = ref({
+  buttonCount: 5,
+  info: true,
+  type: 'numeric',
+  pageSizes: [5, 10, 20, 50],
+  previousNext: true
+})
+
+// Format date helper
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-GB') // dd/mm/yyyy format
+}
+
+// Main grid columns
+const columns = ref([
+  {
+    field: 'selected',
+    title: '',
+    width: '50px',
+    filterable: false,
+    sortable: false,
+    groupable: false,
+    cell: 'checkboxTemplate',
+    headerCell: 'selectAllTemplate'
+  },
+  {
+    field: 'site_id',
+    title: 'ID',
+    width: '80px',
+    columnMenu: true
+  },
+  {
+    field: 'name',
+    title: 'Name',
+    columnMenu: true
+  },
+  {
+    field: 'address',
+    title: 'Address',
+    columnMenu: true
+  },
+  {
+    field: 'city',
+    title: 'City',
+    columnMenu: true
+  },
+  {
+    field: 'country',
+    title: 'Country',
+    columnMenu: true
+  },
+  {
+    field: 'created_at',
+    title: 'Created',
+    columnMenu: true,
+    format: '{0:dd/MM/yyyy}',
+  },
+  {
+    title: 'Actions',
+    width: '150px',
+    filterable: false,
+    sortable: false,
+    groupable: false,
+    cell: 'actionsTemplate'
+  }
+])
+
+// Charge points columns for master-detail
+const chargePointColumns = ref([
+  {
+    field: 'id',
+    title: 'ID',
+    width: '80px'
+  },
+  {
+    field: 'ocpp_charge_box_id',
+    title: 'OCPP ID'
+  },
+  {
+    field: 'manufacturer',
+    title: 'Manufacturer'
+  },
+  {
+    field: 'model',
+    title: 'Model'
+  },
+  {
+    field: 'status',
+    title: 'Status'
+  }
+])
+
+// Process data for grid
+const processedData = computed(() => {
+  let data = sites.value
+    .filter((site) => site && typeof site === 'object')
+    .map((site) => ({
+      ...site,
+      selected: selectedItems.value.some((item) => item.site_id === site.site_id),
+      // Ensure all required fields exist
+      created_at: site.created_at || '',
+      updated_at: site.updated_at || '',
+      note: site.note || ''
+    }))
+
+  // Apply global search
+  if (globalSearch.value) {
+    const searchTerm = globalSearch.value.toLowerCase()
+    data = data.filter(
+      (site) =>
+        site.name?.toLowerCase().includes(searchTerm) ||
+        site.address?.toLowerCase().includes(searchTerm) ||
+        site.city?.toLowerCase().includes(searchTerm) ||
+        site.country?.toLowerCase().includes(searchTerm)
+    )
+  }
+
+  // Process with Kendo data query
+  const result = process(data, {
+    take: take.value,
+    skip: skip.value,
+    group: group.value,
+    sort: sort.value,
+    filter: filter.value
+  })
+
+  return result
 })
 
 // Methods
-// Data retrieval methods for hierarchical view
-const getChargePoints = (site: Site) => {
-  return getChildren(site)?.chargePoints || []
+const onDataStateChange = (event: any) => {
+  if (!event?.data) return
+
+  take.value = event.data.take || 10
+  skip.value = event.data.skip || 0
+  group.value = event.data.group || []
+  sort.value = event.data.sort || []
+  filter.value = event.data.filter || { logic: 'and' as const, filters: [] }
 }
 
-const getChargePointCount = (site: Site) => {
-  return getChargePoints(site).length
-}
-
-const getChargePointStatusColor = (status: string): string => {
-  switch (status) {
-    case 'active':
-      return 'success'
-    case 'inactive':
-      return 'warning'
-    case 'faulty':
-      return 'error'
-    default:
-      return 'primary'
+const onExpandChange = (event: any) => {
+  const item = event.dataItem
+  if (item) {
+    item.expanded = event.value
   }
 }
 
-const openCreateDialog = (): void => {
-  selectedSite.value = null
-  showFormDialog.value = true
+// Detail template function
+const detailTemplate = (props: any) => {
+  return 'detailTemplate'
 }
 
-const openEditDialog = (site: Site): void => {
-  selectedSite.value = site
-  showFormDialog.value = true
+const onSelectionChange = (event: any) => {
+  // Handle selection changes from Kendo Grid
 }
 
-const closeFormDialog = (): void => {
-  selectedSite.value = null
-  showFormDialog.value = false
+const toggleSelection = (item: Site) => {
+  const index = selectedItems.value.findIndex((selected) => selected.site_id === item.site_id)
+
+  if (index >= 0) {
+    selectedItems.value.splice(index, 1)
+  } else {
+    selectedItems.value.push(item)
+  }
 }
 
-const openDetailDialog = (site: Site): void => {
-  siteToView.value = site
-  showDetailDialog.value = true
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedItems.value = []
+  } else {
+    selectedItems.value = [...sites.value]
+  }
 }
 
-const closeDetailDialog = (): void => {
-  siteToView.value = null
-  showDetailDialog.value = false
+const onGlobalSearchChange = () => {
+  // Trigger grid refresh
+  skip.value = 0
 }
 
-const openDeleteDialog = (site: Site): void => {
-  siteToDelete.value = site
-  showDeleteDialog.value = true
+const getChargePointsForSite = (siteId: number): ChargePoint[] => {
+  return chargePointsStore.getChargePointsBySiteId(siteId)
 }
 
-const closeDeleteDialog = (): void => {
-  siteToDelete.value = null
-  showDeleteDialog.value = false
+const viewItem = (item: Site) => {
+  viewingItem.value = item
+  showViewDialog.value = true
 }
 
-const handleFormSubmit = async (data: CreateSiteRequest | UpdateSiteRequest): Promise<void> => {
+const editItem = (item: Site) => {
+  editingItem.value = { ...item }
+  showCreateDialog.value = true
+}
+
+const deleteItem = async (item: Site) => {
+  if (item.site_id && confirm(`Delete site "${item.name}"?`)) {
+    await sitesStore.deleteSite(item.site_id)
+  }
+}
+
+const deleteSelected = async () => {
+  if (selectedItems.value.length === 0) return
+
+  if (confirm(`Delete ${selectedItems.value.length} selected items?`)) {
+    for (const item of selectedItems.value) {
+      if (item.site_id) {
+        await sitesStore.deleteSite(item.site_id)
+      }
+    }
+    selectedItems.value = []
+  }
+}
+
+const exportSelected = (format: 'xlsx' | 'pdf') => {
+  const dataToExport = selectedItems.value.length > 0 ? selectedItems.value : sites.value
+
+  if (format === 'xlsx') {
+    const worksheet = XLSX.utils.json_to_sheet(
+      dataToExport.map((site) => ({
+        ID: site.site_id,
+        Name: site.name,
+        Address: site.address,
+        City: site.city,
+        Country: site.country,
+        'Postal Code': site.postal_code,
+        Note: site.note || '',
+        Created: formatDate(site.created_at)
+      }))
+    )
+
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sites')
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+
+    saveAs(blob, `sites-export-${new Date().toISOString().split('T')[0]}.xlsx`)
+  } else if (format === 'pdf') {
+    const doc = new jsPDF()
+
+    const tableData = dataToExport.map((site) => [
+      site.site_id?.toString() || '',
+      site.name || '',
+      site.address || '',
+      site.city || '',
+      site.country || '',
+      formatDate(site.created_at)
+    ])
+
+    autoTable(doc, {
+      head: [['ID', 'Name', 'Address', 'City', 'Country', 'Created']],
+      body: tableData,
+      margin: { top: 20 },
+      styles: { fontSize: 8 }
+    })
+
+    doc.save(`sites-export-${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+}
+
+const onSaveSite = async (siteData: any) => {
   let success = false
-  const isEdit = 'site_id' in data
 
-  try {
-    if (isEdit) {
-      // Update existing site
-      success = await sitesStore.updateSite(data as UpdateSiteRequest)
-      if (success) {
-        closeFormDialog()
-        showSuccessMessage(t('sites.updated', { name: data.name }))
-      }
-    } else {
-      // Create new site
-      success = await sitesStore.createSite(data as CreateSiteRequest)
-      if (success) {
-        closeFormDialog()
-        showSuccessMessage(t('sites.created', { name: data.name }))
-      }
-    }
-  } catch (error) {
-    console.error('Form submit error:', error)
-    showErrorMessage(
-      t(isEdit ? 'messages.updateError' : 'messages.createError', { item: t('sites.site') })
-    )
+  if (editingItem.value && editingItem.value.site_id) {
+    // Update existing site
+    success = await sitesStore.updateSite({ ...siteData, site_id: editingItem.value.site_id })
+  } else {
+    // Create new site
+    success = await sitesStore.createSite(siteData)
+  }
+
+  if (success) {
+    onCancelDialog()
   }
 }
 
-const confirmDelete = async (): Promise<void> => {
-  if (!siteToDelete.value?.site_id) return
+const onCancelDialog = () => {
+  showCreateDialog.value = false
+  editingItem.value = null
+}
 
-  try {
-    const siteName = siteToDelete.value.name
-    const success = await sitesStore.deleteSite(siteToDelete.value.site_id)
-
-    if (success) {
-      closeDeleteDialog()
-      showSuccessMessage(t('sites.deleted', { name: siteName }))
-    }
-  } catch (error) {
-    console.error('Delete error:', error)
-    showErrorMessage(t('messages.deleteError', { item: t('sites.site') }))
+// Watch for errors
+watch(error, (newError) => {
+  if (newError) {
+    errorSnackbar.value = true
   }
-}
-
-// Export functions
-const exportToPDF = async (): Promise<void> => {
-  try {
-    const { jsPDF } = await import('jspdf')
-    const html2canvas = (await import('html2canvas')).default
-
-    // Create a temporary table for PDF export
-    const exportData = filteredSites.value.map((site) => ({
-      [t('export.headers.id')]: site.site_id || '-',
-      [t('export.headers.siteName')]: site.name,
-      [t('export.headers.address')]: site.address,
-      [t('export.headers.postalCode')]: site.postal_code,
-      [t('export.headers.city')]: site.city,
-      [t('export.headers.country')]: site.country,
-      [t('export.headers.note')]: site.note || '-',
-      [t('export.headers.created')]: site.created_at ? formatDate(site.created_at) : '-'
-    }))
-
-    const pdf = new jsPDF('l', 'mm', 'a4') // landscape orientation
-    const pageWidth = pdf.internal.pageSize.getWidth()
-    const pageHeight = pdf.internal.pageSize.getHeight()
-
-    // Add title
-    pdf.setFontSize(16)
-    pdf.text('Sites Export Report', 20, 20)
-
-    // Add timestamp
-    pdf.setFontSize(10)
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 30)
-    pdf.text(`Total Sites: ${exportData.length}`, 20, 35)
-
-    // Create table content
-    let yPos = 50
-    const rowHeight = 8
-    const colWidths = [15, 30, 40, 18, 20, 20, 30, 20]
-    const headers = [
-      t('export.headers.id'),
-      t('export.headers.siteName'),
-      t('export.headers.address'),
-      t('export.headers.postal'),
-      t('export.headers.city'),
-      t('export.headers.country'),
-      t('export.headers.note'),
-      t('export.headers.created')
-    ]
-
-    // Draw headers
-    pdf.setFontSize(9)
-    pdf.setFont(undefined, 'bold')
-    let xPos = 20
-    headers.forEach((header, index) => {
-      pdf.text(header, xPos, yPos)
-      xPos += colWidths[index]
-    })
-
-    yPos += rowHeight
-    pdf.setFont(undefined, 'normal')
-
-    // Draw data rows
-    exportData.forEach((row) => {
-      if (yPos > pageHeight - 20) {
-        pdf.addPage()
-        yPos = 20
-      }
-
-      xPos = 20
-      Object.values(row).forEach((value, index) => {
-        const text = String(value).substring(0, 25) // Limit text length
-        pdf.text(text, xPos, yPos)
-        xPos += colWidths[index]
-      })
-
-      yPos += rowHeight
-    })
-
-    // Save the PDF
-    const filename = `sites_export_${new Date().toISOString().split('T')[0]}.pdf`
-    pdf.save(filename)
-  } catch (error) {
-    console.error('PDF export error:', error)
-    showErrorMessage(t('messages.exportPdfError'))
-  }
-}
-
-const exportToExcel = async (): Promise<void> => {
-  try {
-    const XLSX = await import('xlsx')
-
-    // Prepare data for Excel export
-    const exportData = filteredSites.value.map((site) => ({
-      [t('export.headers.id')]: site.site_id || '',
-      [t('export.headers.siteName')]: site.name,
-      [t('export.headers.address')]: site.address,
-      [t('export.headers.postalCode')]: site.postal_code,
-      [t('export.headers.city')]: site.city,
-      [t('export.headers.country')]: site.country,
-      [t('export.headers.note')]: site.note || '',
-      [t('export.headers.createdDate')]: site.created_at ? formatDate(site.created_at) : ''
-    }))
-
-    // Create workbook and worksheet
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    const wb = XLSX.utils.book_new()
-
-    // Set column widths
-    const colWidths = [
-      { wch: 10 }, // Site ID
-      { wch: 25 }, // Site Name
-      { wch: 30 }, // Address
-      { wch: 12 }, // Postal Code
-      { wch: 15 }, // City
-      { wch: 15 }, // Country
-      { wch: 30 }, // Note
-      { wch: 15 } // Created Date
-    ]
-    ws['!cols'] = colWidths
-
-    // Add metadata
-    XLSX.utils.book_append_sheet(wb, ws, 'Sites')
-
-    // Set workbook properties
-    wb.Props = {
-      Title: 'Sites Export',
-      Subject: 'OCPP Sites Data',
-      Author: 'OCPP Frontend',
-      CreatedDate: new Date()
-    }
-
-    // Generate filename with timestamp
-    const filename = `sites_export_${new Date().toISOString().split('T')[0]}.xlsx`
-
-    // Save the file
-    XLSX.writeFile(wb, filename)
-  } catch (error) {
-    console.error('Excel export error:', error)
-    showErrorMessage(t('messages.exportExcelError'))
-  }
-}
-
-const exportToCSV = async (): Promise<void> => {
-  try {
-    // Prepare CSV data
-    const headers = [
-      t('export.headers.id'),
-      t('export.headers.siteName'),
-      t('export.headers.address'),
-      t('export.headers.postalCode'),
-      t('export.headers.city'),
-      t('export.headers.country'),
-      t('export.headers.note'),
-      t('export.headers.createdDate')
-    ]
-    const csvRows = []
-
-    // Add headers
-    csvRows.push(headers.join(','))
-
-    // Add data rows
-    filteredSites.value.forEach((site) => {
-      const row = [
-        `"${site.site_id || ''}"`,
-        `"${site.name.replace(/"/g, '""')}"`,
-        `"${site.address.replace(/"/g, '""')}"`,
-        `"${site.postal_code}"`,
-        `"${site.city.replace(/"/g, '""')}"`,
-        `"${site.country.replace(/"/g, '""')}"`,
-        `"${(site.note || '').replace(/"/g, '""')}"`,
-        `"${site.created_at ? formatDate(site.created_at) : ''}"`
-      ]
-      csvRows.push(row.join(','))
-    })
-
-    // Create CSV content
-    const csvContent = csvRows.join('\n')
-
-    // Create and download the file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const FileSaver = await import('file-saver')
-
-    const filename = `sites_export_${new Date().toISOString().split('T')[0]}.csv`
-    FileSaver.saveAs(blob, filename)
-  } catch (error) {
-    console.error('CSV export error:', error)
-    showErrorMessage(t('messages.exportCsvError'))
-  }
-}
-
-// Notification methods
-const showSuccessMessage = (message: string): void => {
-  successMessage.value = message
-  showSuccessAlert.value = true
-  // Auto-hide after 5 seconds
-  setTimeout(() => {
-    hideSuccessMessage()
-  }, 5000)
-}
-
-const hideSuccessMessage = (): void => {
-  showSuccessAlert.value = false
-  successMessage.value = ''
-}
-
-const showErrorMessage = (message: string): void => {
-  sitesStore.error = message
-}
-
-// Batch selection methods
-const clearSelection = (): void => {
-  selectedItems.value = []
-}
-
-const handleBatchDelete = async (items: Site[]): Promise<void> => {
-  if (items.length === 0) return
-
-  batchDeleteLoading.value = true
-  currentDeleteIndex.value = 0
-  batchDeleteProgress.value = 0
-  let successCount = 0
-  let failedCount = 0
-  const failedItems: string[] = []
-
-  try {
-    for (let i = 0; i < items.length; i++) {
-      const site = items[i]
-      currentDeleteIndex.value = i + 1
-      batchDeleteProgress.value = ((i + 1) / items.length) * 100
-
-      try {
-        if (site.site_id) {
-          const success = await sitesStore.deleteSite(site.site_id)
-          if (success) {
-            successCount++
-            // Remove from selection immediately after successful deletion
-            selectedItems.value = selectedItems.value.filter(
-              (item) => item.site_id !== site.site_id
-            )
-          } else {
-            failedCount++
-            failedItems.push(site.name)
-          }
-        } else {
-          failedCount++
-          failedItems.push(site.name)
-        }
-      } catch (error) {
-        console.error(`Failed to delete site ${site.name}:`, error)
-        failedCount++
-        failedItems.push(site.name)
-      }
-
-      // Small delay to show progress and prevent overwhelming the API
-      await new Promise((resolve) => setTimeout(resolve, 300))
-    }
-
-    // Clear any remaining selection after all deletions are attempted
-    const remainingSelected = selectedItems.value.filter(
-      (item) => !items.some((deletedItem) => deletedItem.site_id === item.site_id)
-    )
-    selectedItems.value = remainingSelected
-
-    // Show result message
-    if (failedCount === 0) {
-      showSuccessMessage(t('messages.batchDeleteSuccess', { count: successCount }))
-    } else if (successCount > 0) {
-      showSuccessMessage(
-        t('messages.batchDeletePartialSuccess', {
-          success: successCount,
-          failed: failedCount,
-          failedItems: failedItems.join(', ')
-        })
-      )
-    } else {
-      showErrorMessage(
-        t('messages.batchDeleteAllFailed', {
-          failed: failedCount,
-          failedItems: failedItems.join(', ')
-        })
-      )
-    }
-  } catch (error) {
-    console.error('Batch delete error:', error)
-    showErrorMessage(t('messages.batchDeleteFailed'))
-  } finally {
-    batchDeleteLoading.value = false
-    currentDeleteIndex.value = 0
-    batchDeleteProgress.value = 0
-  }
-}
-
-const handleBatchExport = (format: string): void => {
-  // Create a temporary filtered sites array with only selected items
-  const originalSites = filteredSites.value
-  const selectedSites = selectedItems.value
-
-  try {
-    switch (format) {
-      case 'pdf':
-        exportSelectedToPDF(selectedSites)
-        break
-      case 'excel':
-        exportSelectedToExcel(selectedSites)
-        break
-      case 'csv':
-        exportSelectedToCSV(selectedSites)
-        break
-    }
-  } catch (error) {
-    console.error('Batch export error:', error)
-    showErrorMessage(t('messages.batchExportError'))
-  }
-}
-
-// Export methods for selected items
-const exportSelectedToPDF = async (selectedSites: Site[]): Promise<void> => {
-  try {
-    const { jsPDF } = await import('jspdf')
-
-    const exportData = selectedSites.map((site) => ({
-      'Site ID': site.site_id || '-',
-      'Site Name': site.name,
-      Address: site.address,
-      'Postal Code': site.postal_code,
-      City: site.city,
-      Country: site.country,
-      Note: site.note || '-',
-      Created: site.created_at ? formatDate(site.created_at) : '-'
-    }))
-
-    const pdf = new jsPDF('l', 'mm', 'a4')
-    const pageWidth = pdf.internal.pageSize.getWidth()
-    const pageHeight = pdf.internal.pageSize.getHeight()
-
-    pdf.setFontSize(16)
-    pdf.text('Selected Sites Export Report', 20, 20)
-
-    pdf.setFontSize(10)
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 30)
-    pdf.text(`Selected Sites: ${exportData.length}`, 20, 35)
-
-    let yPos = 50
-    const rowHeight = 8
-    const colWidths = [15, 30, 40, 18, 20, 20, 30, 20]
-    const headers = [
-      t('export.headers.id'),
-      t('export.headers.siteName'),
-      t('export.headers.address'),
-      t('export.headers.postal'),
-      t('export.headers.city'),
-      t('export.headers.country'),
-      t('export.headers.note'),
-      t('export.headers.created')
-    ]
-
-    pdf.setFontSize(9)
-    pdf.setFont(undefined, 'bold')
-    let xPos = 20
-    headers.forEach((header, index) => {
-      pdf.text(header, xPos, yPos)
-      xPos += colWidths[index]
-    })
-
-    yPos += rowHeight
-    pdf.setFont(undefined, 'normal')
-
-    exportData.forEach((row) => {
-      if (yPos > pageHeight - 20) {
-        pdf.addPage()
-        yPos = 20
-      }
-
-      xPos = 20
-      Object.values(row).forEach((value, index) => {
-        const text = String(value).substring(0, 25)
-        pdf.text(text, xPos, yPos)
-        xPos += colWidths[index]
-      })
-
-      yPos += rowHeight
-    })
-
-    const filename = `selected_sites_export_${new Date().toISOString().split('T')[0]}.pdf`
-    pdf.save(filename)
-  } catch (error) {
-    console.error('PDF export error:', error)
-    showErrorMessage(t('messages.exportPdfError'))
-  }
-}
-
-const exportSelectedToExcel = async (selectedSites: Site[]): Promise<void> => {
-  try {
-    const XLSX = await import('xlsx')
-
-    const exportData = selectedSites.map((site) => ({
-      'Site ID': site.site_id || '',
-      'Site Name': site.name,
-      Address: site.address,
-      'Postal Code': site.postal_code,
-      City: site.city,
-      Country: site.country,
-      Note: site.note || '',
-      'Created Date': site.created_at ? formatDate(site.created_at) : ''
-    }))
-
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    const wb = XLSX.utils.book_new()
-
-    const colWidths = [
-      { wch: 10 },
-      { wch: 25 },
-      { wch: 30 },
-      { wch: 12 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 30 },
-      { wch: 15 }
-    ]
-    ws['!cols'] = colWidths
-
-    XLSX.utils.book_append_sheet(wb, ws, 'Selected Sites')
-
-    wb.Props = {
-      Title: 'Selected Sites Export',
-      Subject: 'OCPP Selected Sites Data',
-      Author: 'OCPP Frontend',
-      CreatedDate: new Date()
-    }
-
-    const filename = `selected_sites_export_${new Date().toISOString().split('T')[0]}.xlsx`
-    XLSX.writeFile(wb, filename)
-  } catch (error) {
-    console.error('Excel export error:', error)
-    showErrorMessage(t('messages.exportExcelError'))
-  }
-}
-
-const exportSelectedToCSV = async (selectedSites: Site[]): Promise<void> => {
-  try {
-    const headers = [
-      t('export.headers.id'),
-      t('export.headers.siteName'),
-      t('export.headers.address'),
-      t('export.headers.postalCode'),
-      t('export.headers.city'),
-      t('export.headers.country'),
-      t('export.headers.note'),
-      t('export.headers.createdDate')
-    ]
-    const csvRows = []
-
-    csvRows.push(headers.join(','))
-
-    selectedSites.forEach((site) => {
-      const row = [
-        `"${site.site_id || ''}"`,
-        `"${site.name.replace(/"/g, '""')}"`,
-        `"${site.address.replace(/"/g, '""')}"`,
-        `"${site.postal_code}"`,
-        `"${site.city.replace(/"/g, '""')}"`,
-        `"${site.country.replace(/"/g, '""')}"`,
-        `"${(site.note || '').replace(/"/g, '""')}"`,
-        `"${site.created_at ? formatDate(site.created_at) : ''}"`
-      ]
-      csvRows.push(row.join(','))
-    })
-
-    const csvContent = csvRows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const FileSaver = await import('file-saver')
-
-    const filename = `selected_sites_export_${new Date().toISOString().split('T')[0]}.csv`
-    FileSaver.saveAs(blob, filename)
-  } catch (error) {
-    console.error('CSV export error:', error)
-    showErrorMessage(t('messages.exportCsvError'))
-  }
-}
-
-// Advanced DataGrid event handlers
-const handleFilteredExport = (format: string, items: Site[]) => {
-  switch (format) {
-    case 'pdf':
-      exportFilteredToPDF(items)
-      break
-    case 'excel':
-      exportFilteredToExcel(items)
-      break
-    case 'csv':
-      exportFilteredToCSV(items)
-      break
-  }
-}
-
-// Selection event handlers
-const handleSelectionChange = (newSelection: Site[]) => {
-  selectedSites.value = newSelection
-}
-
-const handleDeleteSelected = async (items: Site[]) => {
-  if (items.length === 0) return
-
-  try {
-    let successCount = 0
-    let failedCount = 0
-    const failedItems: string[] = []
-
-    for (const site of items) {
-      try {
-        if (site.site_id) {
-          const success = await sitesStore.deleteSite(site.site_id)
-          if (success) {
-            successCount++
-          } else {
-            failedCount++
-            failedItems.push(site.name)
-          }
-        } else {
-          failedCount++
-          failedItems.push(site.name)
-        }
-      } catch (error) {
-        console.error(`Failed to delete site ${site.name}:`, error)
-        failedCount++
-        failedItems.push(site.name)
-      }
-    }
-
-    // Show result message
-    if (failedCount === 0) {
-      showSuccessMessage(t('messages.batchDeleteSuccess', { count: successCount }))
-    } else if (successCount > 0) {
-      showSuccessMessage(
-        t('messages.batchDeletePartialSuccess', {
-          success: successCount,
-          failed: failedCount,
-          failedItems: failedItems.join(', ')
-        })
-      )
-    } else {
-      showErrorMessage(
-        t('messages.batchDeleteAllFailed', {
-          failed: failedCount,
-          failedItems: failedItems.join(', ')
-        })
-      )
-    }
-  } catch (error) {
-    console.error('Batch delete error:', error)
-    showErrorMessage(t('messages.batchDeleteFailed'))
-  }
-}
-
-const handleExportSelected = (format: 'pdf' | 'excel' | 'csv', items: Site[]) => {
-  console.log(`Exporting ${items.length} selected sites to ${format}`)
-
-  switch (format) {
-    case 'pdf':
-      exportSelectedToPDF(items)
-      break
-    case 'excel':
-      exportSelectedToExcel(items)
-      break
-    case 'csv':
-      exportSelectedToCSV(items)
-      break
-  }
-}
-
-const handleRowClick = (item: Site) => {
-  // Handle row click - could open detail dialog
-  console.log('Row clicked:', item)
-  // Optionally open detail dialog:
-  // openDetailDialog(item)
-}
-
-// Export methods for filtered sites
-const exportFilteredToPDF = async (filteredSites: Site[]): Promise<void> => {
-  try {
-    const { jsPDF } = await import('jspdf')
-    const pdf = new jsPDF('l', 'mm', 'a4')
-
-    pdf.setFontSize(16)
-    pdf.text('Filtered Sites Export Report', 20, 20)
-
-    pdf.setFontSize(10)
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 30)
-    pdf.text(`Total Items: ${filteredSites.length}`, 20, 35)
-
-    const filename = `filtered_sites_export_${new Date().toISOString().split('T')[0]}.pdf`
-    pdf.save(filename)
-  } catch (error) {
-    console.error('PDF export error:', error)
-    showErrorMessage(t('messages.exportPdfError'))
-  }
-}
-
-const exportFilteredToExcel = async (filteredSites: Site[]): Promise<void> => {
-  try {
-    const XLSX = await import('xlsx')
-    const exportData = filteredSites.map((site) => ({
-      'Site ID': site.site_id || '',
-      'Site Name': site.name,
-      Address: site.address,
-      'Postal Code': site.postal_code,
-      City: site.city,
-      Country: site.country,
-      Note: site.note || '',
-      'Created Date': site.created_at ? formatDate(site.created_at) : ''
-    }))
-
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Filtered Sites')
-
-    const filename = `filtered_sites_export_${new Date().toISOString().split('T')[0]}.xlsx`
-    XLSX.writeFile(wb, filename)
-  } catch (error) {
-    console.error('Excel export error:', error)
-    showErrorMessage(t('messages.exportExcelError'))
-  }
-}
-
-const exportFilteredToCSV = async (filteredSites: Site[]): Promise<void> => {
-  try {
-    const headers = [
-      'Site ID',
-      'Site Name',
-      'Address',
-      'Postal Code',
-      'City',
-      'Country',
-      'Note',
-      'Created Date'
-    ]
-    const csvRows = [headers.join(',')]
-
-    filteredSites.forEach((site) => {
-      const row = [
-        `"${site.site_id || ''}"`,
-        `"${site.name.replace(/"/g, '""')}"`,
-        `"${site.address.replace(/"/g, '""')}"`,
-        `"${site.postal_code.replace(/"/g, '""')}"`,
-        `"${site.city.replace(/"/g, '""')}"`,
-        `"${site.country.replace(/"/g, '""')}"`,
-        `"${(site.note || '').replace(/"/g, '""')}"`,
-        `"${site.created_at ? formatDate(site.created_at) : ''}"`
-      ]
-      csvRows.push(row.join(','))
-    })
-
-    const csvContent = csvRows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' })
-    const FileSaver = await import('file-saver')
-
-    const filename = `filtered_sites_export_${new Date().toISOString().split('T')[0]}.csv`
-    FileSaver.saveAs(blob, filename)
-  } catch (error) {
-    console.error('CSV export error:', error)
-    showErrorMessage(t('messages.exportCsvError'))
-  }
-}
+})
 
 // Lifecycle
 onMounted(async () => {
-  try {
-    // Load sites and charge points for hierarchical functionality
-    await Promise.all([
-      sitesStore.fetchSites(),
-      chargePointsStore.chargePoints.length === 0
-        ? chargePointsStore.fetchChargePoints()
-        : Promise.resolve()
-    ])
-
-    console.log(
-      'Initial data loaded - Sites:',
-      sitesStore.sites.length,
-      'Charge Points:',
-      chargePointsStore.chargePoints.length
-    )
-
-    if (sitesStore.sites.length === 0 && !sitesStore.error) {
-      showSuccessMessage(t('messages.sitesLoadedSuccess'))
-    }
-  } catch (error) {
-    console.error('Failed to load sites:', error)
-    showErrorMessage(t('messages.loadError', { item: t('sites.title') }))
-  }
+  await Promise.all([sitesStore.fetchSites(), chargePointsStore.fetchChargePoints()])
 })
 </script>
 
 <style scoped>
-.sites-container {
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+.sites-view {
+  padding: 20px;
 }
 
 .page-title {
-  font-size: 2rem;
-  font-weight: 600;
-  color: rgb(var(--v-theme-on-background));
+  margin-bottom: 20px;
 }
 
-.header-actions {
+.grid-toolbar {
   display: flex;
-  gap: 12px;
-}
-
-.filters-card {
-  margin-bottom: 24px;
-}
-
-.success-alert {
-  margin-bottom: 24px;
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 400px;
-  z-index: 10000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.error-alert {
-  margin-bottom: 24px;
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 400px;
-  z-index: 10000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.data-grid-card {
-  background: rgb(var(--v-theme-surface));
-}
-
-.sites-table {
-  background: transparent;
-}
-
-.country-cell {
-  display: flex;
+  justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.toolbar-actions {
+  display: flex;
   gap: 8px;
 }
 
-.country-icon {
-  color: rgb(var(--v-theme-primary));
+.grid-container {
+  margin-top: 20px;
+  position: relative;
+  z-index: 1;
 }
 
-.note-cell {
-  max-width: 200px;
+.detail-container {
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.detail-container h3 {
+  margin-bottom: 16px;
+  color: #1976d2;
 }
 
 .actions-cell {
@@ -1380,362 +593,64 @@ onMounted(async () => {
   gap: 4px;
 }
 
-.table-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 16px;
-  border-top: 1px solid rgb(var(--v-theme-outline));
+/* Kendo Grid Styling */
+:deep(.k-grid) {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-family: inherit;
 }
 
-.selection-info {
-  font-size: 0.875rem;
-  color: rgb(var(--v-theme-on-surface));
-  font-weight: 500;
+:deep(.k-grid-header) {
+  background: #f5f5f5;
 }
 
-.delete-dialog .delete-title {
-  color: rgb(var(--v-theme-error));
+:deep(.k-grid-header .k-header) {
+  border-color: #e0e0e0;
   font-weight: 600;
 }
 
-.site-detail-dialog .detail-title {
-  color: rgb(var(--v-theme-info));
-  font-weight: 600;
-  padding: 20px 24px 16px;
+:deep(.k-alt) {
+  background: #fafafa;
 }
 
-.site-detail-dialog .label {
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: rgb(var(--v-theme-on-surface));
+/* Remove selected row background */
+:deep(.k-state-selected) {
+  background: inherit !important;
+  color: inherit !important;
 }
 
-.site-detail-dialog .value {
-  font-size: 1rem;
-  color: rgb(var(--v-theme-on-surface));
-  margin-top: 4px;
+:deep(.k-pager) {
+  border-top: 1px solid #e0e0e0;
 }
 
-.site-detail-dialog .note-title {
-  color: rgb(var(--v-theme-on-surface));
-  margin-bottom: 8px;
-}
-
-.site-detail-dialog .note-content {
-  color: rgb(var(--v-theme-on-surface));
-  line-height: 1.5;
-  margin: 0;
-}
-
-.site-detail-dialog .detail-actions {
-  padding: 16px 24px 24px;
-}
-
-.export-actions {
-  width: 100%;
-}
-
-/* Responsive table styles */
-.sites-table {
-  /* Enable horizontal scrolling on mobile */
+:deep(.k-grid-content) {
   overflow-x: auto;
 }
 
-@media (max-width: 1200px) {
-  .sites-table :deep(th),
-  .sites-table :deep(td) {
-    font-size: 0.875rem;
-    padding: 8px 4px;
-  }
+/* Hide row selection background */
+:deep(.k-master-row.k-state-selected) {
+  background: inherit !important;
 }
 
-@media (max-width: 960px) {
-  .sites-container {
-    padding: 16px;
-  }
-
-  .header-section {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-
-  .page-title {
-    font-size: 1.75rem;
-    text-align: center;
-  }
-
-  /* Stack filter controls vertically on mobile */
-  .filters-card .v-row {
-    flex-direction: column;
-  }
-
-  .filters-card .v-col {
-    margin-bottom: 8px;
-  }
-
-  /* Improve table readability on mobile */
-  .sites-table {
-    font-size: 0.75rem;
-  }
-
-  .sites-table :deep(.v-data-table__wrapper) {
-    overflow-x: auto;
-  }
-
-  /* Hide less important columns on mobile */
-  .sites-table :deep(th):nth-child(3),
-  .sites-table :deep(td):nth-child(3),
-  .sites-table :deep(th):nth-child(4),
-  .sites-table :deep(td):nth-child(4) {
-    display: none;
-  }
-
-  /* Adjust action buttons for mobile */
-  .actions-cell {
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .actions-cell .v-btn {
-    min-width: 28px;
-    height: 28px;
-  }
+:deep(.k-grouping-row.k-state-selected) {
+  background: inherit !important;
 }
 
-@media (max-width: 600px) {
-  /* Even more aggressive hiding on small screens */
-  .sites-table :deep(th):nth-child(5),
-  .sites-table :deep(td):nth-child(5),
-  .sites-table :deep(th):nth-child(7),
-  .sites-table :deep(td):nth-child(7) {
-    display: none;
-  }
-
-  .header-actions {
-    width: 100%;
-  }
-
-  .create-btn {
-    width: 100%;
-  }
+/* Fix z-index issues */
+::deep(.k-grid) {
+  position: relative;
+  z-index: 2;
 }
 
-/* Hierarchical View Styles */
-.hierarchical-view {
-  padding: 16px;
-}
-
-.site-row-container {
-  margin-bottom: 16px;
-}
-
-.site-parent-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 16px;
-  background: rgb(var(--v-theme-surface));
-  border-radius: 8px;
-  border: 1px solid rgb(var(--v-theme-outline));
-}
-
-.site-info {
-  flex: 1;
-}
-
-.site-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.site-name {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.site-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.site-location {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: rgb(var(--v-theme-on-surface-variant));
-  font-size: 0.875rem;
-}
-
-.location-icon {
-  color: rgb(var(--v-theme-primary));
-}
-
-.site-meta {
-  display: flex;
-  gap: 16px;
-  font-size: 0.75rem;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-
-.site-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.charge-points-section {
-  margin-top: 16px;
-}
-
-.charge-points-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-  padding: 16px;
-}
-
-.charge-point-card {
-  background: rgb(var(--v-theme-background));
-  border: 1px solid rgb(var(--v-theme-outline));
-  border-radius: 8px;
-  padding: 16px;
-  transition: box-shadow 0.2s ease;
-}
-
-.charge-point-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.charge-point-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.charge-point-id {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.charge-point-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.detail-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.875rem;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-
-.detail-row v-icon {
-  color: rgb(var(--v-theme-primary));
-}
-
-.charge-point-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
-  text-align: center;
-}
-
-.empty-message {
-  margin: 8px 0 0 0;
-  color: rgb(var(--v-theme-on-surface-variant));
-  font-size: 0.875rem;
-}
-
-.view-toggle-btn {
-  margin-right: 8px;
-}
-
-@media (max-width: 768px) {
-  .charge-points-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .site-parent-content {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .site-actions {
-    align-self: flex-end;
-  }
-}
-
-/* Hierarchical expanded content styles */
-.expanded-content-wrapper {
-  background: rgb(var(--v-theme-surface-container));
-  border-radius: 0 0 8px 8px;
-}
-
-.child-items-container {
-  background: transparent;
-}
-
-.child-item-card {
-  transition: all 0.2s ease;
-  border: 1px solid rgb(var(--v-theme-outline));
-  background: rgb(var(--v-theme-surface));
-}
-
-.child-item-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-  border-color: rgb(var(--v-theme-primary));
-}
-
-.child-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  font-size: 0.85rem;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-
-.empty-state {
-  text-align: center;
-  padding: 32px;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-
-/* Dark theme improvements */
-.v-theme--dark .expanded-content-wrapper {
-  background: rgb(var(--v-theme-surface-container));
-}
-
-.v-theme--dark .child-item-card {
-  background: rgb(var(--v-theme-surface-bright));
-  border-color: rgb(var(--v-theme-outline-variant));
-}
-
-.v-theme--dark .child-item-card:hover {
-  background: rgb(var(--v-theme-surface-container-high));
+/* Additional rules to completely remove selection backgrounds */
+::deep(.k-state-selected:hover),
+::deep(.k-state-selected.k-alt),
+::deep(.k-state-selected.k-alt:hover),
+::deep(.k-grid-content .k-state-selected),
+::deep(.k-grid-content .k-state-selected:hover),
+::deep(.k-grid-content .k-state-selected.k-alt),
+::deep(.k-grid-content .k-state-selected.k-alt:hover) {
+  background-color: transparent !important;
+  background: transparent !important;
 }
 </style>

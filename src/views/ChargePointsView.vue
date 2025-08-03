@@ -1,654 +1,365 @@
 <template>
-  <div class="chargepoints-container">
-    <!-- Success Alert - Positioned at top for visibility -->
-    <v-alert
-      v-if="showSuccessAlert"
-      type="success"
-      class="success-alert"
-      closable
-      @click:close="hideSuccessMessage"
-    >
-      {{ successMessage }}
-    </v-alert>
+  <div class="charge-points-view">
+    <v-container fluid>
+      <v-row>
+        <v-col>
+          <h1 class="page-title">{{ $t('chargePoints.title') }}</h1>
 
-    <!-- Error Alert - Positioned at top for visibility -->
-    <v-alert
-      v-if="chargePointsStore.error"
-      type="error"
-      class="error-alert"
-      closable
-      @click:close="chargePointsStore.clearError()"
-    >
-      {{ chargePointsStore.error }}
-    </v-alert>
+          <!-- Global Search and Actions -->
+          <div class="grid-toolbar">
+            <v-text-field
+              v-model="globalSearch"
+              :label="$t('common.search')"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="compact"
+              clearable
+              style="max-width: 300px"
+              @input="onGlobalSearchChange"
+            />
 
-    <!-- Header -->
-    <div class="header-section">
-      <h1 class="page-title">{{ $t('chargePoints.title') }}</h1>
-      <div class="header-actions">
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog" class="create-btn">
-          {{ $t('chargePoints.addChargePoint') }}
-        </v-btn>
-      </div>
-    </div>
+            <div class="toolbar-actions">
+              <v-btn
+                v-if="selectedItems.length > 0"
+                color="error"
+                variant="outlined"
+                @click="deleteSelected"
+                :disabled="loading"
+              >
+                <v-icon left>mdi-delete</v-icon>
+                {{ $t('common.deleteSelected') }} ({{ selectedItems.length }})
+              </v-btn>
 
-    <!-- Data Grid -->
-    <v-card class="data-grid-card" elevation="2">
-      <EnhancedDataGrid
-        :columns="advancedHeaders"
-        :items="filteredChargePoints"
-        :loading="chargePointsStore.loading"
-        :table-key="'chargepoints'"
-        :enable-selection="true"
-        :show-expand="true"
-        @row-click="handleRowClick"
-        @selection-change="handleSelectionChange"
-        @export-selected="handleExportSelected"
-        @delete-selected="handleDeleteSelected"
-      >
-        <!-- Status column with chip -->
-        <template v-slot:item.status="{ item }">
-          <v-chip :color="getStatusColor(item.status)" size="small" variant="tonal">
-            {{ $t(`status.${item.status?.toLowerCase()}`) }}
-          </v-chip>
-        </template>
-
-        <!-- Site column with site name -->
-        <template v-slot:item.site_id="{ item }">
-          <div class="site-cell">
-            <v-icon class="site-icon" size="small">mdi-map-marker</v-icon>
-            {{ getSiteName(item.site_id) }}
-          </div>
-        </template>
-
-        <!-- Note column with tooltip -->
-        <template v-slot:item.note="{ item }">
-          <div class="note-cell">
-            <span v-if="item.note && item.note.length > 30">
-              <v-tooltip :text="item.note">
+              <v-menu v-if="selectedItems.length > 0" location="bottom">
                 <template v-slot:activator="{ props }">
-                  <span v-bind="props">{{ item.note.substring(0, 30) }}...</span>
+                  <v-btn color="primary" variant="outlined" :disabled="loading" v-bind="props">
+                    <v-icon left>mdi-export</v-icon>
+                    {{ $t('common.export') }}
+                    <v-icon right>mdi-chevron-down</v-icon>
+                  </v-btn>
                 </template>
-              </v-tooltip>
-            </span>
-            <span v-else>{{ item.note || '-' }}</span>
+                <v-list>
+                  <v-list-item @click="exportSelected('xlsx')">
+                    <v-list-item-title>Export to Excel</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="exportSelected('pdf')">
+                    <v-list-item-title>Export to PDF</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+
+              <v-btn color="primary" @click="showCreateDialog = true" :disabled="loading">
+                <v-icon left>mdi-plus</v-icon>
+                {{ $t('chargePoints.create') }}
+              </v-btn>
+            </div>
           </div>
-        </template>
 
-        <!-- Created date column -->
-        <template v-slot:item.created_at="{ item }">
-          <span v-if="item.created_at">
-            {{ formatDate(item.created_at) }}
-          </span>
-          <span v-else>-</span>
-        </template>
-
-        <!-- Actions column -->
-        <template v-slot:item.actions="{ item }">
-          <div class="actions-cell">
-            <v-tooltip :text="$t('tooltips.viewDetails')" location="top">
-              <template v-slot:activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  icon
-                  variant="text"
-                  color="info"
-                  size="small"
-                  @click="openDetailDialog(item)"
-                  :aria-label="$t('tooltips.viewDetails')"
-                >
-                  <v-icon>mdi-eye</v-icon>
-                </v-btn>
+          <!-- Kendo Grid -->
+          <div class="grid-container">
+            <Grid
+              ref="gridRef"
+              :style="{ height: '600px' }"
+              :data-items="processedData"
+              :columns="columns"
+              :sortable="true"
+              :groupable="true"
+              :reorderable="true"
+              :pageable="pageableConfig"
+              :filterable="false"
+              :selected-field="'selected'"
+              :detail="detailTemplate"
+              :expand-field="'expanded'"
+              :take="take"
+              :skip="skip"
+              :total="total"
+              :group="group"
+              :sort="sort"
+              :filter="filter"
+              :loader="loading"
+              @datastatechange="onDataStateChange"
+              @expandchange="onExpandChange"
+              @selectionchange="onSelectionChange"
+            >
+              <!-- Select All Checkbox Template -->
+              <template #selectAllTemplate="{ props }">
+                <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" />
               </template>
-            </v-tooltip>
 
-            <v-tooltip :text="$t('tooltips.editItem')" location="top">
-              <template v-slot:activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  icon
-                  variant="text"
-                  color="primary"
-                  size="small"
-                  @click="openEditDialog(item)"
-                  :aria-label="$t('tooltips.editItem')"
-                >
-                  <v-icon>mdi-pencil</v-icon>
-                </v-btn>
+              <!-- Checkbox Template -->
+              <template #checkboxTemplate="{ props }">
+                <input
+                  type="checkbox"
+                  :checked="props.dataItem?.selected || false"
+                  @change="props.dataItem && toggleSelection(props.dataItem)"
+                />
               </template>
-            </v-tooltip>
 
-            <v-tooltip :text="$t('tooltips.deleteItem')" location="top">
-              <template v-slot:activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="tooltipProps"
-                  icon
-                  variant="text"
-                  color="error"
+              <!-- Status Template -->
+              <template #statusTemplate="{ props }">
+                <v-chip
+                  v-if="props.dataItem"
+                  :color="getStatusColor(props.dataItem.status)"
                   size="small"
-                  @click="openDeleteDialog(item)"
-                  :aria-label="$t('tooltips.deleteItem')"
+                  class="status-chip"
                 >
-                  <v-icon>mdi-delete</v-icon>
-                </v-btn>
+                  {{ props.dataItem.status }}
+                </v-chip>
               </template>
-            </v-tooltip>
+
+              <!-- Actions Template -->
+              <template #actionsTemplate="{ props }">
+                <div v-if="props.dataItem" class="actions-cell">
+                  <v-btn
+                    icon="mdi-eye"
+                    size="small"
+                    variant="text"
+                    @click="viewItem(props.dataItem)"
+                  />
+                  <v-btn
+                    icon="mdi-pencil"
+                    size="small"
+                    variant="text"
+                    @click="editItem(props.dataItem)"
+                  />
+                  <v-btn
+                    icon="mdi-delete"
+                    size="small"
+                    variant="text"
+                    color="error"
+                    @click="deleteItem(props.dataItem)"
+                  />
+                </div>
+              </template>
+
+              <!-- Master-Detail Template -->
+              <template #detailTemplate="{ props }">
+                <div v-if="props.dataItem" class="detail-container">
+                  <v-tabs v-model="activeTab" class="detail-tabs">
+                    <v-tab value="connectors">
+                      <v-icon left>mdi-power-plug</v-icon>
+                      {{ $t('connectors.title') }}
+                    </v-tab>
+                    <v-tab value="profiles">
+                      <v-icon left>mdi-chart-line</v-icon>
+                      {{ $t('chargingProfiles.title') }}
+                    </v-tab>
+                  </v-tabs>
+
+                  <v-tabs-window v-model="activeTab">
+                    <v-tabs-window-item value="connectors">
+                      <div class="tab-content">
+                        <h4>
+                          {{ $t('connectors.title') }} for
+                          {{ props.dataItem?.ocpp_charge_box_id || 'Unknown' }}
+                        </h4>
+                        <Grid
+                          :data-items="
+                            props.dataItem?.id ? getConnectorsForChargePoint(props.dataItem.id) : []
+                          "
+                          :columns="connectorColumns"
+                          :sortable="true"
+                          :pageable="{ pageSize: 5 }"
+                          style="margin-top: 16px"
+                        />
+                      </div>
+                    </v-tabs-window-item>
+
+                    <v-tabs-window-item value="profiles">
+                      <div class="tab-content">
+                        <h4>
+                          {{ $t('chargingProfiles.title') }} for
+                          {{ props.dataItem?.ocpp_charge_box_id || 'Unknown' }}
+                        </h4>
+                        <Grid
+                          :data-items="
+                            props.dataItem?.id
+                              ? getChargingProfilesForChargePoint(props.dataItem.id)
+                              : []
+                          "
+                          :columns="chargingProfileColumns"
+                          :sortable="true"
+                          :pageable="{ pageSize: 5 }"
+                          style="margin-top: 16px"
+                        />
+                      </div>
+                    </v-tabs-window-item>
+                  </v-tabs-window>
+                </div>
+              </template>
+            </Grid>
           </div>
-        </template>
-
-        <!-- Expanded row content for hierarchical data -->
-        <template v-slot:expanded-row="{ item }">
-          <tr>
-            <td :colspan="advancedHeaders.length" class="pa-0">
-              <div class="expanded-content-wrapper">
-                <TabbedChildView
-                  :tabs="[
-                    {
-                      key: 'connectors',
-                      title: $t('connectors.title'),
-                      icon: 'mdi-power-plug',
-                      count: getConnectorCount(item)
-                    },
-                    {
-                      key: 'profiles',
-                      title: $t('chargingProfiles.title'),
-                      icon: 'mdi-chart-line',
-                      count: getProfileCount(item)
-                    }
-                  ]"
-                  :loading="isLoading(item)"
-                  :error="getError(item)"
-                  @refresh="() => loadChildren(item)"
-                >
-                  <template #connectors>
-                    <div v-if="getConnectors(item)?.length" class="child-items-container">
-                      <v-row class="ma-0">
-                        <v-col
-                          v-for="connector in getConnectors(item)"
-                          :key="connector.id"
-                          cols="12"
-                          sm="6"
-                          md="4"
-                          class="pa-2"
-                        >
-                          <v-card class="child-item-card" variant="outlined">
-                            <v-card-text class="pa-3">
-                              <div class="d-flex justify-space-between align-center mb-2">
-                                <div class="d-flex align-center">
-                                  <v-icon class="me-2" color="primary" size="small"
-                                    >mdi-power-plug</v-icon
-                                  >
-                                  <span class="text-subtitle-2 font-weight-medium">
-                                    {{ $t('connectors.connector') }} {{ connector.connector_id }}
-                                  </span>
-                                </div>
-                                <v-chip
-                                  :color="getConnectorStatusColor(connector.status)"
-                                  size="x-small"
-                                  variant="tonal"
-                                >
-                                  {{ connector.status }}
-                                </v-chip>
-                              </div>
-                              <div class="child-details">
-                                <div class="detail-item">
-                                  <v-icon size="x-small" class="me-1">mdi-lightning-bolt</v-icon>
-                                  <span class="text-caption">{{ connector.connector_type }}</span>
-                                </div>
-                                <div class="detail-item">
-                                  <v-icon size="x-small" class="me-1">mdi-speedometer</v-icon>
-                                  <span class="text-caption">{{ connector.power_rating }} kW</span>
-                                </div>
-                              </div>
-                            </v-card-text>
-                          </v-card>
-                        </v-col>
-                      </v-row>
-                    </div>
-                    <div v-else class="empty-state text-center pa-6">
-                      <v-icon size="32" color="grey-lighten-1">mdi-power-plug-off</v-icon>
-                      <div class="text-body-2 text-medium-emphasis mt-2">
-                        {{ $t('connectors.noConnectors') }}
-                      </div>
-                    </div>
-                  </template>
-
-                  <template #profiles>
-                    <div v-if="getProfiles(item)?.length" class="child-items-container">
-                      <v-row class="ma-0">
-                        <v-col
-                          v-for="profile in getProfiles(item)"
-                          :key="profile.id"
-                          cols="12"
-                          sm="6"
-                          md="4"
-                          class="pa-2"
-                        >
-                          <v-card class="child-item-card" variant="outlined">
-                            <v-card-text class="pa-3">
-                              <div class="d-flex justify-space-between align-center mb-2">
-                                <div class="d-flex align-center">
-                                  <v-icon class="me-2" color="primary" size="small"
-                                    >mdi-chart-line</v-icon
-                                  >
-                                  <span class="text-subtitle-2 font-weight-medium">
-                                    {{ profile.description || $t('chargingProfiles.untitled') }}
-                                  </span>
-                                </div>
-                                <v-chip
-                                  :color="getPurposeColor(profile.charging_profile_purpose)"
-                                  size="x-small"
-                                  variant="tonal"
-                                >
-                                  {{
-                                    $t(
-                                      `chargingProfiles.purpose${profile.charging_profile_purpose}`
-                                    )
-                                  }}
-                                </v-chip>
-                              </div>
-                              <div class="child-details">
-                                <div class="detail-item">
-                                  <v-icon size="x-small" class="me-1">mdi-layers</v-icon>
-                                  <span class="text-caption">
-                                    {{ $t('chargingProfiles.stackLevel') }}:
-                                    {{ profile.stack_level }}
-                                  </span>
-                                </div>
-                                <div class="detail-item">
-                                  <v-icon size="x-small" class="me-1">mdi-calendar</v-icon>
-                                  <span class="text-caption">{{
-                                    formatDateTime(profile.valid_from)
-                                  }}</span>
-                                </div>
-                              </div>
-                            </v-card-text>
-                          </v-card>
-                        </v-col>
-                      </v-row>
-                    </div>
-                    <div v-else class="empty-state text-center pa-6">
-                      <v-icon size="32" color="grey-lighten-1">mdi-chart-line-variant</v-icon>
-                      <div class="text-body-2 text-medium-emphasis mt-2">
-                        {{ $t('chargingProfiles.noProfiles') }}
-                      </div>
-                    </div>
-                  </template>
-                </TabbedChildView>
-              </div>
-            </td>
-          </tr>
-        </template>
-      </EnhancedDataGrid>
-    </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
 
     <!-- Create/Edit Dialog -->
-    <v-dialog v-model="showFormDialog" max-width="700px" persistent>
-      <ChargePointForm
-        :charge-point="selectedChargePoint"
-        :loading="chargePointsStore.loading"
-        @submit="handleFormSubmit"
-        @cancel="closeFormDialog"
-      />
-    </v-dialog>
-
-    <!-- Charge Point Detail Dialog -->
-    <v-dialog v-model="showDetailDialog" max-width="800px">
-      <v-card class="chargepoint-detail-dialog">
-        <v-card-title class="detail-title">
-          <v-icon color="info" start>mdi-information</v-icon>
-          {{ $t('chargePoints.chargePointDetails') }}
+    <v-dialog v-model="showCreateDialog" max-width="600px">
+      <v-card>
+        <v-card-title>
+          {{ editingItem ? $t('chargePoints.edit') : $t('chargePoints.create') }}
         </v-card-title>
-
         <v-card-text>
-          <v-container v-if="chargePointToView">
-            <v-row>
-              <v-col cols="12" sm="6">
-                <v-list density="compact">
-                  <v-list-item>
-                    <v-list-item-title class="label"
-                      >{{ $t('chargePoints.chargePointId') }}:</v-list-item-title
-                    >
-                    <v-list-item-subtitle class="value">{{
-                      chargePointToView.id || 'N/A'
-                    }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label"
-                      >{{ $t('chargePoints.ocppChargeBoxId') }}:</v-list-item-title
-                    >
-                    <v-list-item-subtitle class="value">{{
-                      chargePointToView.ocpp_charge_box_id
-                    }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label"
-                      >{{ $t('chargePoints.site') }}:</v-list-item-title
-                    >
-                    <v-list-item-subtitle class="value">{{
-                      getSiteName(chargePointToView.site_id)
-                    }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label"
-                      >{{ $t('chargePoints.manufacturer') }}:</v-list-item-title
-                    >
-                    <v-list-item-subtitle class="value">{{
-                      chargePointToView.manufacturer
-                    }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label"
-                      >{{ $t('chargePoints.model') }}:</v-list-item-title
-                    >
-                    <v-list-item-subtitle class="value">{{
-                      chargePointToView.model
-                    }}</v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </v-col>
-
-              <v-col cols="12" sm="6">
-                <v-list density="compact">
-                  <v-list-item>
-                    <v-list-item-title class="label"
-                      >{{ $t('chargePoints.connectorCount') }}:</v-list-item-title
-                    >
-                    <v-list-item-subtitle class="value">{{
-                      chargePointToView.connector_count
-                    }}</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label">{{ $t('common.status') }}:</v-list-item-title>
-                    <v-list-item-subtitle class="value">
-                      <v-chip
-                        :color="getStatusColor(chargePointToView.status)"
-                        size="small"
-                        variant="tonal"
-                      >
-                        {{ $t(`status.${chargePointToView.status?.toLowerCase()}`) }}
-                      </v-chip>
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label">{{ $t('common.created') }}:</v-list-item-title>
-                    <v-list-item-subtitle class="value">
-                      {{
-                        chargePointToView.created_at
-                          ? formatDate(chargePointToView.created_at)
-                          : 'N/A'
-                      }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title class="label">{{ $t('common.updated') }}:</v-list-item-title>
-                    <v-list-item-subtitle class="value">
-                      {{
-                        chargePointToView.updated_at
-                          ? formatDate(chargePointToView.updated_at)
-                          : 'N/A'
-                      }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </v-col>
-            </v-row>
-
-            <v-row v-if="chargePointToView.note">
-              <v-col cols="12">
-                <v-divider class="my-4" />
-                <h4 class="note-title">{{ $t('common.notes') }}:</h4>
-                <p class="note-content">{{ chargePointToView.note }}</p>
-              </v-col>
-            </v-row>
-          </v-container>
+          <ChargePointForm
+            :charge-point="editingItem"
+            @save="onSaveChargePoint"
+            @cancel="onCancelDialog"
+          />
         </v-card-text>
-
-        <v-card-actions class="detail-actions">
-          <v-spacer />
-          <v-btn variant="text" @click="closeDetailDialog">
-            {{ $t('common.close') }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            class="pl-4 pr-4"
-            variant="flat"
-            v-if="chargePointToView"
-            @click="() => {
-              openEditDialog(chargePointToView!)
-              closeDetailDialog()
-            }"
-          >
-            <v-icon start>mdi-pencil</v-icon>
-            {{ $t('chargePoints.editChargePoint') }}
-          </v-btn>
-        </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- Delete Confirmation Dialog -->
-    <v-dialog v-model="showDeleteDialog" max-width="400px">
-      <v-card class="delete-dialog">
-        <v-card-title class="delete-title">
-          <v-icon color="error" start>mdi-delete</v-icon>
-          {{ $t('common.confirmDelete') }}
-        </v-card-title>
-
+    <!-- View Dialog -->
+    <v-dialog v-model="showViewDialog" max-width="600px">
+      <v-card>
+        <v-card-title>{{ $t('chargePoints.view') }}</v-card-title>
         <v-card-text>
-          {{
-            $t('chargePoints.confirmDelete', {
-              id: chargePointToDelete?.ocpp_charge_box_id
-            })
-          }}
+          <div v-if="viewingItem">
+            <v-row>
+              <v-col cols="6">
+                <strong>{{ $t('chargePoints.ocppId') }}:</strong>
+                {{ viewingItem.ocpp_charge_box_id }}
+              </v-col>
+              <v-col cols="6">
+                <strong>{{ $t('chargePoints.status') }}:</strong>
+                <v-chip :color="getStatusColor(viewingItem.status)" size="small">
+                  {{ viewingItem.status }}
+                </v-chip>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="6">
+                <strong>{{ $t('chargePoints.manufacturer') }}:</strong>
+                {{ viewingItem.manufacturer }}
+              </v-col>
+              <v-col cols="6">
+                <strong>{{ $t('chargePoints.model') }}:</strong> {{ viewingItem.model }}
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="6">
+                <strong>{{ $t('chargePoints.connectorCount') }}:</strong>
+                {{ viewingItem.connector_count }}
+              </v-col>
+              <v-col cols="6">
+                <strong>{{ $t('chargePoints.site') }}:</strong>
+                {{ getSiteName(viewingItem.site_id) }}
+              </v-col>
+            </v-row>
+            <v-row v-if="viewingItem.note">
+              <v-col cols="12">
+                <strong>{{ $t('chargePoints.note') }}:</strong> {{ viewingItem.note }}
+              </v-col>
+            </v-row>
+          </div>
         </v-card-text>
-
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="closeDeleteDialog" :disabled="chargePointsStore.loading">
-            {{ $t('common.cancel') }}
-          </v-btn>
-          <v-btn
-            color="error"
-            variant="flat"
-            @click="confirmDelete"
-            :loading="chargePointsStore.loading"
-          >
-            {{ $t('common.delete') }}
-          </v-btn>
+          <v-btn @click="showViewDialog = false">{{ $t('common.close') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Simple Loading -->
+    <v-progress-linear v-if="loading" indeterminate color="primary" />
+
+    <!-- Error Snackbar -->
+    <v-snackbar v-model="errorSnackbar" color="error" timeout="5000">
+      {{ error }}
+      <template v-slot:actions>
+        <v-btn variant="text" @click="errorSnackbar = false">
+          {{ $t('common.close') }}
+        </v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive, watchEffect, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
+import { ref, computed, onMounted, watch } from 'vue'
+import { Grid } from '@progress/kendo-vue-grid'
+import { process } from '@progress/kendo-data-query'
 import { useChargePointsStore } from '@/stores/chargepoints'
-import { useSitesStore } from '@/stores/sites'
-import ChargePointForm from '@/components/ChargePointForm.vue'
-
-import EnhancedDataGrid from '@/components/EnhancedDataGrid.vue'
-import TabbedChildView from '@/components/TabbedChildView.vue'
-import { useHierarchicalData } from '@/composables/useHierarchicalData'
 import { useConnectorsStore } from '@/stores/connectors'
 import { useChargingProfilesStore } from '@/stores/chargingprofiles'
-import type {
-  ChargePoint,
-  CreateChargePointRequest,
-  UpdateChargePointRequest
-} from '@/types/chargepoints'
+import { useSitesStore } from '@/stores/sites'
+import ChargePointForm from '@/components/ChargePointForm.vue'
+import type { ChargePoint } from '@/types/chargepoints'
 import type { Connector } from '@/types/connectors'
 import type { ChargingProfile } from '@/types/chargingprofiles'
+import { saveAs } from 'file-saver'
+import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
+// Stores
 const chargePointsStore = useChargePointsStore()
-const sitesStore = useSitesStore()
 const connectorsStore = useConnectorsStore()
 const chargingProfilesStore = useChargingProfilesStore()
-const { t, locale } = useI18n()
-const { formatDate, formatNumber } = useLocaleFormatting()
+const sitesStore = useSitesStore()
 
-// Reactive state
-const selectedChargePoint = ref<ChargePoint | null>(null)
-const chargePointToDelete = ref<ChargePoint | null>(null)
-const chargePointToView = ref<ChargePoint | null>(null)
-const selectedChargePoints = ref<ChargePoint[]>([])
-const showFormDialog = ref(false)
-const showDeleteDialog = ref(false)
-const showDetailDialog = ref(false)
+// Reactive data
+const gridRef = ref()
+const globalSearch = ref('')
+const selectedItems = ref<ChargePoint[]>([])
+const showCreateDialog = ref(false)
+const showViewDialog = ref(false)
+const editingItem = ref<ChargePoint | null>(null)
+const viewingItem = ref<ChargePoint | null>(null)
+const errorSnackbar = ref(false)
+const activeTab = ref('connectors')
 
-const successMessage = ref('')
-const showSuccessAlert = ref(false)
-
-// Hierarchical data management
-
-// Set up hierarchical data management for connectors
-const {
-  expandedItems,
-  childrenData,
-  loadingStates,
-  errorStates,
-  toggleExpansion,
-  loadChildren,
-  hasChildren,
-  getChildren,
-  isLoading,
-  getError
-} = useHierarchicalData({
-  childDataFetcher: async (chargePoint: ChargePoint) => {
-    console.log('Loading children for charge point:', chargePoint.id)
-
-    // Ensure data is loaded
-    await Promise.all([
-      connectorsStore.connectors.length === 0
-        ? connectorsStore.fetchConnectors()
-        : Promise.resolve(),
-      chargingProfilesStore.chargingProfiles.length === 0
-        ? chargingProfilesStore.fetchChargingProfiles()
-        : Promise.resolve()
-    ])
-
-    // Get connectors and profiles for this charge point
-    const connectors = connectorsStore.getConnectorsByChargePointId(chargePoint.id || 0)
-    const profiles = chargingProfilesStore.getChargingProfilesByChargePointId(chargePoint.id || 0)
-
-    console.log('Found connectors:', connectors.length, 'profiles:', profiles.length)
-
-    return { connectors, profiles }
-  },
-  childDataKey: 'id'
-})
-
-// Table headers
-interface TableHeader {
-  title: string
-  key: string
-  sortable: boolean
-  width?: string
-}
-
-const headers = computed((): TableHeader[] => [
-  { title: t('chargePoints.chargePointId'), key: 'id', sortable: true, width: '80px' },
-  { title: t('chargePoints.ocppChargeBoxId'), key: 'ocpp_charge_box_id', sortable: true },
-  { title: t('chargePoints.site'), key: 'site_id', sortable: true },
-  { title: t('chargePoints.manufacturer'), key: 'manufacturer', sortable: true },
-  { title: t('chargePoints.model'), key: 'model', sortable: true },
-  { title: t('chargePoints.connectors'), key: 'connector_count', sortable: true, width: '120px' },
-  { title: t('common.status'), key: 'status', sortable: true, width: '120px' },
-  { title: t('common.note'), key: 'note', sortable: false },
-  { title: t('common.created'), key: 'created_at', sortable: true },
-  { title: t('common.actions'), key: 'actions', sortable: false, width: '160px' }
-])
-
-// Force reactivity key for translations
-const translationKey = ref(0)
-
-// Watch for locale changes to force header re-computation
-watch(locale, () => {
-  translationKey.value++
-})
-
-// Advanced DataGrid headers configuration - reactive to language changes
-const advancedHeaders = computed(() => {
-  // Access translationKey to force reactivity
-  translationKey.value
-  return [
-    {
-      key: 'id',
-      title: t('chargePoints.chargePointId'),
-      width: 80,
-      sortable: true,
-      type: 'number'
-    },
-    {
-      key: 'ocpp_charge_box_id',
-      title: t('chargePoints.ocppChargeBoxId'),
-      sortable: true,
-      type: 'text'
-    },
-    {
-      key: 'site_id',
-      title: t('chargePoints.site'),
-      sortable: true,
-      type: 'number'
-    },
-    {
-      key: 'manufacturer',
-      title: t('chargePoints.manufacturer'),
-      sortable: true,
-      type: 'text'
-    },
-    {
-      key: 'model',
-      title: t('chargePoints.model'),
-      sortable: true,
-      type: 'text'
-    },
-    {
-      key: 'connector_count',
-      title: t('chargePoints.connectors'),
-      width: 120,
-      sortable: true,
-      type: 'number'
-    },
-    {
-      key: 'status',
-      title: t('common.status'),
-      width: 120,
-      sortable: true,
-      type: 'text'
-    },
-    {
-      key: 'note',
-      title: t('common.note'),
-      sortable: false,
-      type: 'text'
-    },
-    {
-      key: 'created_at',
-      title: t('common.created'),
-      sortable: true,
-      type: 'date'
-    },
-    {
-      key: 'actions',
-      title: t('common.actions'),
-      width: 160,
-      sortable: false,
-      type: 'text',
-      filterable: false
-    }
-  ]
-})
+// Grid state
+const take = ref(10)
+const skip = ref(0)
+const group = ref([])
+const sort = ref([])
+const filter = ref({ logic: 'and' as const, filters: [] })
 
 // Computed properties
-const filteredChargePoints = computed(() => {
-  return chargePointsStore.allChargePoints
+const loading = computed(
+  () =>
+    chargePointsStore.loading ||
+    connectorsStore.loading ||
+    chargingProfilesStore.loading ||
+    sitesStore.loading
+)
+const error = computed(
+  () =>
+    chargePointsStore.error ||
+    connectorsStore.error ||
+    chargingProfilesStore.error ||
+    sitesStore.error
+)
+const chargePoints = computed(() => chargePointsStore.allChargePoints)
+const total = computed(() => chargePoints.value.length)
+const isAllSelected = computed(
+  () => chargePoints.value.length > 0 && selectedItems.value.length === chargePoints.value.length
+)
+
+// Grid configuration
+const pageableConfig = ref({
+  buttonCount: 5,
+  info: true,
+  type: 'numeric',
+  pageSizes: [5, 10, 20, 50],
+  previousNext: true
 })
 
-// Methods (formatDate now provided by useLocaleFormatting composable)
+// Format date helper
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-GB') // dd/mm/yyyy format
+}
 
+// Helper function to get site name
+const getSiteName = (siteId: number): string => {
+  const site = sitesStore.getSiteById(siteId)
+  return site?.name || `Site ${siteId}`
+}
+
+// Helper function to get status color
 const getStatusColor = (status: string): string => {
   switch (status) {
     case 'active':
@@ -658,1091 +369,470 @@ const getStatusColor = (status: string): string => {
     case 'faulty':
       return 'error'
     default:
-      return 'primary'
+      return 'default'
   }
 }
 
-const getSiteName = (siteId: number): string => {
-  const site = sitesStore.getSiteById(siteId)
-  return site?.name || `Site ${siteId}`
-}
+// Main grid columns
+const columns = ref([
+  {
+    field: 'selected',
+    title: '',
+    width: '50px',
+    filterable: false,
+    sortable: false,
+    groupable: false,
+    cell: 'checkboxTemplate',
+    headerCell: 'selectAllTemplate'
+  },
+  {
+    field: 'id',
+    title: 'ID',
+    width: '80px',
+    columnMenu: true
+  },
+  {
+    field: 'ocpp_charge_box_id',
+    title: 'OCPP ID',
+    columnMenu: true
+  },
+  {
+    field: 'site_id',
+    title: 'Site',
+    columnMenu: true,
+  },
+  {
+    field: 'manufacturer',
+    title: 'Manufacturer',
+    columnMenu: true
+  },
+  {
+    field: 'model',
+    title: 'Model',
+    columnMenu: true
+  },
+  {
+    field: 'connector_count',
+    title: 'Connectors',
+    width: '120px',
+    columnMenu: true
+  },
+  {
+    field: 'status',
+    title: 'Status',
+    width: '120px',
+    columnMenu: true,
+    cell: 'statusTemplate'
+  },
+  {
+    field: 'created_at',
+    title: 'Created',
+    columnMenu: true,
+    format: '{0:dd/MM/yyyy}',
+  },
+  {
+    title: 'Actions',
+    width: '150px',
+    filterable: false,
+    sortable: false,
+    groupable: false,
+    cell: 'actionsTemplate'
+  }
+])
 
-const openCreateDialog = (): void => {
-  selectedChargePoint.value = null
-  showFormDialog.value = true
-}
+// Connector columns for master-detail
+const connectorColumns = ref([
+  {
+    field: 'id',
+    title: 'ID',
+    width: '80px'
+  },
+  {
+    field: 'connector_number',
+    title: 'Number',
+    width: '100px'
+  },
+  {
+    field: 'type',
+    title: 'Type'
+  },
+  {
+    field: 'max_power_kw',
+    title: 'Max Power (kW)',
+    width: '140px'
+  },
+  {
+    field: 'status',
+    title: 'Status',
+    width: '120px'
+  }
+])
 
-const openEditDialog = (chargePoint: ChargePoint): void => {
-  selectedChargePoint.value = chargePoint
-  showFormDialog.value = true
-}
+// Charging profile columns for master-detail
+const chargingProfileColumns = ref([
+  {
+    field: 'id',
+    title: 'ID',
+    width: '80px'
+  },
+  {
+    field: 'stack_level',
+    title: 'Stack Level',
+    width: '120px'
+  },
+  {
+    field: 'charging_profile_purpose',
+    title: 'Purpose'
+  },
+  {
+    field: 'charging_profile_kind',
+    title: 'Kind'
+  },
+  {
+    field: 'valid_from',
+    title: 'Valid From',
+    format: '{0:dd/MM/yyyy}'
+  },
+  {
+    field: 'valid_to',
+    title: 'Valid To',
+    format: '{0:dd/MM/yyyy}'
+  }
+])
 
-const closeFormDialog = (): void => {
-  selectedChargePoint.value = null
-  showFormDialog.value = false
-}
+// Process data for grid
+const processedData = computed(() => {
+  let data = chargePoints.value
+    .filter((chargePoint) => chargePoint && typeof chargePoint === 'object')
+    .map((chargePoint) => ({
+      ...chargePoint,
+      selected: selectedItems.value.some((item) => item.id === chargePoint.id),
+      // Ensure all required fields exist
+      created_at: chargePoint.created_at || '',
+      updated_at: chargePoint.updated_at || '',
+      note: chargePoint.note || ''
+    }))
 
-const openDetailDialog = (chargePoint: ChargePoint): void => {
-  chargePointToView.value = chargePoint
-  showDetailDialog.value = true
-}
-
-const closeDetailDialog = (): void => {
-  chargePointToView.value = null
-  showDetailDialog.value = false
-}
-
-const openDeleteDialog = (chargePoint: ChargePoint): void => {
-  chargePointToDelete.value = chargePoint
-  showDeleteDialog.value = true
-}
-
-const closeDeleteDialog = (): void => {
-  chargePointToDelete.value = null
-  showDeleteDialog.value = false
-}
-
-const handleFormSubmit = async (
-  data: CreateChargePointRequest | UpdateChargePointRequest
-): Promise<void> => {
-  let success = false
-  const isEdit = 'id' in data
-
-  try {
-    if (isEdit) {
-      // Update existing charge point
-      success = await chargePointsStore.updateChargePoint(data as UpdateChargePointRequest)
-      if (success) {
-        closeFormDialog()
-        showSuccessMessage(t('chargePoints.updated', { id: data.ocpp_charge_box_id }))
-      }
-    } else {
-      // Create new charge point
-      success = await chargePointsStore.createChargePoint(data as CreateChargePointRequest)
-      if (success) {
-        closeFormDialog()
-        showSuccessMessage(t('chargePoints.created', { id: data.ocpp_charge_box_id }))
-      }
-    }
-  } catch (error) {
-    console.error('Form submit error:', error)
-    showErrorMessage(
-      t(isEdit ? 'messages.updateError' : 'messages.createError', {
-        item: t('chargePoints.chargePoint')
-      })
+  // Apply global search
+  if (globalSearch.value) {
+    const searchTerm = globalSearch.value.toLowerCase()
+    data = data.filter(
+      (chargePoint) =>
+        chargePoint.ocpp_charge_box_id?.toLowerCase().includes(searchTerm) ||
+        chargePoint.manufacturer?.toLowerCase().includes(searchTerm) ||
+        chargePoint.model?.toLowerCase().includes(searchTerm) ||
+        chargePoint.status?.toLowerCase().includes(searchTerm) ||
+        getSiteName(chargePoint.site_id).toLowerCase().includes(searchTerm)
     )
   }
-}
 
-const confirmDelete = async (): Promise<void> => {
-  if (!chargePointToDelete.value?.id) return
-
-  try {
-    const chargePointName = chargePointToDelete.value.ocpp_charge_box_id
-    const success = await chargePointsStore.deleteChargePoint(chargePointToDelete.value.id)
-
-    if (success) {
-      closeDeleteDialog()
-      showSuccessMessage(t('chargePoints.deleted', { id: chargePointName }))
-    }
-  } catch (error) {
-    console.error('Delete error:', error)
-    showErrorMessage(t('messages.deleteError', { item: t('chargePoints.chargePoint') }))
-  }
-}
-
-// Export functions
-const exportToPDF = async (): Promise<void> => {
-  try {
-    const { jsPDF } = await import('jspdf')
-
-    const exportData = filteredChargePoints.value.map((cp) => ({
-      ID: cp.id || '-',
-      'OCPP ID': cp.ocpp_charge_box_id,
-      Site: getSiteName(cp.site_id),
-      Manufacturer: cp.manufacturer,
-      Model: cp.model,
-      Connectors: cp.connector_count,
-      Status: t(`status.${cp.status?.toLowerCase()}`),
-      Note: cp.note || '-',
-      Created: cp.created_at ? formatDate(cp.created_at) : '-'
-    }))
-
-    const pdf = new jsPDF('l', 'mm', 'a4')
-
-    // Add title
-    pdf.setFontSize(16)
-    pdf.text('Charge Points Export Report', 20, 20)
-
-    pdf.setFontSize(10)
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 30)
-    pdf.text(`Total Charge Points: ${exportData.length}`, 20, 35)
-
-    // Create table content
-    let yPos = 50
-    const rowHeight = 8
-    const colWidths = [15, 25, 25, 20, 20, 12, 15, 25, 20]
-    const headers = [
-      t('export.headers.id'),
-      t('export.headers.ocppId'),
-      t('export.headers.site'),
-      t('export.headers.manufacturer'),
-      t('export.headers.model'),
-      t('export.headers.connectors'),
-      t('export.headers.status'),
-      t('export.headers.note'),
-      t('export.headers.created')
-    ]
-
-    // Draw headers
-    pdf.setFontSize(9)
-    pdf.setFont(undefined, 'bold')
-    let xPos = 20
-    headers.forEach((header, index) => {
-      pdf.text(header, xPos, yPos)
-      xPos += colWidths[index]
-    })
-
-    yPos += rowHeight
-    pdf.setFont(undefined, 'normal')
-
-    // Draw data rows
-    exportData.forEach((row) => {
-      if (yPos > 180) {
-        pdf.addPage()
-        yPos = 20
-      }
-
-      xPos = 20
-      Object.values(row).forEach((value, index) => {
-        const text = String(value).substring(0, 20)
-        pdf.text(text, xPos, yPos)
-        xPos += colWidths[index]
-      })
-
-      yPos += rowHeight
-    })
-
-    const filename = `chargepoints_export_${new Date().toISOString().split('T')[0]}.pdf`
-    pdf.save(filename)
-  } catch (error) {
-    console.error('PDF export error:', error)
-    showErrorMessage(t('messages.exportPdfError'))
-  }
-}
-
-const exportToExcel = async (): Promise<void> => {
-  try {
-    const XLSX = await import('xlsx')
-
-    const exportData = filteredChargePoints.value.map((cp) => ({
-      'Charge Point ID': cp.id || '',
-      'OCPP Charge Box ID': cp.ocpp_charge_box_id,
-      Site: getSiteName(cp.site_id),
-      Manufacturer: cp.manufacturer,
-      Model: cp.model,
-      'Connector Count': cp.connector_count,
-      Status: t(`status.${cp.status?.toLowerCase()}`),
-      Note: cp.note || '',
-      'Created Date': cp.created_at ? formatDate(cp.created_at) : ''
-    }))
-
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    const wb = XLSX.utils.book_new()
-
-    const colWidths = [
-      { wch: 15 },
-      { wch: 25 },
-      { wch: 20 },
-      { wch: 15 },
-      { wch: 20 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 30 },
-      { wch: 15 }
-    ]
-    ws['!cols'] = colWidths
-
-    XLSX.utils.book_append_sheet(wb, ws, 'ChargePoints')
-
-    wb.Props = {
-      Title: 'Charge Points Export',
-      Subject: 'OCPP Charge Points Data',
-      Author: 'OCPP Frontend',
-      CreatedDate: new Date()
-    }
-
-    const filename = `chargepoints_export_${new Date().toISOString().split('T')[0]}.xlsx`
-    XLSX.writeFile(wb, filename)
-  } catch (error) {
-    console.error('Excel export error:', error)
-    showErrorMessage(t('messages.exportExcelError'))
-  }
-}
-
-const exportToCSV = async (): Promise<void> => {
-  try {
-    const headers = [
-      t('export.headers.chargePointId'),
-      t('export.headers.ocppChargeBoxId'),
-      t('export.headers.site'),
-      t('export.headers.manufacturer'),
-      t('export.headers.model'),
-      t('export.headers.connectorCount'),
-      t('export.headers.status'),
-      t('export.headers.note'),
-      t('export.headers.createdDate')
-    ]
-    const csvRows = []
-
-    csvRows.push(headers.join(','))
-
-    filteredChargePoints.value.forEach((cp) => {
-      const statusTranslated = t('status.' + cp.status?.toLowerCase())
-      const row = [
-        `"${cp.id || ''}"`,
-        `"${cp.ocpp_charge_box_id.replace(/"/g, '""')}"`,
-        `"${getSiteName(cp.site_id).replace(/"/g, '""')}"`,
-        `"${cp.manufacturer.replace(/"/g, '""')}"`,
-        `"${cp.model.replace(/"/g, '""')}"`,
-        `"${cp.connector_count}"`,
-        `"${statusTranslated}"`,
-        `"${(cp.note || '').replace(/"/g, '""')}"`,
-        `"${cp.created_at ? formatDate(cp.created_at) : ''}"`
-      ]
-      csvRows.push(row.join(','))
-    })
-
-    const csvContent = csvRows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const FileSaver = await import('file-saver')
-
-    const filename = `chargepoints_export_${new Date().toISOString().split('T')[0]}.csv`
-    FileSaver.saveAs(blob, filename)
-  } catch (error) {
-    console.error('CSV export error:', error)
-    showErrorMessage(t('messages.exportCsvError'))
-  }
-}
-
-// Notification methods
-const showSuccessMessage = (message: string): void => {
-  successMessage.value = message
-  showSuccessAlert.value = true
-  setTimeout(() => {
-    hideSuccessMessage()
-  }, 5000)
-}
-
-const hideSuccessMessage = (): void => {
-  showSuccessAlert.value = false
-  successMessage.value = ''
-}
-
-const showErrorMessage = (message: string): void => {
-  chargePointsStore.error = message
-}
-
-// Export methods for selected charge points
-const exportSelectedToPDF = async (selectedChargePoints: ChargePoint[]): Promise<void> => {
-  try {
-    const { jsPDF } = await import('jspdf')
-
-    const exportData = selectedChargePoints.map((cp) => ({
-      'CP ID': cp.id || '-',
-      'OCPP ID': cp.ocpp_charge_box_id,
-      Site: getSiteName(cp.site_id),
-      Manufacturer: cp.manufacturer,
-      Model: cp.model,
-      Connectors: cp.connector_count,
-      Status: t(`status.${cp.status?.toLowerCase()}`),
-      Note: cp.note || '-',
-      Created: cp.created_at ? formatDate(cp.created_at) : '-'
-    }))
-
-    const pdf = new jsPDF('l', 'mm', 'a4')
-
-    pdf.setFontSize(16)
-    pdf.text('Selected Charge Points Export Report', 20, 20)
-
-    pdf.setFontSize(10)
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 30)
-    pdf.text(`Selected Charge Points: ${exportData.length}`, 20, 35)
-
-    let yPos = 50
-    const rowHeight = 8
-    const colWidths = [15, 25, 25, 20, 20, 12, 15, 25, 20]
-    const headers = [
-      t('export.headers.id'),
-      t('export.headers.ocppId'),
-      t('export.headers.site'),
-      t('export.headers.manufacturer'),
-      t('export.headers.model'),
-      t('export.headers.connectors'),
-      t('export.headers.status'),
-      t('export.headers.note'),
-      t('export.headers.created')
-    ]
-
-    pdf.setFontSize(8)
-    pdf.setFont(undefined, 'bold')
-    let xPos = 10
-    headers.forEach((header, index) => {
-      pdf.text(header, xPos, yPos)
-      xPos += colWidths[index]
-    })
-
-    yPos += rowHeight
-    pdf.setFont(undefined, 'normal')
-
-    exportData.forEach((row) => {
-      if (yPos > 180) {
-        pdf.addPage()
-        yPos = 20
-      }
-
-      xPos = 10
-      Object.values(row).forEach((value, index) => {
-        const text = String(value).substring(0, 20)
-        pdf.text(text, xPos, yPos)
-        xPos += colWidths[index]
-      })
-
-      yPos += rowHeight
-    })
-
-    const filename = `selected_chargepoints_export_${new Date().toISOString().split('T')[0]}.pdf`
-    pdf.save(filename)
-  } catch (error) {
-    console.error('PDF export error:', error)
-    showErrorMessage(t('messages.exportPdfError'))
-  }
-}
-
-const exportSelectedToExcel = async (selectedChargePoints: ChargePoint[]): Promise<void> => {
-  try {
-    const XLSX = await import('xlsx')
-
-    const exportData = selectedChargePoints.map((cp) => ({
-      'Charge Point ID': cp.id || '',
-      'OCPP Charge Box ID': cp.ocpp_charge_box_id,
-      Site: getSiteName(cp.site_id),
-      Manufacturer: cp.manufacturer,
-      Model: cp.model,
-      'Connector Count': cp.connector_count,
-      Status: t(`status.${cp.status?.toLowerCase()}`),
-      Note: cp.note || '',
-      'Created Date': cp.created_at ? formatDate(cp.created_at) : ''
-    }))
-
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    const wb = XLSX.utils.book_new()
-
-    const colWidths = [
-      { wch: 12 },
-      { wch: 20 },
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 30 },
-      { wch: 15 }
-    ]
-    ws['!cols'] = colWidths
-
-    XLSX.utils.book_append_sheet(wb, ws, 'Selected Charge Points')
-
-    wb.Props = {
-      Title: 'Selected Charge Points Export',
-      Subject: 'OCPP Selected Charge Points Data',
-      Author: 'OCPP Frontend',
-      CreatedDate: new Date()
-    }
-
-    const filename = `selected_chargepoints_export_${new Date().toISOString().split('T')[0]}.xlsx`
-    XLSX.writeFile(wb, filename)
-  } catch (error) {
-    console.error('Excel export error:', error)
-    showErrorMessage(t('messages.exportExcelError'))
-  }
-}
-
-const exportSelectedToCSV = async (selectedChargePoints: ChargePoint[]): Promise<void> => {
-  try {
-    const headers = [
-      t('export.headers.chargePointId'),
-      t('export.headers.ocppChargeBoxId'),
-      t('export.headers.site'),
-      t('export.headers.manufacturer'),
-      t('export.headers.model'),
-      t('export.headers.connectorCount'),
-      t('export.headers.status'),
-      t('export.headers.note'),
-      t('export.headers.createdDate')
-    ]
-    const csvRows = []
-
-    csvRows.push(headers.join(','))
-
-    selectedChargePoints.forEach((cp) => {
-      const row = [
-        `"${cp.id || ''}"`,
-        `"${cp.ocpp_charge_box_id.replace(/"/g, '""')}"`,
-        `"${getSiteName(cp.site_id).replace(/"/g, '""')}"`,
-        `"${cp.manufacturer.replace(/"/g, '""')}"`,
-        `"${cp.model.replace(/"/g, '""')}"`,
-        `"${cp.connector_count}"`,
-        `"${t(`status.${cp.status?.toLowerCase()}`)}"`,
-        `"${(cp.note || '').replace(/"/g, '""')}"`,
-        `"${cp.created_at ? formatDate(cp.created_at) : ''}"`
-      ]
-      csvRows.push(row.join(','))
-    })
-
-    const csvContent = csvRows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const FileSaver = await import('file-saver')
-
-    const filename = `selected_chargepoints_export_${new Date().toISOString().split('T')[0]}.csv`
-    FileSaver.saveAs(blob, filename)
-  } catch (error) {
-    console.error('CSV export error:', error)
-    showErrorMessage(t('messages.exportCsvError'))
-  }
-}
-
-// Advanced DataGrid event handlers
-const handleFilteredExport = (format: string, items: ChargePoint[]) => {
-  switch (format) {
-    case 'pdf':
-      exportFilteredToPDF(items)
-      break
-    case 'excel':
-      exportFilteredToExcel(items)
-      break
-    case 'csv':
-      exportFilteredToCSV(items)
-      break
-  }
-}
-
-const handleDeleteSelected = async (items: ChargePoint[]) => {
-  if (items.length === 0) return
-
-  try {
-    let successCount = 0
-    let failedCount = 0
-    const failedItems: string[] = []
-
-    for (const chargePoint of items) {
-      try {
-        if (chargePoint.id) {
-          const success = await chargePointsStore.deleteChargePoint(chargePoint.id)
-          if (success) {
-            successCount++
-          } else {
-            failedCount++
-            failedItems.push(chargePoint.ocpp_charge_box_id)
-          }
-        } else {
-          failedCount++
-          failedItems.push(chargePoint.ocpp_charge_box_id)
-        }
-      } catch (error) {
-        console.error(`Failed to delete charge point ${chargePoint.ocpp_charge_box_id}:`, error)
-        failedCount++
-        failedItems.push(chargePoint.ocpp_charge_box_id)
-      }
-    }
-
-    // Show result message
-    if (failedCount === 0) {
-      showSuccessMessage(t('messages.batchDeleteSuccess', { count: successCount }))
-    } else if (successCount > 0) {
-      showSuccessMessage(
-        t('messages.batchDeletePartialSuccess', {
-          success: successCount,
-          failed: failedCount,
-          failedItems: failedItems.join(', ')
-        })
-      )
-    } else {
-      showErrorMessage(
-        t('messages.batchDeleteAllFailed', {
-          failed: failedCount,
-          failedItems: failedItems.join(', ')
-        })
-      )
-    }
-  } catch (error) {
-    console.error('Batch delete error:', error)
-    showErrorMessage(t('messages.batchDeleteFailed'))
-  }
-}
-
-// Selection event handlers
-const handleSelectionChange = (newSelection: ChargePoint[]) => {
-  console.log(`Selection changed: ${newSelection.length} items selected`)
-}
-
-const handleExportSelected = (format: 'pdf' | 'excel' | 'csv', items: ChargePoint[]) => {
-  console.log(`Exporting ${items.length} selected charge points to ${format}`)
-
-  switch (format) {
-    case 'pdf':
-      exportSelectedToPDF(items)
-      break
-    case 'excel':
-      exportSelectedToExcel(items)
-      break
-    case 'csv':
-      exportSelectedToCSV(items)
-      break
-  }
-}
-
-const handleRowClick = (item: ChargePoint) => {
-  console.log('Row clicked:', item)
-  // openDetailDialog(item)
-}
-
-// Export methods for filtered charge points
-const exportFilteredToPDF = async (filteredChargePoints: ChargePoint[]): Promise<void> => {
-  try {
-    const { jsPDF } = await import('jspdf')
-
-    const exportData = filteredChargePoints.map((cp) => ({
-      'CP ID': cp.id || '-',
-      'OCPP ID': cp.ocpp_charge_box_id,
-      Site: getSiteName(cp.site_id),
-      Manufacturer: cp.manufacturer,
-      Model: cp.model,
-      Connectors: cp.connector_count,
-      Status: t(`status.${cp.status?.toLowerCase()}`),
-      Note: cp.note || '-',
-      Created: cp.created_at ? formatDate(cp.created_at) : '-'
-    }))
-
-    const pdf = new jsPDF('l', 'mm', 'a4')
-
-    pdf.setFontSize(16)
-    pdf.text('Filtered Charge Points Export Report', 20, 20)
-
-    pdf.setFontSize(10)
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 30)
-    pdf.text(`Filtered Charge Points: ${exportData.length}`, 20, 35)
-
-    let yPos = 50
-    const rowHeight = 8
-    const colWidths = [15, 25, 25, 20, 20, 12, 15, 25, 20]
-    const headers = [
-      t('export.headers.id'),
-      t('export.headers.ocppId'),
-      t('export.headers.site'),
-      t('export.headers.manufacturer'),
-      t('export.headers.model'),
-      t('export.headers.connectors'),
-      t('export.headers.status'),
-      t('export.headers.note'),
-      t('export.headers.created')
-    ]
-
-    pdf.setFontSize(8)
-    pdf.setFont(undefined, 'bold')
-    let xPos = 10
-    headers.forEach((header, index) => {
-      pdf.text(header, xPos, yPos)
-      xPos += colWidths[index]
-    })
-
-    yPos += rowHeight
-    pdf.setFont(undefined, 'normal')
-
-    exportData.forEach((row) => {
-      if (yPos > 180) {
-        pdf.addPage()
-        yPos = 20
-      }
-
-      xPos = 10
-      Object.values(row).forEach((value, index) => {
-        const text = String(value).substring(0, 20)
-        pdf.text(text, xPos, yPos)
-        xPos += colWidths[index]
-      })
-
-      yPos += rowHeight
-    })
-
-    const filename = `filtered_chargepoints_export_${new Date().toISOString().split('T')[0]}.pdf`
-    pdf.save(filename)
-  } catch (error) {
-    console.error('PDF export error:', error)
-    showErrorMessage(t('messages.exportPdfError'))
-  }
-}
-
-const exportFilteredToExcel = async (filteredChargePoints: ChargePoint[]): Promise<void> => {
-  try {
-    const XLSX = await import('xlsx')
-
-    const exportData = filteredChargePoints.map((cp) => ({
-      'Charge Point ID': cp.id || '',
-      'OCPP Charge Box ID': cp.ocpp_charge_box_id,
-      Site: getSiteName(cp.site_id),
-      Manufacturer: cp.manufacturer,
-      Model: cp.model,
-      'Connector Count': cp.connector_count,
-      Status: t(`status.${cp.status?.toLowerCase()}`),
-      Note: cp.note || '',
-      'Created Date': cp.created_at ? formatDate(cp.created_at) : ''
-    }))
-
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    const wb = XLSX.utils.book_new()
-
-    const colWidths = [
-      { wch: 12 },
-      { wch: 20 },
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 30 },
-      { wch: 15 }
-    ]
-    ws['!cols'] = colWidths
-
-    XLSX.utils.book_append_sheet(wb, ws, 'Filtered Charge Points')
-
-    wb.Props = {
-      Title: 'Filtered Charge Points Export',
-      Subject: 'OCPP Filtered Charge Points Data',
-      Author: 'OCPP Frontend',
-      CreatedDate: new Date()
-    }
-
-    const filename = `filtered_chargepoints_export_${new Date().toISOString().split('T')[0]}.xlsx`
-    XLSX.writeFile(wb, filename)
-  } catch (error) {
-    console.error('Excel export error:', error)
-    showErrorMessage(t('messages.exportExcelError'))
-  }
-}
-
-const exportFilteredToCSV = async (filteredChargePoints: ChargePoint[]): Promise<void> => {
-  try {
-    const headers = [
-      t('export.headers.chargePointId'),
-      t('export.headers.ocppChargeBoxId'),
-      t('export.headers.site'),
-      t('export.headers.manufacturer'),
-      t('export.headers.model'),
-      t('export.headers.connectorCount'),
-      t('export.headers.status'),
-      t('export.headers.note'),
-      t('export.headers.createdDate')
-    ]
-    const csvRows = []
-
-    csvRows.push(headers.join(','))
-
-    filteredChargePoints.forEach((cp) => {
-      const row = [
-        `"${cp.id || ''}"`,
-        `"${cp.ocpp_charge_box_id.replace(/"/g, '""')}"`,
-        `"${getSiteName(cp.site_id).replace(/"/g, '""')}"`,
-        `"${cp.manufacturer.replace(/"/g, '""')}"`,
-        `"${cp.model.replace(/"/g, '""')}"`,
-        `"${cp.connector_count}"`,
-        `"${t(`status.${cp.status?.toLowerCase()}`)}"`,
-        `"${(cp.note || '').replace(/"/g, '""')}"`,
-        `"${cp.created_at ? formatDate(cp.created_at) : ''}"`
-      ]
-      csvRows.push(row.join(','))
-    })
-
-    const csvContent = csvRows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' })
-    const FileSaver = await import('file-saver')
-
-    const filename = `filtered_chargepoints_export_${new Date().toISOString().split('T')[0]}.csv`
-    FileSaver.saveAs(blob, filename)
-  } catch (error) {
-    console.error('CSV export error:', error)
-    showErrorMessage(t('messages.exportCsvError'))
-  }
-}
-
-// Data retrieval methods for hierarchical view
-const getConnectors = (chargePoint: ChargePoint) => {
-  return getChildren(chargePoint)?.connectors || []
-}
-
-const getProfiles = (chargePoint: ChargePoint) => {
-  return getChildren(chargePoint)?.profiles || []
-}
-
-const getConnectorCount = (chargePoint: ChargePoint) => {
-  return getConnectors(chargePoint).length
-}
-
-const getProfileCount = (chargePoint: ChargePoint) => {
-  return getProfiles(chargePoint).length
-}
-
-// Additional helper methods
-const getConnectorStatusColor = (status: string): string => {
-  switch (status) {
-    case 'Available':
-      return 'success'
-    case 'Preparing':
-      return 'warning'
-    case 'Charging':
-      return 'info'
-    case 'Finishing':
-      return 'warning'
-    case 'Faulted':
-      return 'error'
-    default:
-      return 'grey'
-  }
-}
-
-const getPurposeColor = (purpose: string): string => {
-  switch (purpose) {
-    case 'TxDefault':
-      return 'primary'
-    case 'TxProfile':
-      return 'success'
-    case 'TxMaxProfile':
-      return 'warning'
-    default:
-      return 'grey'
-  }
-}
-
-const formatDateTime = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  // Process with Kendo data query
+  const result = process(data, {
+    take: take.value,
+    skip: skip.value,
+    group: group.value,
+    sort: sort.value,
+    filter: filter.value
   })
+
+  return result
+})
+
+// Methods
+const onDataStateChange = (event: any) => {
+  if (!event?.data) return
+
+  take.value = event.data.take || 10
+  skip.value = event.data.skip || 0
+  group.value = event.data.group || []
+  sort.value = event.data.sort || []
+  filter.value = event.data.filter || { logic: 'and' as const, filters: [] }
 }
+
+const onExpandChange = (event: any) => {
+  const item = event.dataItem
+  if (item) {
+    item.expanded = event.value
+  }
+}
+
+// Detail template function
+const detailTemplate = (props: any) => {
+  return 'detailTemplate'
+}
+
+const onSelectionChange = (event: any) => {
+  // Handle selection changes from Kendo Grid
+}
+
+const toggleSelection = (item: ChargePoint) => {
+  const index = selectedItems.value.findIndex((selected) => selected.id === item.id)
+
+  if (index >= 0) {
+    selectedItems.value.splice(index, 1)
+  } else {
+    selectedItems.value.push(item)
+  }
+}
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedItems.value = []
+  } else {
+    selectedItems.value = [...chargePoints.value]
+  }
+}
+
+const onGlobalSearchChange = () => {
+  // Trigger grid refresh
+  skip.value = 0
+}
+
+const getConnectorsForChargePoint = (chargePointId: number): Connector[] => {
+  return connectorsStore.getConnectorsByChargePointId(chargePointId)
+}
+
+const getChargingProfilesForChargePoint = (chargePointId: number): ChargingProfile[] => {
+  return chargingProfilesStore.getChargingProfilesByChargePointId(chargePointId)
+}
+
+const viewItem = (item: ChargePoint) => {
+  viewingItem.value = item
+  showViewDialog.value = true
+}
+
+const editItem = (item: ChargePoint) => {
+  editingItem.value = { ...item }
+  showCreateDialog.value = true
+}
+
+const deleteItem = async (item: ChargePoint) => {
+  if (item.id && confirm(`Delete charge point "${item.ocpp_charge_box_id}"?`)) {
+    await chargePointsStore.deleteChargePoint(item.id)
+  }
+}
+
+const deleteSelected = async () => {
+  if (selectedItems.value.length === 0) return
+
+  if (confirm(`Delete ${selectedItems.value.length} selected items?`)) {
+    for (const item of selectedItems.value) {
+      if (item.id) {
+        await chargePointsStore.deleteChargePoint(item.id)
+      }
+    }
+    selectedItems.value = []
+  }
+}
+
+const exportSelected = (format: 'xlsx' | 'pdf') => {
+  const dataToExport = selectedItems.value.length > 0 ? selectedItems.value : chargePoints.value
+
+  if (format === 'xlsx') {
+    const worksheet = XLSX.utils.json_to_sheet(
+      dataToExport.map((cp) => ({
+        ID: cp.id,
+        'OCPP ID': cp.ocpp_charge_box_id,
+        Site: getSiteName(cp.site_id),
+        Manufacturer: cp.manufacturer,
+        Model: cp.model,
+        'Connector Count': cp.connector_count,
+        Status: cp.status,
+        Note: cp.note || '',
+        Created: formatDate(cp.created_at)
+      }))
+    )
+
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'ChargePoints')
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+
+    saveAs(blob, `chargepoints-export-${new Date().toISOString().split('T')[0]}.xlsx`)
+  } else if (format === 'pdf') {
+    const doc = new jsPDF()
+
+    const tableData = dataToExport.map((cp) => [
+      cp.id?.toString() || '',
+      cp.ocpp_charge_box_id || '',
+      getSiteName(cp.site_id),
+      cp.manufacturer || '',
+      cp.model || '',
+      cp.status || '',
+      formatDate(cp.created_at)
+    ])
+
+    autoTable(doc, {
+      head: [['ID', 'OCPP ID', 'Site', 'Manufacturer', 'Model', 'Status', 'Created']],
+      body: tableData,
+      margin: { top: 20 },
+      styles: { fontSize: 8 }
+    })
+
+    doc.save(`chargepoints-export-${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+}
+
+const onSaveChargePoint = async (chargePointData: any) => {
+  let success = false
+
+  if (editingItem.value && editingItem.value.id) {
+    // Update existing charge point
+    success = await chargePointsStore.updateChargePoint({
+      ...chargePointData,
+      id: editingItem.value.id
+    })
+  } else {
+    // Create new charge point
+    success = await chargePointsStore.createChargePoint(chargePointData)
+  }
+
+  if (success) {
+    onCancelDialog()
+  }
+}
+
+const onCancelDialog = () => {
+  showCreateDialog.value = false
+  editingItem.value = null
+}
+
+// Watch for errors
+watch(error, (newError) => {
+  if (newError) {
+    errorSnackbar.value = true
+  }
+})
 
 // Lifecycle
 onMounted(async () => {
-  try {
-    // Load charge points, sites, connectors, and profiles
-    await Promise.all([
-      chargePointsStore.fetchChargePoints(),
-      sitesStore.sites.length === 0 ? sitesStore.fetchSites() : Promise.resolve(),
-      connectorsStore.connectors.length === 0
-        ? connectorsStore.fetchConnectors()
-        : Promise.resolve(),
-      chargingProfilesStore.chargingProfiles.length === 0
-        ? chargingProfilesStore.fetchChargingProfiles()
-        : Promise.resolve()
-    ])
-    console.log(
-      'Initial data loaded - Charge Points:',
-      chargePointsStore.chargePoints.length,
-      'Connectors:',
-      connectorsStore.connectors.length,
-      'Profiles:',
-      chargingProfilesStore.chargingProfiles.length
-    )
-  } catch (error) {
-    console.error('Failed to load data:', error)
-    showErrorMessage(t('messages.loadError', { item: t('chargePoints.title') }))
-  }
+  await Promise.all([
+    chargePointsStore.fetchChargePoints(),
+    connectorsStore.fetchConnectors(),
+    chargingProfilesStore.fetchChargingProfiles(),
+    sitesStore.fetchSites()
+  ])
 })
 </script>
 
 <style scoped>
-.chargepoints-container {
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+.charge-points-view {
+  padding: 20px;
 }
 
 .page-title {
-  font-size: 2rem;
-  font-weight: 600;
-  color: rgb(var(--v-theme-on-background));
+  margin-bottom: 20px;
 }
 
-.header-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.filters-card {
-  margin-bottom: 24px;
-}
-
-.success-alert {
-  margin-bottom: 24px;
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 400px;
-  z-index: 10000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.error-alert {
-  margin-bottom: 24px;
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 400px;
-  z-index: 10000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.data-grid-card {
-  background: rgb(var(--v-theme-surface));
-}
-
-.chargepoints-table {
-  background: transparent;
-}
-
-.site-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.site-icon {
-  color: rgb(var(--v-theme-primary));
-}
-
-.note-cell {
-  max-width: 200px;
-}
-
-.actions-cell {
-  display: flex;
-  gap: 4px;
-}
-
-.table-footer {
+.grid-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  border-top: 1px solid rgb(var(--v-theme-outline));
+  margin-bottom: 20px;
+  gap: 16px;
 }
 
-.selection-info {
-  font-size: 0.875rem;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.delete-dialog .delete-title {
-  color: rgb(var(--v-theme-error));
-  font-weight: 600;
-}
-
-.chargepoint-detail-dialog .detail-title {
-  color: rgb(var(--v-theme-info));
-  font-weight: 600;
-  padding: 20px 24px 16px;
-}
-
-.chargepoint-detail-dialog .label {
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.chargepoint-detail-dialog .value {
-  font-size: 1rem;
-  color: rgb(var(--v-theme-on-surface));
-  margin-top: 4px;
-}
-
-.chargepoint-detail-dialog .note-title {
-  color: rgb(var(--v-theme-on-surface));
-  margin-bottom: 8px;
-}
-
-.chargepoint-detail-dialog .note-content {
-  color: rgb(var(--v-theme-on-surface));
-  line-height: 1.5;
-  margin: 0;
-}
-
-.chargepoint-detail-dialog .detail-actions {
-  padding: 16px 24px 24px;
-}
-
-.export-actions {
-  width: 100%;
-}
-
-/* Hierarchical Data Table Styles */
-.hierarchical-data-table {
-  background: transparent;
-}
-
-.hierarchical-table {
-  background: transparent;
-}
-
-.hierarchical-table :deep(.v-data-table__wrapper) {
-  background: rgb(var(--v-theme-surface));
-  border-radius: 8px;
-}
-
-.hierarchical-table :deep(.v-data-table-header) {
-  background: rgb(var(--v-theme-surface-variant));
-}
-
-.hierarchical-table :deep(.v-data-table-header th) {
-  background: rgb(var(--v-theme-surface-variant));
-  color: rgb(var(--v-theme-on-surface-variant));
-  font-weight: 600;
-  border-bottom: 1px solid rgb(var(--v-theme-outline));
-}
-
-.hierarchical-table :deep(.v-data-table__tr:hover) {
-  background: rgb(var(--v-theme-surface-bright)) !important;
-}
-
-.expanded-row {
-  background: rgb(var(--v-theme-surface-container)) !important;
-}
-
-.expanded-content {
-  background: rgb(var(--v-theme-surface-container));
-  border-radius: 0 0 8px 8px;
-}
-
-.child-items-grid {
-  background: transparent;
-}
-
-.child-item-card {
-  transition: all 0.2s ease;
-  border: 1px solid rgb(var(--v-theme-outline));
-  background: rgb(var(--v-theme-surface));
-}
-
-.child-item-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-  border-color: rgb(var(--v-theme-primary));
-}
-
-.child-item-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.detail-item {
+.toolbar-actions {
   display: flex;
-  align-items: center;
-  font-size: 0.85rem;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-
-.empty-state-container {
-  background: rgb(var(--v-theme-surface-container-low));
-  border-radius: 8px;
-  margin: 16px;
-}
-
-.site-cell {
-  display: flex;
-  align-items: center;
   gap: 8px;
 }
 
-.site-icon {
-  color: rgb(var(--v-theme-primary));
+.grid-container {
+  margin-top: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.detail-container {
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.detail-tabs {
+  margin-bottom: 16px;
+}
+
+.tab-content {
+  padding: 16px 0;
+}
+
+.tab-content h4 {
+  margin-bottom: 16px;
+  color: #1976d2;
 }
 
 .actions-cell {
   display: flex;
   gap: 4px;
-  justify-content: center;
 }
 
-.view-toggle-btn {
-  margin-right: 8px;
+.status-chip {
+  font-weight: 500;
+  text-transform: uppercase;
 }
 
-/* Dark theme improvements */
-.v-theme--dark .hierarchical-table :deep(.v-data-table__wrapper) {
-  background: rgb(var(--v-theme-surface));
+/* Kendo Grid Styling */
+:deep(.k-grid) {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-family: inherit;
 }
 
-.v-theme--dark .hierarchical-table :deep(.v-data-table-header th) {
-  background: rgb(var(--v-theme-surface-container-high));
-  color: rgb(var(--v-theme-on-surface));
+:deep(.k-grid-header) {
+  background: #f5f5f5;
 }
 
-.v-theme--dark .child-item-card {
-  background: rgb(var(--v-theme-surface-bright));
-  border-color: rgb(var(--v-theme-outline-variant));
+:deep(.k-grid-header .k-header) {
+  border-color: #e0e0e0;
+  font-weight: 600;
 }
 
-.v-theme--dark .child-item-card:hover {
-  background: rgb(var(--v-theme-surface-container-high));
-  border-color: rgb(var(--v-theme-primary));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+:deep(.k-alt) {
+  background: #fafafa;
 }
 
-.v-theme--dark .empty-state-container {
-  background: rgb(var(--v-theme-surface-container));
+/* Remove selected row background */
+:deep(.k-state-selected) {
+  background: inherit !important;
+  color: inherit !important;
 }
 
-@media (max-width: 960px) {
-  .chargepoints-container {
-    padding: 16px;
-  }
+:deep(.k-pager) {
+  border-top: 1px solid #e0e0e0;
+}
 
-  .header-section {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
+:deep(.k-grid-content) {
+  overflow-x: auto;
+}
 
-  .page-title {
-    font-size: 1.75rem;
-    text-align: center;
-  }
+/* Hide row selection background */
+:deep(.k-master-row.k-state-selected) {
+  background: inherit !important;
+}
 
-  .connectors-grid,
-  .profiles-grid {
-    grid-template-columns: 1fr;
-  }
+:deep(.k-grouping-row.k-state-selected) {
+  background: inherit !important;
+}
 
-  .charge-point-parent-content {
-    flex-direction: column;
-    gap: 12px;
-  }
+/* Fix z-index issues */
+::deep(.k-grid) {
+  position: relative;
+  z-index: 2;
+}
 
-  .charge-point-actions {
-    align-self: flex-end;
-  }
+/* Additional rules to completely remove selection backgrounds */
+::deep(.k-state-selected:hover),
+::deep(.k-state-selected.k-alt),
+::deep(.k-state-selected.k-alt:hover),
+::deep(.k-grid-content .k-state-selected),
+::deep(.k-grid-content .k-state-selected:hover),
+::deep(.k-grid-content .k-state-selected.k-alt),
+::deep(.k-grid-content .k-state-selected.k-alt:hover) {
+  background-color: transparent !important;
+  background: transparent !important;
 }
 </style>

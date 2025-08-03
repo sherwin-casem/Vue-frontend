@@ -255,8 +255,8 @@ const chargePointsLoading = computed(() => chargePointsStore.loading)
 // Validation rules
 const rules = {
   required: (value: any) => !!value || t('validation.fieldRequired'),
-  stackLevel: (value: number) => {
-    if (value == null || value === '') return t('validation.fieldRequired')
+  stackLevel: (value: any) => {
+    if (value == null || value === '' || value === undefined) return t('validation.fieldRequired')
     const numValue = Number(value)
     if (isNaN(numValue) || numValue < 0) return t('chargingProfiles.validation.stackLevelMin')
     if (numValue > 999) return t('chargingProfiles.validation.stackLevelMax')
