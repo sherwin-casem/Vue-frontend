@@ -4,11 +4,6 @@ import { useAuthStore } from '@/stores/auth'
 // Lazy-loaded components
 const LoginView = () => import('@/views/LoginView.vue')
 const DashboardView = () => import('@/views/DashboardView.vue')
-const SitesView = () => import('@/views/SitesView.vue')
-const ChargePointsView = () => import('@/views/ChargePointsView.vue')
-const ConnectorsView = () => import('@/views/ConnectorsView.vue')
-const ChargingProfilesView = () => import('@/views/ChargingProfilesView.vue')
-const SchedulePeriodsView = () => import('@/views/SchedulePeriodsView.vue')
 const NotFoundView = () => import('@/views/NotFoundView.vue')
 
 const routes: Array<RouteRecordRaw> = [
@@ -26,36 +21,6 @@ const routes: Array<RouteRecordRaw> = [
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/sites',
-    name: 'sites',
-    component: SitesView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/charge-points',
-    name: 'chargePoints',
-    component: ChargePointsView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/connectors',
-    name: 'connectors',
-    component: ConnectorsView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/charging-profiles',
-    name: 'chargingProfiles',
-    component: ChargingProfilesView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/schedule-periods',
-    name: 'schedulePeriods',
-    component: SchedulePeriodsView,
     meta: { requiresAuth: true }
   },
 

@@ -144,6 +144,7 @@
     "city": "Ville",
     "country": "Pays",
     "searchSites": "Rechercher des sites",
+    "manageAllSites": "Gérez tous vos sites de recharge",
     "createSite": "Créer un site",
     "updateSite": "Mettre à jour le site",
     "confirmDelete": "Êtes-vous sûr de vouloir supprimer le site \"{name}\" ? Cette action ne peut pas être annulée.",

@@ -94,8 +94,8 @@
     "collapseAll": "Collapse All",
     "selectColumnsToGroup": "Select columns to group by",
     "groupingByFields": "Grouping by {count} field(s)",
-    "noItems":"No Items",
-    "noItemsDescription":"0 Items found here"
+    "noItems": "No Items",
+    "noItemsDescription": "0 Items found here"
   },
   "validation": {
     "fieldRequired": "This field is required",
@@ -146,6 +146,7 @@
     "searchSites": "Search Sites",
     "createSite": "Create Site",
     "updateSite": "Update Site",
+    "manageAllSites": "Manage all your charging sites",
     "confirmDelete": "Are you sure you want to delete the site \"{name}\"? This action cannot be undone.",
     "created": "Site \"{name}\" created successfully",
     "updated": "Site \"{name}\" updated successfully",

@@ -144,6 +144,7 @@
     "city": "Ciudad",
     "country": "País",
     "searchSites": "Buscar sitios",
+    "manageAllSites": "Gestiona todos tus sitios de carga",
     "createSite": "Crear sitio",
     "updateSite": "Actualizar sitio",
     "confirmDelete": "¿Está seguro de que desea eliminar el sitio \"{name}\"? Esta acción no se puede deshacer.",

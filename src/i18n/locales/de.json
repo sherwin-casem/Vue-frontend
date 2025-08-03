@@ -145,6 +145,7 @@
     "city": "Stadt",
     "country": "Land",
     "searchSites": "Standorte suchen",
+    "manageAllSites": "Verwalten Sie alle Ihre Ladestationen",
     "createSite": "Standort erstellen",
     "updateSite": "Standort aktualisieren",
     "confirmDelete": "Sind Sie sicher, dass Sie den Standort \"{name}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
