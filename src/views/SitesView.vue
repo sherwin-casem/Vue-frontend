@@ -81,6 +81,9 @@
             :sortable="true"
             :pageable="pageableConfig"
             :groupable="true"
+            :group="group"
+            :take="take"
+            :skip="skip"
             :reorderable="true"
             :loading="sitesStore.loading"
             :selectable="{ enabled: true, mode: 'single' }"
@@ -91,6 +94,9 @@
             @datastatechange="dataStateChange"
             @selectionchange="onSelectionChange"
             @rowdblclick="onRowDoubleClick"
+            @expandchange="expandChange"
+            :expand-field="'expanded'"
+
           >
             <template #columnMenuTemplate="{ props }">
               <ColumnMenu
@@ -279,11 +285,14 @@ const selectedSite = ref<Site | null>(null)
 const selectedGridSite = ref<Site | null>(null)
 const siteForm = ref()
 const kendoGrid = ref()
+const group = ref([]);
 const result = ref([])
 const dataState = ref({
     take: 8,
     skip: 0,
 });
+const skip = ref(0);
+const take = ref(10);
 
 const currentSite = reactive<Partial<Site>>({
   name: '',
@@ -369,6 +378,18 @@ const rules = {
   countryMinLength: (value: string) => value.length >= 2 || t('sites.validation.countryMinLength')
 }
 
+function createAppState(dataState) {
+    group.value = dataState.group;
+    take.value = dataState.take;
+    skip.value = dataState.skip;
+    refreshData();
+}
+
+
+function expandChange(event) {
+    event.dataItem[event.target.$props.expandField] = event.value;
+}
+
 const createDataState = (state) => {
   if (sites.value && sites.value.length > 0) {
     result.value = process(sites.value.slice(0), state);
@@ -390,6 +411,7 @@ const dataStateChange = (e) => {
                 ? 'customMenu active'
                 : '';
         }
+        createAppState(e.data);
     }
     createDataState(e.data);
 };
