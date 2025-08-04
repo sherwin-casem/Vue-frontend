@@ -86,14 +86,15 @@
             :skip="skip"
             :reorderable="true"
             :loading="sitesStore.loading"
-            :selectable="{ enabled: true, mode: 'single' }"
+            :selected-field="selectedField"
             :filterable="false"
             class="sites-grid"
             :filter="dataState.filter"
             :sort="dataState.sort"
             @datastatechange="dataStateChange"
             @selectionchange="onSelectionChange"
-            @rowdblclick="onRowDoubleClick"
+            @headerselectionchange="onHeaderSelectionChange"  
+            @rowclick="onRowClick"
             @expandchange="expandChange"
             :expand-field="'expanded'"
 
@@ -272,11 +273,13 @@ import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import { process } from '@progress/kendo-data-query'
+import '@/utils/resizeObserverFix'
 
-const { t } = useI18n()
+
+const { t,d } = useI18n()
 const { formatDate } = useLocaleFormatting()
 const sitesStore = useSitesStore()
-
+const selectedField = 'selected';
 const dialogOpen = ref(false)
 const deleteDialogOpen = ref(false)
 const formValid = ref(false)
@@ -311,7 +314,7 @@ const pageableConfig = {
   pageSize: 20
 }
 
-const columns = computed(() => [
+const staticColumns = [
   {
     field: 'site_id',
     title: t('sites.siteId'),
@@ -359,15 +362,26 @@ const columns = computed(() => [
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
   },
-  {
-    field: 'created_at',
-    title: t('common.created'),
-    width: '140px',
-    filter: 'date',
-    columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu',
-  }
-])
+{
+  field: 'created_at',
+  title: t('common.created'),
+  width: '140px',
+  filter: 'date',
+  columnMenu: 'columnMenuTemplate',
+  headerClassName: 'customMenu',
+}
+]
+
+
+const areAllSelected = computed(() =>
+    sites.value.findIndex((item) => item.selected === false) === -1
+);
+
+const columns = computed(() => [
+    { field: 'selected', width: '50px', headerSelectionValue: areAllSelected.value },
+    ...staticColumns,
+]);
+
 
 const rules = {
   required: (value: string) => !!value || t('validation.fieldRequired'),
@@ -420,9 +434,13 @@ const onColumnsSubmit = (columnsState) => {
     columns.value = columnsState;
 };
 
-
 const refreshData = async () => {
   await sitesStore.fetchSites()
+  sitesStore.sites.forEach(site => {
+    if (!site.hasOwnProperty('selected')) {
+      site.selected = false
+    }
+  })
 }
 
 const openCreateDialog = () => {
@@ -502,21 +520,36 @@ const deleteSite = async () => {
   }
 }
 
-const onSelectionChange = (event: any) => {
-  const selection = event.selection
-  if (selection && selection.length > 0) {
-    selectedGridSite.value = selection[0].dataItem
-  } else {
-    selectedGridSite.value = null
-  }
+
+function onHeaderSelectionChange(event) {
+    const checked = event.event.target.checked;
+    sitesStore.sites = sitesStore.sites.map((item) => ({
+        ...item,
+        selected: checked,
+    }));
 }
 
-const onRowDoubleClick = (event: any) => {
-  const site = event.dataItem
-  if (site) {
-    openEditDialog(site)
-  }
+function onSelectionChange(event) {
+    const updatedItem = {
+        ...event.dataItem,
+        selected: !event.dataItem.selected
+    };
+    
+    const index = sitesStore.sites.findIndex(s => s.site_id === updatedItem.site_id);
+    if (index !== -1) {
+        sitesStore.sites[index] = updatedItem;
+    }
 }
+function onRowClick(event) {
+    event.dataItem[selectedField] = !event.dataItem[selectedField];
+}
+
+// const onRowDoubleClick = (event: any) => {
+//   const site = event.dataItem
+//   if (site) {
+//     openEditDialog(site)
+//   }
+// }
 
 const exportToPdf = async () => {
   try {
