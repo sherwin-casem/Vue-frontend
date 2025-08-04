@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 // Lazy-loaded components
 const LoginView = () => import('@/views/LoginView.vue')
 const DashboardView = () => import('@/views/DashboardView.vue')
+const SitesView = () => import('@/views/SitesView.vue')
 const NotFoundView = () => import('@/views/NotFoundView.vue')
 
 const routes: Array<RouteRecordRaw> = [
@@ -21,6 +22,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sites',
+    name: 'sites',
+    component: SitesView,
     meta: { requiresAuth: true }
   },
 
