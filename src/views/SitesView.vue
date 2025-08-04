@@ -120,10 +120,6 @@
         <template #detailTemplate="{ props }">
       <SiteDetailView :site="props.dataItem" @edit="openEditDialog" @delete="confirmDelete" />
     </template>
-
-    <template #myTemplate="{ props }">
-      <DetailItem :data-item="props.dataItem" :columns="props.columns" :items="props.items" />
-    </template>
           </Grid>
 
           <div v-if="selectedGridSite" class="grid-row-actions">
