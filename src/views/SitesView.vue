@@ -76,9 +76,10 @@
             ref="kendoGrid"
             :data-items="result.data || []"
             :total="sites.length"
-            :columns="columns"
+            :columns="columnsWithSelection"
             :style="{ height: '500px' }"
             :sortable="true"
+             :key="gridKey"
             :pageable="pageableConfig"
             :groupable="true"
             :group="group"
@@ -96,6 +97,7 @@
             @headerselectionchange="onHeaderSelectionChange"  
             @rowclick="onRowClick"
             @expandchange="expandChange"
+            @columnreorder="columnReorder"
             :expand-field="'expanded'"
 
           >
@@ -114,6 +116,14 @@
               @columnssubmit="onColumnsSubmit"
             />
             </template>
+
+        <template #detailTemplate="{ props }">
+      <SiteDetailView :site="props.dataItem" @edit="openEditDialog" @delete="confirmDelete" />
+    </template>
+
+    <template #myTemplate="{ props }">
+      <DetailItem :data-item="props.dataItem" :columns="props.columns" :items="props.items" />
+    </template>
           </Grid>
 
           <div v-if="selectedGridSite" class="grid-row-actions">
@@ -260,6 +270,28 @@
       </v-card>
     </v-dialog>
   </div>
+   <v-dialog v-model="detailDialogOpen" max-width="800px">
+    <v-card v-if="viewedSite">
+      <v-card-title class="d-flex justify-space-between align-center">
+        <span class="text-h5">{{ viewedSite.name }}</span>
+        <v-btn icon @click="detailDialogOpen = false">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </v-card-title>
+      
+      <v-card-text>
+        <SiteDetailView :site="viewedSite" :full-view="true" />
+      </v-card-text>
+      
+      <v-card-actions class="pa-4">
+        <v-spacer></v-spacer>
+        <v-btn color="primary" variant="outlined" @click="openEditDialog(viewedSite)">
+          <v-icon left>mdi-pencil</v-icon>
+          {{ $t('common.edit') }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
@@ -272,14 +304,20 @@ import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
 import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
+import SiteDetailView from '@/components/SiteDetailView.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
+import DetailItem from '@/components/DetailItem.vue'
+
 
 
 const { t,d } = useI18n()
 const { formatDate } = useLocaleFormatting()
 const sitesStore = useSitesStore()
 const selectedField = 'selected';
+const cellTemplate = ref('myTemplate');
+const viewedSite = ref<Site | null>(null);
+const detailDialogOpen = ref(false);
 const dialogOpen = ref(false)
 const deleteDialogOpen = ref(false)
 const formValid = ref(false)
@@ -290,6 +328,8 @@ const siteForm = ref()
 const kendoGrid = ref()
 const group = ref([]);
 const result = ref([])
+const gridKey = ref(0);
+const forceGridRefresh = () => gridKey.value++;
 const dataState = ref({
     take: 8,
     skip: 0,
@@ -313,6 +353,7 @@ const pageableConfig = {
   pageSizes: [10, 20, 50, 100],
   pageSize: 20
 }
+
 
 const staticColumns = [
   {
@@ -369,19 +410,21 @@ const staticColumns = [
   filter: 'date',
   columnMenu: 'columnMenuTemplate',
   headerClassName: 'customMenu',
-}
+},
 ]
+
 
 
 const areAllSelected = computed(() =>
     sites.value.findIndex((item) => item.selected === false) === -1
 );
 
-const columns = computed(() => [
-    { field: 'selected', width: '50px', headerSelectionValue: areAllSelected.value },
-    ...staticColumns,
-]);
+const columns = ref([...staticColumns]);
 
+const columnsWithSelection = computed(() => [
+    { field: 'selected', width: '50px', headerSelectionValue: areAllSelected.value },
+    ...columns.value,
+]);
 
 const rules = {
   required: (value: string) => !!value || t('validation.fieldRequired'),
@@ -398,8 +441,11 @@ function createAppState(dataState) {
     skip.value = dataState.skip;
     refreshData();
 }
-
-
+const columnReorder = (options) => {
+    // Filter out the selection column before updating
+    const newColumns = options.columns.filter(col => col.field !== 'selected');
+    columns.value = newColumns;
+};
 function expandChange(event) {
     event.dataItem[event.target.$props.expandField] = event.value;
 }
@@ -448,6 +494,11 @@ const openCreateDialog = () => {
   resetForm()
   dialogOpen.value = true
 }
+const viewSite = (site: Site) => {
+  viewedSite.value = site;
+  detailDialogOpen.value = true;
+};
+
 
 const openEditDialog = (site: Site) => {
   isEditing.value = true
@@ -541,7 +592,7 @@ function onSelectionChange(event) {
     }
 }
 function onRowClick(event) {
-    event.dataItem[selectedField] = !event.dataItem[selectedField];
+    // event.dataItem[selectedField] = !event.dataItem[selectedField];
 }
 
 // const onRowDoubleClick = (event: any) => {
@@ -743,5 +794,61 @@ th.k-header.customMenu.active > div > div > span.k-i-more-vertical::before {
 th.k-header.active > div > a {
   color: #fff;
   background-color: #ff6358;
+}
+
+.action-buttons-cell {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.action-btn {
+  margin: 0 2px;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+}
+
+.action-btn .v-icon {
+  font-size: 18px;
+}
+
+/* Detail view styling */
+.site-detail {
+  padding: 16px;
+}
+
+.site-detail-row {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.site-detail-label {
+  font-weight: 500;
+  min-width: 120px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.site-detail-value {
+  flex: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .action-buttons-cell {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .site-detail-row {
+    flex-direction: column;
+  }
+  
+  .site-detail-label {
+    margin-bottom: 4px;
+  }
 }
 </style>
