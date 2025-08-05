@@ -563,23 +563,20 @@ const schedulePeriodsColumns = [
   {
     field: 'start_period_in_seconds',
     title: t('scheduleperiods.startPeriodInSeconds'),
-    filter: 'numeric',
-    columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    filterable:false
   },
   {
     field: 'limit',
     title: t('scheduleperiods.limit'),
-    filter: 'numeric',
-    columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    filterable:false
+
+
   },
   {
     field: 'number_phases',
     title: t('scheduleperiods.numberPhases'),
-    filter: 'numeric',
-    columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    filterable:false
+
   }
 ]
 const staticColumns = [

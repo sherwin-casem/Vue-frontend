@@ -505,27 +505,26 @@ const chargingProfilesColumns = [
   {
     field: 'charging_profile_purpose',
     title: t('chargingprofiles.purpose'),
-    filter: 'text',
-    columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    filterable:false
+
   },
   {
     field: 'charging_profile_kind',
     title: t('chargingprofiles.kind'),
-    filter: 'text',
-    columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    filterable:false
+
   },
   {
     field: 'valid_from',
     title: t('chargingprofiles.validFrom'),
-    filter: 'date',
-    columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    filterable:false
+
   },
   {
     field: 'valid_to',
     title: t('chargingprofiles.validTo')
+    filterable:false
+
   }
 ]
 
