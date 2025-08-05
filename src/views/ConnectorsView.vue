@@ -733,17 +733,8 @@ function onHeaderSelectionChange(event) {
 }
 
 function onSelectionChange(event) {
-  const updatedItem = {
-    ...event.dataItem,
-    selected: !event.dataItem.selected
-  }
-
-  const index = connectorsStore.connectors.findIndex((c) => c.id === updatedItem.id)
-  if (index !== -1) {
-    connectorsStore.connectors[index] = updatedItem
-  }
+    event.dataItem[selectedField] = !event.dataItem[selectedField];
 }
-
 function onRowClick(event) {
   if (event.dataItem) {
     viewConnector(event.dataItem)

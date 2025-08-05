@@ -669,24 +669,18 @@ const exportSelectedSites = async (format: 'pdf' | 'excel' | 'csv') => {
 }
 
 function onHeaderSelectionChange(event) {
-  const checked = event.event.target.checked
-  sitesStore.sites = sitesStore.sites.map((item) => ({
-    ...item,
-    selected: checked
-  }))
+    const checked = event.event.target.checked;
+    sites.value = sites.value.map((item) => ({
+        ...item,
+        selected: checked,
+    }));
 }
+
 
 function onSelectionChange(event) {
-  const updatedItem = {
-    ...event.dataItem,
-    selected: !event.dataItem.selected
-  }
-
-  const index = sitesStore.sites.findIndex((s) => s.site_id === updatedItem.site_id)
-  if (index !== -1) {
-    sitesStore.sites[index] = updatedItem
-  }
+    event.dataItem[selectedField] = !event.dataItem[selectedField];
 }
+
 function onRowClick(event) {
   if (event.dataItem) {
     viewSite(event.dataItem)

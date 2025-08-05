@@ -859,17 +859,8 @@ function onHeaderSelectionChange(event) {
     selected: checked
   }))
 }
-
 function onSelectionChange(event) {
-  const updatedItem = {
-    ...event.dataItem,
-    selected: !event.dataItem.selected
-  }
-
-  const index = chargingProfilesStore.chargingProfiles.findIndex((p) => p.id === updatedItem.id)
-  if (index !== -1) {
-    chargingProfilesStore.chargingProfiles[index] = updatedItem
-  }
+    event.dataItem[selectedField] = !event.dataItem[selectedField];
 }
 
 function onRowClick(event) {

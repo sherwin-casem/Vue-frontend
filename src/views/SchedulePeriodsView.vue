@@ -717,15 +717,7 @@ function onHeaderSelectionChange(event) {
 }
 
 function onSelectionChange(event) {
-  const updatedItem = {
-    ...event.dataItem,
-    selected: !event.dataItem.selected
-  }
-
-  const index = schedulePeriodsStore.schedulePeriods.findIndex((p) => p.id === updatedItem.id)
-  if (index !== -1) {
-    schedulePeriodsStore.schedulePeriods[index] = updatedItem
-  }
+    event.dataItem[selectedField] = !event.dataItem[selectedField];
 }
 
 function onRowClick(event) {
