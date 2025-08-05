@@ -35,39 +35,6 @@
             ></v-text-field>
           </div>
 
-<<<<<<< HEAD
-          <div class="export-actions">
-            <v-btn
-              variant="outlined"
-              prepend-icon="mdi-file-pdf-box"
-              @click="exportToPdf"
-              :disabled="!chargePoints.length || chargePointsStore.loading"
-              class="export-btn"
-            >
-              {{ $t('export.exportToPdf') }}
-            </v-btn>
-
-            <v-btn
-              variant="outlined"
-              prepend-icon="mdi-file-excel"
-              @click="exportToExcel"
-              :disabled="!chargePoints.length || chargePointsStore.loading"
-              class="export-btn"
-            >
-              {{ $t('export.exportToExcel') }}
-            </v-btn>
-
-            <v-btn
-              variant="outlined"
-              prepend-icon="mdi-file-delimited"
-              @click="exportToCsv"
-              :disabled="!chargePoints.length || chargePointsStore.loading"
-              class="export-btn"
-            >
-              {{ $t('export.exportToCsv') }}
-            </v-btn>
-          </div>
-=======
           <v-menu>
             <template v-slot:activator="{ props }">
               <v-btn
@@ -102,7 +69,6 @@
               </v-list-item>
             </v-list>
           </v-menu>
->>>>>>> 25b676d760d3a3182ddb9cfaf1c7d6cb59ed1bb4
 
           <v-btn
             variant="text"
