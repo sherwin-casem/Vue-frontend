@@ -1,9 +1,11 @@
 <template>
-  <div class="sites-management">
+  <div class="scheduleperiods-management">
     <v-card elevation="2">
-      <v-card-title class="sites-header">
-        <h1 class="text-h4">{{ $t('sites.title') }}</h1>
-        <p class="text-subtitle-1 text-medium-emphasis">{{ $t('sites.manageAllSites') }}</p>
+      <v-card-title class="scheduleperiods-header">
+        <h1 class="text-h4">{{ $t('scheduleperiods.title') }}</h1>
+        <p class="text-subtitle-1 text-medium-emphasis">
+          {{ $t('scheduleperiods.manageAllSchedulePeriods') }}
+        </p>
       </v-card-title>
 
       <v-card-text>
@@ -13,12 +15,25 @@
             variant="elevated"
             prepend-icon="mdi-plus"
             @click="openCreateDialog"
-            :disabled="sitesStore.loading"
+            :disabled="schedulePeriodsStore.loading"
           >
-            {{ $t('sites.addSite') }}
+            {{ $t('scheduleperiods.addSchedulePeriod') }}
           </v-btn>
 
           <v-spacer></v-spacer>
+
+          <div class="search-container">
+            <v-text-field
+              v-model="globalSearch"
+              prepend-icon="mdi-magnify"
+              :label="$t('common.search')"
+              variant="outlined"
+              density="compact"
+              hide-details
+              clearable
+              class="search-field"
+            ></v-text-field>
+          </div>
 
           <v-menu>
             <template v-slot:activator="{ props }">
@@ -26,7 +41,7 @@
                 variant="outlined"
                 prepend-icon="mdi-export"
                 v-bind="props"
-                :disabled="!sites.length || sitesStore.loading"
+                :disabled="!schedulePeriods.length || schedulePeriodsStore.loading"
                 class="export-btn"
               >
                 {{ $t('export.export') }}
@@ -59,26 +74,26 @@
             variant="text"
             icon="mdi-refresh"
             @click="refreshData"
-            :loading="sitesStore.loading"
+            :loading="schedulePeriodsStore.loading"
           ></v-btn>
         </div>
 
         <v-alert
-          v-if="sitesStore.error"
+          v-if="schedulePeriodsStore.error"
           type="error"
           variant="tonal"
           closable
-          @click:close="sitesStore.clearError"
+          @click:close="schedulePeriodsStore.clearError"
           class="error-alert"
         >
-          {{ sitesStore.error }}
+          {{ schedulePeriodsStore.error }}
         </v-alert>
 
         <div class="grid-container">
           <Grid
             ref="kendoGrid"
             :data-items="result.data || []"
-            :total="sites.length"
+            :total="filteredSchedulePeriods.length"
             :columns="columnsWithSelection"
             :style="{ height: '500px' }"
             :sortable="true"
@@ -89,10 +104,10 @@
             :take="take"
             :skip="skip"
             :reorderable="true"
-            :loading="sitesStore.loading"
+            :loading="schedulePeriodsStore.loading"
             :selected-field="selectedField"
             :filterable="false"
-            class="sites-grid"
+            class="scheduleperiods-grid"
             :filter="dataState.filter"
             :sort="dataState.sort"
             @datastatechange="dataStateChange"
@@ -120,17 +135,17 @@
             </template>
 
             <template #detailTemplate="{ props }">
-              <SiteDetailView
-                :site="props.dataItem"
+              <SchedulePeriodDetailView
+                :schedulePeriod="props.dataItem"
                 @edit="openEditDialog"
                 @delete="confirmDelete"
               />
             </template>
           </Grid>
 
-          <div v-if="selectedGridSite" class="grid-row-actions">
+          <div v-if="selectedGridSchedulePeriod" class="grid-row-actions">
             <v-chip class="selected-indicator" color="primary" variant="outlined">
-              {{ $t('sites.site') }}: {{ selectedGridSite.name }}
+              {{ $t('scheduleperiods.schedulePeriod') }}: {{ selectedGridSchedulePeriod.id }}
             </v-chip>
 
             <div class="action-buttons">
@@ -138,7 +153,7 @@
                 size="small"
                 variant="outlined"
                 prepend-icon="mdi-pencil"
-                @click="openEditDialog(selectedGridSite)"
+                @click="openEditDialog(selectedGridSchedulePeriod)"
               >
                 {{ $t('common.edit') }}
               </v-btn>
@@ -148,7 +163,7 @@
                 variant="outlined"
                 color="error"
                 prepend-icon="mdi-delete"
-                @click="confirmDelete(selectedGridSite)"
+                @click="confirmDelete(selectedGridSchedulePeriod)"
               >
                 {{ $t('common.delete') }}
               </v-btn>
@@ -162,76 +177,61 @@
       <v-card>
         <v-card-title>
           <span class="text-h6">{{
-            isEditing ? $t('sites.editSite') : $t('sites.createNewSite')
+            isEditing
+              ? $t('scheduleperiods.editSchedulePeriod')
+              : $t('scheduleperiods.createNewSchedulePeriod')
           }}</span>
         </v-card-title>
 
         <v-card-text>
-          <v-form ref="siteForm" v-model="formValid" @submit.prevent="saveSite">
+          <v-form ref="schedulePeriodForm" v-model="formValid" @submit.prevent="saveSchedulePeriod">
             <v-row>
               <v-col cols="12">
-                <v-text-field
-                  v-model="currentSite.name"
-                  :label="$t('sites.siteName')"
-                  :placeholder="$t('forms.siteNamePlaceholder')"
-                  :rules="[rules.required, rules.nameMinLength]"
+                <v-select
+                  v-model="currentSchedulePeriod.charging_profile_id"
+                  :label="$t('scheduleperiods.chargingProfile')"
+                  :items="availableChargingProfiles"
+                  :rules="[rules.required]"
                   variant="outlined"
                   required
-                ></v-text-field>
+                  :no-data-text="$t('scheduleperiods.noChargingProfilesAvailable')"
+                ></v-select>
               </v-col>
 
-              <v-col cols="12">
+              <v-col cols="6">
                 <v-text-field
-                  v-model="currentSite.address"
-                  :label="$t('sites.address')"
-                  :placeholder="$t('forms.addressPlaceholder')"
-                  :rules="[rules.required, rules.addressMinLength]"
+                  v-model="currentSchedulePeriod.start_period_in_seconds"
+                  :label="$t('scheduleperiods.startPeriodInSeconds')"
+                  :placeholder="$t('forms.startPeriodPlaceholder')"
+                  :rules="[rules.required, rules.startPeriodNumeric]"
                   variant="outlined"
+                  type="number"
                   required
                 ></v-text-field>
               </v-col>
 
               <v-col cols="6">
                 <v-text-field
-                  v-model="currentSite.postal_code"
-                  :label="$t('sites.postalCode')"
-                  :placeholder="$t('forms.postalCodePlaceholder')"
-                  :rules="[rules.required, rules.postalCodeFormat]"
+                  v-model="currentSchedulePeriod.limit"
+                  :label="$t('scheduleperiods.limit')"
+                  :placeholder="$t('forms.limitPlaceholder')"
+                  :rules="[rules.required, rules.limitRange]"
                   variant="outlined"
-                  required
-                ></v-text-field>
-              </v-col>
-
-              <v-col cols="6">
-                <v-text-field
-                  v-model="currentSite.city"
-                  :label="$t('sites.city')"
-                  :placeholder="$t('forms.cityPlaceholder')"
-                  :rules="[rules.required, rules.cityMinLength]"
-                  variant="outlined"
+                  type="number"
+                  step="0.1"
                   required
                 ></v-text-field>
               </v-col>
 
               <v-col cols="12">
-                <v-text-field
-                  v-model="currentSite.country"
-                  :label="$t('sites.country')"
-                  :placeholder="$t('forms.countryPlaceholder')"
-                  :rules="[rules.required, rules.countryMinLength]"
+                <v-select
+                  v-model="currentSchedulePeriod.number_phases"
+                  :label="$t('scheduleperiods.numberPhases')"
+                  :items="phaseOptions"
+                  :rules="[rules.required]"
                   variant="outlined"
                   required
-                ></v-text-field>
-              </v-col>
-
-              <v-col cols="12">
-                <v-textarea
-                  v-model="currentSite.note"
-                  :label="$t('common.note')"
-                  :placeholder="$t('forms.notePlaceholder')"
-                  variant="outlined"
-                  rows="3"
-                ></v-textarea>
+                ></v-select>
               </v-col>
             </v-row>
           </v-form>
@@ -243,8 +243,8 @@
           <v-btn
             color="primary"
             variant="elevated"
-            @click="saveSite"
-            :loading="sitesStore.loading"
+            @click="saveSchedulePeriod"
+            :loading="schedulePeriodsStore.loading"
             :disabled="!formValid"
           >
             {{ isEditing ? $t('common.update') : $t('common.create') }}
@@ -255,102 +255,125 @@
 
     <v-dialog v-model="deleteDialogOpen" max-width="500px">
       <v-card>
-        <v-card-title class="text-h6">{{ $t('sites.deleteSite') }}</v-card-title>
+        <v-card-title class="text-h6">{{
+          $t('scheduleperiods.deleteSchedulePeriod')
+        }}</v-card-title>
         <v-card-text>
-          {{ $t('sites.confirmDelete', { name: selectedSite?.name || '' }) }}
+          {{ $t('scheduleperiods.confirmDelete', { id: selectedSchedulePeriod?.id || '' }) }}
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn variant="text" @click="deleteDialogOpen = false">{{ $t('common.cancel') }}</v-btn>
-          <v-btn color="error" variant="elevated" @click="deleteSite" :loading="sitesStore.loading">
+          <v-btn
+            color="error"
+            variant="elevated"
+            @click="deleteSchedulePeriod"
+            :loading="schedulePeriodsStore.loading"
+          >
             {{ $t('common.delete') }}
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </div>
-  <v-dialog v-model="detailDialogOpen" max-width="900px" persistent>
-    <v-card v-if="viewedSite" class="modern-detail-card">
-      <v-card-title class="detail-card-header">
-        <div class="header-content">
-          <v-icon class="header-icon" size="28" color="primary">mdi-map-marker</v-icon>
-          <div class="header-text">
-            <h2 class="header-title">{{ viewedSite.name }}</h2>
-            <p class="header-subtitle">{{ $t('sites.siteDetails') }}</p>
+
+    <v-dialog v-model="detailDialogOpen" max-width="900px" persistent>
+      <v-card v-if="viewedSchedulePeriod" class="modern-detail-card">
+        <v-card-title class="detail-card-header">
+          <div class="header-content">
+            <v-icon class="header-icon" size="28" color="primary">mdi-calendar-clock</v-icon>
+            <div class="header-text">
+              <h2 class="header-title">
+                {{ $t('scheduleperiods.schedulePeriod') }} {{ viewedSchedulePeriod.id }}
+              </h2>
+              <p class="header-subtitle">{{ $t('scheduleperiods.schedulePeriodDetails') }}</p>
+            </div>
           </div>
-        </div>
-        <v-btn icon variant="text" size="small" @click="detailDialogOpen = false" class="close-btn">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
+          <v-btn
+            icon
+            variant="text"
+            size="small"
+            @click="detailDialogOpen = false"
+            class="close-btn"
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
 
-      <v-divider class="header-divider"></v-divider>
+        <v-divider class="header-divider"></v-divider>
 
-      <v-card-text class="detail-content">
-        <SiteDetailView :site="viewedSite" :full-view="true" />
-      </v-card-text>
+        <v-card-text class="detail-content">
+          <SchedulePeriodDetailView :schedulePeriod="viewedSchedulePeriod" :full-view="true" />
+        </v-card-text>
 
-      <v-divider></v-divider>
+        <v-divider></v-divider>
 
-      <v-card-actions class="detail-actions">
-        <v-spacer></v-spacer>
-        <v-btn
-          variant="outlined"
-          color="error"
-          prepend-icon="mdi-delete"
-          @click="confirmDelete(viewedSite)"
-          class="action-btn"
-        >
-          {{ $t('common.delete') }}
-        </v-btn>
-        <v-btn
-          variant="elevated"
-          color="primary"
-          prepend-icon="mdi-pencil"
-          @click="openEditDialog(viewedSite)"
-          class="action-btn"
-        >
-          {{ $t('common.edit') }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+        <v-card-actions class="detail-actions">
+          <v-spacer></v-spacer>
+          <v-btn
+            variant="outlined"
+            color="error"
+            prepend-icon="mdi-delete"
+            @click="confirmDelete(viewedSchedulePeriod)"
+            class="action-btn"
+          >
+            {{ $t('common.delete') }}
+          </v-btn>
+          <v-btn
+            variant="elevated"
+            color="primary"
+            prepend-icon="mdi-pencil"
+            @click="openEditDialog(viewedSchedulePeriod)"
+            class="action-btn"
+          >
+            {{ $t('common.edit') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
-import { useSitesStore } from '@/stores/sites'
-import type { Site, CreateSiteRequest, UpdateSiteRequest } from '@/types/sites'
+import { useSchedulePeriodsStore } from '@/stores/scheduleperiods'
+import { useChargingProfilesStore } from '@/stores/chargingprofiles'
+import type {
+  SchedulePeriod,
+  CreateSchedulePeriodRequest,
+  UpdateSchedulePeriodRequest
+} from '@/types/scheduleperiods'
 import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
 import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
-import SiteDetailView from '@/components/SiteDetailView.vue'
+import SchedulePeriodDetailView from '@/components/SchedulePeriodDetailView.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
-import DetailItem from '@/components/DetailItem.vue'
 
-const { t, d } = useI18n()
+const { t } = useI18n()
 const { formatDate } = useLocaleFormatting()
-const sitesStore = useSitesStore()
+const schedulePeriodsStore = useSchedulePeriodsStore()
+const chargingProfilesStore = useChargingProfilesStore()
 const selectedField = 'selected'
 const cellTemplate = ref('myTemplate')
-const viewedSite = ref<Site | null>(null)
+const viewedSchedulePeriod = ref<SchedulePeriod | null>(null)
 const detailDialogOpen = ref(false)
 const dialogOpen = ref(false)
 const deleteDialogOpen = ref(false)
 const formValid = ref(false)
 const isEditing = ref(false)
-const selectedSite = ref<Site | null>(null)
-const selectedGridSite = ref<Site | null>(null)
-const siteForm = ref()
+const selectedSchedulePeriod = ref<SchedulePeriod | null>(null)
+const selectedGridSchedulePeriod = ref<SchedulePeriod | null>(null)
+const schedulePeriodForm = ref()
 const kendoGrid = ref()
 const group = ref([])
 const result = ref([])
 const gridKey = ref(0)
+const globalSearch = ref('')
 const forceGridRefresh = () => gridKey.value++
+
 const dataState = ref({
   take: 8,
   skip: 0
@@ -358,16 +381,29 @@ const dataState = ref({
 const skip = ref(0)
 const take = ref(10)
 
-const currentSite = reactive<Partial<Site>>({
-  name: '',
-  address: '',
-  postal_code: '',
-  city: '',
-  country: '',
-  note: ''
+const currentSchedulePeriod = reactive<Partial<SchedulePeriod>>({
+  charging_profile_id: undefined,
+  start_period_in_seconds: undefined,
+  limit: undefined,
+  number_phases: 1
 })
 
-const sites = computed(() => sitesStore.sites)
+const schedulePeriods = computed(() => schedulePeriodsStore.schedulePeriods)
+
+const filteredSchedulePeriods = computed(() => {
+  if (!globalSearch.value) {
+    return schedulePeriods.value
+  }
+
+  const searchTerm = globalSearch.value.toLowerCase()
+  return schedulePeriods.value.filter(
+    (period) =>
+      period.charging_profile_id?.toString().includes(searchTerm) ||
+      period.start_period_in_seconds?.toString().includes(searchTerm) ||
+      period.limit?.toString().includes(searchTerm) ||
+      period.number_phases?.toString().includes(searchTerm)
+  )
+})
 
 const pageableConfig = {
   buttonCount: 5,
@@ -375,60 +411,59 @@ const pageableConfig = {
   pageSize: 20
 }
 
+const phaseOptions = [
+  { value: 1, title: t('scheduleperiods.onePhase') },
+  { value: 2, title: t('scheduleperiods.twoPhases') },
+  { value: 3, title: t('scheduleperiods.threePhases') }
+]
+
+const availableChargingProfiles = computed(() =>
+  chargingProfilesStore.chargingProfiles.map((profile) => ({
+    value: profile.id,
+    title: `${profile.description || 'Profile ' + profile.id} (${profile.charging_profile_purpose})`
+  }))
+)
+
 const staticColumns = [
   {
-    field: 'site_id',
-    title: t('sites.siteId'),
+    field: 'id',
+    title: t('scheduleperiods.id'),
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu'
   },
   {
-    field: 'name',
-    title: t('sites.siteName'),
-    filter: 'text',
+    field: 'charging_profile_id',
+    title: t('scheduleperiods.chargingProfileId'),
+    filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu'
   },
   {
-    field: 'address',
-    title: t('sites.address'),
-    filter: 'text',
+    field: 'start_period_in_seconds',
+    title: t('scheduleperiods.startPeriodInSeconds'),
+    filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu'
   },
   {
-    field: 'postal_code',
-    title: t('sites.postalCode'),
-    filter: 'text',
+    field: 'limit',
+    title: t('scheduleperiods.limit'),
+    filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu'
   },
   {
-    field: 'city',
-    title: t('sites.city'),
-    filter: 'text',
-    columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
-  },
-  {
-    field: 'country',
-    title: t('sites.country'),
-    filter: 'text',
-    columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
-  },
-  {
-    field: 'created_at',
-    title: t('common.created'),
-    filter: 'date',
+    field: 'number_phases',
+    title: t('scheduleperiods.numberPhases'),
+    filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu'
   }
 ]
 
 const areAllSelected = computed(
-  () => sites.value.findIndex((item) => item.selected === false) === -1
+  () => filteredSchedulePeriods.value.findIndex((item) => item.selected === false) === -1
 )
 
 const columns = ref([...staticColumns])
@@ -439,13 +474,14 @@ const columnsWithSelection = computed(() => [
 ])
 
 const rules = {
-  required: (value: string) => !!value || t('validation.fieldRequired'),
-  nameMinLength: (value: string) => value.length >= 3 || t('sites.validation.nameMinLength'),
-  addressMinLength: (value: string) => value.length >= 5 || t('sites.validation.addressMinLength'),
-  postalCodeFormat: (value: string) =>
-    /^\d{4,10}$/.test(value) || t('sites.validation.postalCodeFormat'),
-  cityMinLength: (value: string) => value.length >= 2 || t('sites.validation.cityMinLength'),
-  countryMinLength: (value: string) => value.length >= 2 || t('sites.validation.countryMinLength')
+  required: (value: string | number) =>
+    (value !== null && value !== undefined && value !== '') || t('validation.fieldRequired'),
+  chargingProfileIdNumeric: (value: number) =>
+    (!isNaN(value) && value > 0) || t('scheduleperiods.validation.chargingProfileIdNumeric'),
+  startPeriodNumeric: (value: number) =>
+    (!isNaN(value) && value >= 0) || t('scheduleperiods.validation.startPeriodNumeric'),
+  limitRange: (value: number) =>
+    (value > 0 && value <= 1000) || t('scheduleperiods.validation.limitRange')
 }
 
 function createAppState(dataState) {
@@ -454,18 +490,19 @@ function createAppState(dataState) {
   skip.value = dataState.skip
   refreshData()
 }
+
 const columnReorder = (options) => {
-  // Filter out the selection column before updating
   const newColumns = options.columns.filter((col) => col.field !== 'selected')
   columns.value = newColumns
 }
+
 function expandChange(event) {
   event.dataItem[event.target.$props.expandField] = event.value
 }
 
 const createDataState = (state) => {
-  if (sites.value && sites.value.length > 0) {
-    result.value = process(sites.value.slice(0), state)
+  if (filteredSchedulePeriods.value && filteredSchedulePeriods.value.length > 0) {
+    result.value = process(filteredSchedulePeriods.value.slice(0), state)
   } else {
     result.value = []
   }
@@ -490,10 +527,13 @@ const onColumnsSubmit = (columnsState) => {
 }
 
 const refreshData = async () => {
-  await sitesStore.fetchSites()
-  sitesStore.sites.forEach((site) => {
-    if (!site.hasOwnProperty('selected')) {
-      site.selected = false
+  await Promise.all([
+    schedulePeriodsStore.fetchSchedulePeriods(),
+    chargingProfilesStore.fetchChargingProfiles()
+  ])
+  schedulePeriodsStore.schedulePeriods.forEach((period) => {
+    if (!period.hasOwnProperty('selected')) {
+      period.selected = false
     }
   })
 }
@@ -503,14 +543,15 @@ const openCreateDialog = () => {
   resetForm()
   dialogOpen.value = true
 }
-const viewSite = (site: Site) => {
-  viewedSite.value = site
+
+const viewSchedulePeriod = (period: SchedulePeriod) => {
+  viewedSchedulePeriod.value = period
   detailDialogOpen.value = true
 }
 
-const openEditDialog = (site: Site) => {
+const openEditDialog = (period: SchedulePeriod) => {
   isEditing.value = true
-  Object.assign(currentSite, site)
+  Object.assign(currentSchedulePeriod, period)
   dialogOpen.value = true
 }
 
@@ -520,42 +561,38 @@ const closeDialog = () => {
 }
 
 const resetForm = () => {
-  Object.assign(currentSite, {
-    name: '',
-    address: '',
-    postal_code: '',
-    city: '',
-    country: '',
-    note: ''
+  Object.assign(currentSchedulePeriod, {
+    charging_profile_id: undefined,
+    start_period_in_seconds: undefined,
+    limit: undefined,
+    number_phases: 1
   })
-  if (siteForm.value) {
-    siteForm.value.resetValidation()
+  if (schedulePeriodForm.value) {
+    schedulePeriodForm.value.resetValidation()
   }
 }
 
-const saveSite = async () => {
-  if (!siteForm.value?.validate()) return
+const saveSchedulePeriod = async () => {
+  if (!schedulePeriodForm.value?.validate()) return
 
-  const siteData = {
-    name: currentSite.name!,
-    address: currentSite.address!,
-    postal_code: currentSite.postal_code!,
-    city: currentSite.city!,
-    country: currentSite.country!,
-    note: currentSite.note || ''
+  const periodData = {
+    charging_profile_id: Number(currentSchedulePeriod.charging_profile_id!),
+    start_period_in_seconds: Number(currentSchedulePeriod.start_period_in_seconds!),
+    limit: Number(currentSchedulePeriod.limit!),
+    number_phases: Number(currentSchedulePeriod.number_phases!)
   }
 
   let success = false
 
-  if (isEditing.value && currentSite.site_id) {
-    const updateData: UpdateSiteRequest = {
-      ...siteData,
-      site_id: currentSite.site_id
+  if (isEditing.value && currentSchedulePeriod.id) {
+    const updateData: UpdateSchedulePeriodRequest = {
+      ...periodData,
+      id: currentSchedulePeriod.id
     }
-    success = await sitesStore.updateSite(updateData)
+    success = await schedulePeriodsStore.updateSchedulePeriod(updateData)
   } else {
-    const createData: CreateSiteRequest = siteData
-    success = await sitesStore.createSite(createData)
+    const createData: CreateSchedulePeriodRequest = periodData
+    success = await schedulePeriodsStore.createSchedulePeriod(createData)
   }
 
   if (success) {
@@ -563,25 +600,25 @@ const saveSite = async () => {
   }
 }
 
-const confirmDelete = (site: Site) => {
-  selectedSite.value = site
+const confirmDelete = (period: SchedulePeriod) => {
+  selectedSchedulePeriod.value = period
   deleteDialogOpen.value = true
 }
 
-const deleteSite = async () => {
-  if (selectedSite.value?.site_id) {
-    const success = await sitesStore.deleteSite(selectedSite.value.site_id)
+const deleteSchedulePeriod = async () => {
+  if (selectedSchedulePeriod.value?.id) {
+    const success = await schedulePeriodsStore.deleteSchedulePeriod(selectedSchedulePeriod.value.id)
     if (success) {
       deleteDialogOpen.value = false
-      selectedSite.value = null
-      selectedGridSite.value = null
+      selectedSchedulePeriod.value = null
+      selectedGridSchedulePeriod.value = null
     }
   }
 }
 
 function onHeaderSelectionChange(event) {
   const checked = event.event.target.checked
-  sitesStore.sites = sitesStore.sites.map((item) => ({
+  schedulePeriodsStore.schedulePeriods = schedulePeriodsStore.schedulePeriods.map((item) => ({
     ...item,
     selected: checked
   }))
@@ -593,41 +630,37 @@ function onSelectionChange(event) {
     selected: !event.dataItem.selected
   }
 
-  const index = sitesStore.sites.findIndex((s) => s.site_id === updatedItem.site_id)
+  const index = schedulePeriodsStore.schedulePeriods.findIndex((p) => p.id === updatedItem.id)
   if (index !== -1) {
-    sitesStore.sites[index] = updatedItem
-  }
-}
-function onRowClick(event) {
-  if (event.dataItem) {
-    viewSite(event.dataItem)
+    schedulePeriodsStore.schedulePeriods[index] = updatedItem
   }
 }
 
-// const onRowDoubleClick = (event: any) => {
-//   const site = event.dataItem
-//   if (site) {
-//     openEditDialog(site)
-//   }
-// }
+function onRowClick(event) {
+  if (event.dataItem) {
+    viewSchedulePeriod(event.dataItem)
+  }
+}
 
 const exportToPdf = async () => {
   try {
     const columns: ExportColumn[] = [
-      { key: 'site_id', title: t('sites.siteId'), type: 'number' },
-      { key: 'name', title: t('sites.siteName'), type: 'text' },
-      { key: 'address', title: t('sites.address'), type: 'text' },
-      { key: 'postal_code', title: t('sites.postalCode'), type: 'text' },
-      { key: 'city', title: t('sites.city'), type: 'text' },
-      { key: 'country', title: t('sites.country'), type: 'text' },
-      { key: 'created_at', title: t('common.created'), type: 'date' }
+      { key: 'id', title: t('scheduleperiods.id'), type: 'number' },
+      { key: 'charging_profile_id', title: t('scheduleperiods.chargingProfileId'), type: 'number' },
+      {
+        key: 'start_period_in_seconds',
+        title: t('scheduleperiods.startPeriodInSeconds'),
+        type: 'number'
+      },
+      { key: 'limit', title: t('scheduleperiods.limit'), type: 'number' },
+      { key: 'number_phases', title: t('scheduleperiods.numberPhases'), type: 'number' }
     ]
 
     await ExportUtils.exportToPDF({
-      data: sites.value,
+      data: filteredSchedulePeriods.value,
       columns,
-      title: t('sites.title'),
-      filename: `sites_${new Date().toISOString().split('T')[0]}.pdf`
+      title: t('scheduleperiods.title'),
+      filename: `scheduleperiods_${new Date().toISOString().split('T')[0]}.pdf`
     })
   } catch (error) {
     console.error('PDF export error:', error)
@@ -637,20 +670,22 @@ const exportToPdf = async () => {
 const exportToExcel = async () => {
   try {
     const columns: ExportColumn[] = [
-      { key: 'site_id', title: t('sites.siteId'), type: 'number' },
-      { key: 'name', title: t('sites.siteName'), type: 'text' },
-      { key: 'address', title: t('sites.address'), type: 'text' },
-      { key: 'postal_code', title: t('sites.postalCode'), type: 'text' },
-      { key: 'city', title: t('sites.city'), type: 'text' },
-      { key: 'country', title: t('sites.country'), type: 'text' },
-      { key: 'created_at', title: t('common.created'), type: 'date' }
+      { key: 'id', title: t('scheduleperiods.id'), type: 'number' },
+      { key: 'charging_profile_id', title: t('scheduleperiods.chargingProfileId'), type: 'number' },
+      {
+        key: 'start_period_in_seconds',
+        title: t('scheduleperiods.startPeriodInSeconds'),
+        type: 'number'
+      },
+      { key: 'limit', title: t('scheduleperiods.limit'), type: 'number' },
+      { key: 'number_phases', title: t('scheduleperiods.numberPhases'), type: 'number' }
     ]
 
     await ExportUtils.exportToExcel({
-      data: sites.value,
+      data: filteredSchedulePeriods.value,
       columns,
-      title: t('sites.title'),
-      filename: `sites_${new Date().toISOString().split('T')[0]}.xlsx`
+      title: t('scheduleperiods.title'),
+      filename: `scheduleperiods_${new Date().toISOString().split('T')[0]}.xlsx`
     })
   } catch (error) {
     console.error('Excel export error:', error)
@@ -660,20 +695,22 @@ const exportToExcel = async () => {
 const exportToCsv = async () => {
   try {
     const columns: ExportColumn[] = [
-      { key: 'site_id', title: t('sites.siteId'), type: 'number' },
-      { key: 'name', title: t('sites.siteName'), type: 'text' },
-      { key: 'address', title: t('sites.address'), type: 'text' },
-      { key: 'postal_code', title: t('sites.postalCode'), type: 'text' },
-      { key: 'city', title: t('sites.city'), type: 'text' },
-      { key: 'country', title: t('sites.country'), type: 'text' },
-      { key: 'created_at', title: t('common.created'), type: 'date' }
+      { key: 'id', title: t('scheduleperiods.id'), type: 'number' },
+      { key: 'charging_profile_id', title: t('scheduleperiods.chargingProfileId'), type: 'number' },
+      {
+        key: 'start_period_in_seconds',
+        title: t('scheduleperiods.startPeriodInSeconds'),
+        type: 'number'
+      },
+      { key: 'limit', title: t('scheduleperiods.limit'), type: 'number' },
+      { key: 'number_phases', title: t('scheduleperiods.numberPhases'), type: 'number' }
     ]
 
     await ExportUtils.exportToCSV({
-      data: sites.value,
+      data: filteredSchedulePeriods.value,
       columns,
-      title: t('sites.title'),
-      filename: `sites_${new Date().toISOString().split('T')[0]}.csv`
+      title: t('scheduleperiods.title'),
+      filename: `scheduleperiods_${new Date().toISOString().split('T')[0]}.csv`
     })
   } catch (error) {
     console.error('CSV export error:', error)
@@ -686,6 +723,7 @@ onMounted(() => {
     skip: 0
   })
 })
+
 onMounted(async () => {
   await refreshData()
   createDataState({
@@ -695,7 +733,7 @@ onMounted(async () => {
 })
 
 watch(
-  sites,
+  filteredSchedulePeriods,
   (newValue) => {
     if (newValue.length > 0) {
       createDataState(dataState.value)
@@ -703,14 +741,18 @@ watch(
   },
   { immediate: true }
 )
+
+watch(globalSearch, () => {
+  createDataState(dataState.value)
+})
 </script>
 
 <style scoped>
-.sites-management {
+.scheduleperiods-management {
   padding: 16px;
 }
 
-.sites-header {
+.scheduleperiods-header {
   padding: 24px 24px 16px 24px;
 }
 
@@ -721,17 +763,25 @@ watch(
   margin-bottom: 16px;
 }
 
+.search-container {
+  min-width: 250px;
+}
+
+.search-field {
+  max-width: 300px;
+}
+
 .export-actions {
   display: flex;
   gap: 8px;
 }
 
-.sites-grid .k-grid-table tbody tr {
+.scheduleperiods-grid .k-grid-table tbody tr {
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
-.sites-grid .k-grid-table tbody tr:hover {
+.scheduleperiods-grid .k-grid-table tbody tr:hover {
   background-color: rgba(25, 118, 210, 0.04);
 }
 
@@ -747,7 +797,7 @@ watch(
   margin-top: 16px;
 }
 
-.sites-grid {
+.scheduleperiods-grid {
   border: 1px solid var(--v-border-color);
   border-radius: 4px;
 }
@@ -772,6 +822,26 @@ watch(
   gap: 8px;
 }
 
+.action-buttons-cell {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.action-btn {
+  margin: 0 2px;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+}
+
+.action-btn .v-icon {
+  font-size: 18px;
+}
+
 @media (max-width: 768px) {
   .action-bar {
     flex-direction: column;
@@ -786,20 +856,29 @@ watch(
     flex: 1;
     min-width: 0;
   }
+
+  .search-container {
+    min-width: auto;
+  }
 }
 
 @media (max-width: 600px) {
-  .sites-management {
+  .scheduleperiods-management {
     padding: 8px;
   }
 
-  .sites-header {
+  .scheduleperiods-header {
     padding: 16px;
   }
 
   .export-actions {
     flex-direction: column;
     gap: 8px;
+  }
+
+  .action-buttons-cell {
+    flex-direction: column;
+    align-items: center;
   }
 }
 
@@ -902,61 +981,5 @@ th.k-header.active > div > a {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
   transition: all 0.2s ease;
-}
-
-.action-buttons-cell {
-  display: flex;
-  gap: 4px;
-  justify-content: center;
-  padding: 8px 0;
-}
-
-.action-btn {
-  margin: 0 2px;
-  transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-  transform: scale(1.1);
-}
-
-.action-btn .v-icon {
-  font-size: 18px;
-}
-
-/* Detail view styling */
-.site-detail {
-  padding: 16px;
-}
-
-.site-detail-row {
-  display: flex;
-  margin-bottom: 12px;
-}
-
-.site-detail-label {
-  font-weight: 500;
-  min-width: 120px;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.site-detail-value {
-  flex: 1;
-}
-
-/* Responsive adjustments */
-@media (max-width: 600px) {
-  .action-buttons-cell {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .site-detail-row {
-    flex-direction: column;
-  }
-
-  .site-detail-label {
-    margin-bottom: 4px;
-  }
 }
 </style>

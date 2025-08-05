@@ -5,6 +5,10 @@ import { useAuthStore } from '@/stores/auth'
 const LoginView = () => import('@/views/LoginView.vue')
 const DashboardView = () => import('@/views/DashboardView.vue')
 const SitesView = () => import('@/views/SitesView.vue')
+const ChargePointsView = () => import('@/views/ChargePointsView.vue')
+const ConnectorsView = () => import('@/views/ConnectorsView.vue')
+const SchedulePeriodsView = () => import('@/views/SchedulePeriodsView.vue')
+const ChargingProfilesView = () => import('@/views/ChargingProfilesView.vue')
 const NotFoundView = () => import('@/views/NotFoundView.vue')
 
 const routes: Array<RouteRecordRaw> = [
@@ -28,6 +32,30 @@ const routes: Array<RouteRecordRaw> = [
     path: '/sites',
     name: 'sites',
     component: SitesView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/charge-points',
+    name: 'chargepoints',
+    component: ChargePointsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/connectors',
+    name: 'connectors',
+    component: ConnectorsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/schedule-periods',
+    name: 'scheduleperiods',
+    component: SchedulePeriodsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/charging-profiles',
+    name: 'chargingprofiles',
+    component: ChargingProfilesView,
     meta: { requiresAuth: true }
   },
 

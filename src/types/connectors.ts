@@ -5,6 +5,7 @@ export interface Connector {
   type: string // Connector type (e.g. CCS, Type2)
   max_power_kw: number // Max. power in kW
   status: 'available' | 'faulted' // Connector status
+  last_status_change?: string // Last time status was changed
   created_at?: string
   updated_at?: string
 }
