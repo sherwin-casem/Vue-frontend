@@ -648,10 +648,6 @@ function createAppState(dataState) {
   refreshData()
 }
 
-const columnReorder = (options) => {
-  const newColumns = options.columns.filter((col) => col.field !== 'selected')
-  columns.value = newColumns
-}
 
 function expandChange(event) {
   event.dataItem[event.target.$props.expandField] = event.value
@@ -884,6 +880,15 @@ function onHeaderSelectionChange(event) {
     ...item,
     selected: checked
   }))
+}
+const columnReorder = (options: any) => {
+  const newColumnOrder = options.columns.filter((col: any) => col.field !== 'selected')
+  const reorderedColumns = newColumnOrder.map((newCol: any) => {
+    const existingCol = allColumns.value.find((col) => col.field === newCol.field)
+    return existingCol ? { ...existingCol, ...newCol } : newCol
+  })
+
+  allColumns.value = reorderedColumns
 }
 
 function onSelectionChange(event) {
