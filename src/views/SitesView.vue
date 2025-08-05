@@ -106,6 +106,7 @@
             class="sites-grid"
             :filter="dataState.filter"
             :sort="dataState.sort"
+            :detail="cellTemplate"
             @datastatechange="dataStateChange"
             @selectionchange="onSelectionChange"
             @headerselectionchange="onHeaderSelectionChange"
@@ -130,13 +131,24 @@
               />
             </template>
 
-            <template #detailTemplate="{ props }">
-              <SiteDetailView
-                :site="props.dataItem"
-                @edit="openEditDialog"
-                @delete="confirmDelete"
-              />
-            </template>
+              <template #myTemplate="{props}">
+                <TabStrip :selected="selected" @select="onSelect" :tabs='tabs'>
+                    <template #chargepoints>
+                        <Grid
+                        :columns="chargePointsColumns"
+                        :data-item="chargePoints"
+                        />
+                    </template>
+
+                     <template #connectors>
+                        <Grid
+                        :columns="connectorsColumns"
+                        :data-item="connectors"
+                        />
+                    </template>
+                </TabStrip>
+              </template>
+
           </Grid>
 
           <div v-if="selectedGridSite" class="grid-row-actions">
@@ -351,8 +363,10 @@ import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 import DetailItem from '@/components/DetailItem.vue'
+import { TabStrip } from "@progress/kendo-vue-layout";
 
 const { t, d } = useI18n()
+const selected = ref(0);
 const { formatDate } = useLocaleFormatting()
 const sitesStore = useSitesStore()
 const selectedField = 'selected'
@@ -371,6 +385,8 @@ const group = ref([])
 const result = ref([])
 const gridKey = ref(0)
 const successMessage = ref('')
+const connectors = ref([])
+const chargePoints = ref([])
 const showSuccessAlert = ref(false)
 const forceGridRefresh = () => gridKey.value++
 const dataState = ref({
@@ -400,6 +416,75 @@ const pageableConfig = {
   pageSizes: [10, 20, 50, 100],
   pageSize: 20
 }
+
+const tabs = ref([
+    { title: "Charge points", content: "chargepoints" },
+    { title: "Connectors", content: "connectors" },
+]);
+
+const connectorsColumns =  [
+
+  {
+    field: 'connector_number',
+    title: t('connectors.connectorNumber'),
+    filterable:false
+  },
+  {
+    field: 'type',
+    title: t('connectors.type'),
+    filterable:false
+
+  },
+  {
+    field: 'max_power_kw',
+    title: t('connectors.maxPowerKw'),
+    filterable:false
+
+  },
+  {
+    field: 'status',
+    title: t('connectors.status'),
+    filterable:false
+
+  },
+]
+const chargePointsColumns = [
+
+  {
+    field: 'ocpp_charge_box_id',
+    title: t('chargepoints.ocppChargeBoxId'),
+    filter: 'text',
+    filterable:false
+  },
+  {
+    field: 'manufacturer',
+    title: t('chargepoints.manufacturer'),
+    filter: 'text',
+    filterable:false
+
+  },
+  {
+    field: 'model',
+    title: t('chargepoints.model'),
+    filter: 'text',
+    filterable:false
+
+  },
+  {
+    field: 'connector_count',
+    title: t('chargepoints.connectorCount'),
+    filter: 'numeric',
+    filterable:false
+
+  },
+  {
+    field: 'status',
+    title: t('chargepoints.status'),
+    filter: 'text',
+    filterable:false
+
+  },
+]
 
 const staticColumns = [
   {
@@ -480,6 +565,10 @@ function createAppState(dataState) {
   skip.value = dataState.skip
   refreshData()
 }
+const onSelect = (e) => {
+    selected.value = e.selected;
+};
+
 const columnReorder = (options) => {
   // Filter out the selection column before updating
   const newColumns = options.columns.filter((col) => col.field !== 'selected')

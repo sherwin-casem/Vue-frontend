@@ -121,6 +121,7 @@
             class="chargingprofiles-grid"
             :filter="dataState.filter"
             :sort="dataState.sort"
+            :detail="cellTemplate"
             @datastatechange="dataStateChange"
             @selectionchange="onSelectionChange"
             @headerselectionchange="onHeaderSelectionChange"
@@ -146,10 +147,9 @@
             </template>
 
             <template #detailTemplate="{ props }">
-              <ChargingProfileDetailView
-                :chargingProfile="props.dataItem"
-                @edit="openEditDialog"
-                @delete="confirmDelete"
+              <Grid 
+              :columns="schedulePeriodsColumns"
+              :data-item="schedulePeriods"
               />
             </template>
           </Grid>
@@ -461,7 +461,7 @@ const { formatDate } = useLocaleFormatting()
 const chargingProfilesStore = useChargingProfilesStore()
 const chargePointsStore = useChargePointsStore()
 const selectedField = 'selected'
-const cellTemplate = ref('myTemplate')
+const cellTemplate = ref('detailTemplate')
 const viewedChargingProfile = ref<ChargingProfile | null>(null)
 const detailDialogOpen = ref(false)
 const dialogOpen = ref(false)
@@ -478,6 +478,7 @@ const gridKey = ref(0)
 const globalSearch = ref('')
 const successMessage = ref('')
 const showSuccessAlert = ref(false)
+const schedulePeriods = ref([])
 const forceGridRefresh = () => gridKey.value++
 
 const dataState = ref({
@@ -557,6 +558,30 @@ const availableChargePoints = computed(() =>
   }))
 )
 
+const schedulePeriodsColumns = [
+
+  {
+    field: 'start_period_in_seconds',
+    title: t('scheduleperiods.startPeriodInSeconds'),
+    filter: 'numeric',
+    columnMenu: 'columnMenuTemplate',
+    headerClassName: 'customMenu'
+  },
+  {
+    field: 'limit',
+    title: t('scheduleperiods.limit'),
+    filter: 'numeric',
+    columnMenu: 'columnMenuTemplate',
+    headerClassName: 'customMenu'
+  },
+  {
+    field: 'number_phases',
+    title: t('scheduleperiods.numberPhases'),
+    filter: 'numeric',
+    columnMenu: 'columnMenuTemplate',
+    headerClassName: 'customMenu'
+  }
+]
 const staticColumns = [
   {
     field: 'id',
