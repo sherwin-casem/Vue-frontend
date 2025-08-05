@@ -121,6 +121,7 @@
             class="chargepoints-grid"
             :filter="dataState.filter"
             :sort="dataState.sort"
+            :detail="cellTemplate"
             @datastatechange="dataStateChange"
             @selectionchange="onSelectionChange"
             @headerselectionchange="onHeaderSelectionChange"
@@ -152,6 +153,17 @@
                 @delete="confirmDelete"
               />
             </template>
+
+             <template #myTemplate="{ props }">
+              <v-card-text class="text-bold">Charging profiles for {{ props.dataItem.manufacturer }} ( {{ props.dataItem.model }})</v-card-text>
+              <Grid
+              :columns="chargingProfilesColumns"
+              :data-items="chargingProfiles || []"
+              :sortable="false"
+              :groupable="false"
+              :filterable="false"
+              />
+          </template>
           </Grid>
 
           <div v-if="selectedGridChargePoint" class="grid-row-actions">
@@ -420,6 +432,7 @@ const gridKey = ref(0)
 const globalSearch = ref('')
 const successMessage = ref('')
 const showSuccessAlert = ref(false)
+const chargingProfiles = ref([])
 const forceGridRefresh = () => gridKey.value++
 
 const dataState = ref({
@@ -479,6 +492,42 @@ const availableSites = computed(() =>
     title: `${site.name} (${site.city})`
   }))
 )
+
+const chargingProfilesColumns = [
+
+  {
+    field: 'stack_level',
+    title: t('chargingprofiles.stackLevel'),
+    filter: 'numeric',
+    columnMenu: 'columnMenuTemplate',
+    headerClassName: 'customMenu'
+  },
+  {
+    field: 'charging_profile_purpose',
+    title: t('chargingprofiles.purpose'),
+    filter: 'text',
+    columnMenu: 'columnMenuTemplate',
+    headerClassName: 'customMenu'
+  },
+  {
+    field: 'charging_profile_kind',
+    title: t('chargingprofiles.kind'),
+    filter: 'text',
+    columnMenu: 'columnMenuTemplate',
+    headerClassName: 'customMenu'
+  },
+  {
+    field: 'valid_from',
+    title: t('chargingprofiles.validFrom'),
+    filter: 'date',
+    columnMenu: 'columnMenuTemplate',
+    headerClassName: 'customMenu'
+  },
+  {
+    field: 'valid_to',
+    title: t('chargingprofiles.validTo')
+  }
+]
 
 const staticColumns = [
   {
@@ -808,7 +857,7 @@ function onSelectionChange(event) {
 }
 
 function onRowClick(event) {
-  if (event.dataItem && !event.dataItem.aggregates) {
+  if (event.dataItem && !event.dataItem.aggregates && !event.dataItem.templates)  {
     viewChargePoint(event.dataItem)
   }
 }
@@ -884,6 +933,7 @@ const exportToCsv = async () => {
     console.error('CSV export error:', error)
   }
 }
+
 
 onMounted(() => {
   createDataState({
