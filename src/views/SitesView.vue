@@ -980,7 +980,7 @@ const exportSelectedSites = async (format: 'pdf' | 'excel' | 'csv') => {
 
 function onHeaderSelectionChange(event) {
   const checked = event.event.target.checked
-  sites.value = sites.value.map((item) => ({
+  sitesStore.sites = sitesStore.sites.map((item) => ({
     ...item,
     selected: checked
   }))
