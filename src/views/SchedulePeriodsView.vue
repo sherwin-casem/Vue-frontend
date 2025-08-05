@@ -70,6 +70,38 @@
             </v-list>
           </v-menu>
 
+          <v-menu>
+            <template v-slot:activator="{ props }">
+              <v-btn
+                variant="outlined"
+                prepend-icon="mdi-view-column"
+                v-bind="props"
+                class="column-selector-btn"
+              >
+                {{ $t('common.selectColumns') }}
+                <v-icon>mdi-chevron-down</v-icon>
+              </v-btn>
+            </template>
+            <v-list>
+              <v-list-item
+                v-for="column in allColumns"
+                :key="column.field"
+                :disabled="column.required"
+                @click="toggleColumn(column.field)"
+              >
+                <template v-slot:prepend>
+                  <v-checkbox
+                    :model-value="column.visible"
+                    :disabled="column.required"
+                    @click.stop="toggleColumn(column.field)"
+                    hide-details
+                  />
+                </template>
+                <v-list-item-title>{{ column.title }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+
           <v-btn
             variant="text"
             icon="mdi-refresh"
@@ -452,49 +484,64 @@ const availableChargingProfiles = computed(() =>
   }))
 )
 
-const staticColumns = [
+// All available columns with visibility control
+const allColumns = ref([
   {
     field: 'id',
     title: t('scheduleperiods.id'),
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true,
+    required: true
   },
   {
     field: 'charging_profile_id',
     title: t('scheduleperiods.chargingProfileId'),
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true
   },
   {
     field: 'start_period_in_seconds',
     title: t('scheduleperiods.startPeriodInSeconds'),
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true
   },
   {
     field: 'limit',
     title: t('scheduleperiods.limit'),
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true
   },
   {
     field: 'number_phases',
     title: t('scheduleperiods.numberPhases'),
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true
   }
-]
+])
+
+// Default visible columns
+const defaultVisibleColumns = ['id', 'charging_profile_id', 'start_period_in_seconds', 'limit']
+
+// Computed visible columns
+const staticColumns = computed(() => {
+  return allColumns.value.filter((col) => col.visible)
+})
 
 const areAllSelected = computed(
   () => filteredSchedulePeriods.value.findIndex((item) => item.selected === false) === -1
 )
 
-const columns = ref([...staticColumns])
+const columns = computed(() => staticColumns.value)
 
 const columnsWithSelection = computed(() => [
   { field: 'selected', width: '50px', headerSelectionValue: areAllSelected.value },
@@ -550,8 +597,21 @@ const dataStateChange = (e) => {
   createDataState(e.data)
 }
 
+// Function to toggle column visibility
+const toggleColumn = (field: string) => {
+  const column = allColumns.value.find((col) => col.field === field)
+  if (column && !column.required) {
+    column.visible = !column.visible
+  }
+}
+
 const onColumnsSubmit = (columnsState) => {
-  columns.value = columnsState
+  // Update the visible columns based on the column menu state
+  const visibleFields = columnsState.map((col) => col.field)
+  allColumns.value = allColumns.value.map((col) => ({
+    ...col,
+    visible: visibleFields.includes(col.field)
+  }))
 }
 
 const refreshData = async () => {
@@ -902,6 +962,10 @@ watch(globalSearch, () => {
 }
 
 .export-btn {
+  font-size: 0.875rem;
+}
+
+.column-selector-btn {
   font-size: 0.875rem;
 }
 

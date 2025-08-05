@@ -14,41 +14,38 @@
 </template>
 
 <script setup>
-import {
-    GridColumnMenuFilter,
-} from '@progress/kendo-vue-grid';
+import { GridColumnMenuFilter } from '@progress/kendo-vue-grid'
 
 defineProps({
-    column: Object,
-    sortable: [Boolean, Object],
-    sort: Array,
-    filter: Object,
-    filterable: Boolean,
-    columns: Array,
-});
+  column: Object,
+  sortable: [Boolean, Object],
+  sort: Array,
+  filter: Object,
+  filterable: Boolean,
+  columns: Array
+})
 
 const emit = defineEmits([
-    'columnssubmit',
-    'closemenu',
-    'expandchange',
-    'filterchange',
-    'sortchange',
-]);
+  'columnssubmit',
+  'closemenu',
+  'expandchange',
+  'filterchange',
+  'sortchange'
+])
 
 const handleFocus = (e) => {
-    emit('contentfocus', e);
-};
+  emit('contentfocus', e)
+}
 
 const expandChange = () => {
-    emit('expandchange');
-};
+  emit('expandchange')
+}
 
 const closeMenu = () => {
-    emit('closemenu');
-};
+  emit('closemenu')
+}
 
 const filterChange = (newDescriptor, e) => {
-    emit('filterchange', newDescriptor, e);
-};
-
+  emit('filterchange', newDescriptor, e)
+}
 </script>

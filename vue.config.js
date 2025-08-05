@@ -4,8 +4,8 @@ module.exports = defineConfig({
   transpileDependencies: true,
   devServer: {
     port: 8080,
-    open:true,
-    proxy:{
+    open: true,
+    proxy: {
       '/fleet/ocpp/v1': {
         target: 'https://192.168.100.125:5401',
         changeOrigin: true,

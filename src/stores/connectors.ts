@@ -130,6 +130,25 @@ export const useConnectorsStore = defineStore('connectors', {
       }
     },
 
+    async fetchConnectorsBySiteId(siteId: number): Promise<Connector[]> {
+      try {
+        const response: AxiosResponse<ConnectorsApiResponse> = await apiClient.get(
+          `/connectors?site_id=${siteId}`
+        )
+
+        if (response.data && response.data.connectors) {
+          return response.data.connectors
+        } else if (response.data && !response.data.error) {
+          return Array.isArray(response.data.connectors) ? response.data.connectors : []
+        } else {
+          throw new Error(response.data?.error || 'Failed to fetch connectors')
+        }
+      } catch (error) {
+        console.error('Fetch connectors by site ID error:', error)
+        return []
+      }
+    },
+
     async createConnector(connectorData: CreateConnectorRequest): Promise<boolean> {
       this.loading = true
       this.error = null

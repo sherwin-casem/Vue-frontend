@@ -70,6 +70,38 @@
             </v-list>
           </v-menu>
 
+          <v-menu>
+            <template v-slot:activator="{ props }">
+              <v-btn
+                variant="outlined"
+                prepend-icon="mdi-view-column"
+                v-bind="props"
+                class="column-selector-btn"
+              >
+                {{ $t('common.selectColumns') }}
+                <v-icon>mdi-chevron-down</v-icon>
+              </v-btn>
+            </template>
+            <v-list>
+              <v-list-item
+                v-for="column in allColumns"
+                :key="column.field"
+                :disabled="column.required"
+                @click="toggleColumn(column.field)"
+              >
+                <template v-slot:prepend>
+                  <v-checkbox
+                    :model-value="column.visible"
+                    :disabled="column.required"
+                    @click.stop="toggleColumn(column.field)"
+                    hide-details
+                  />
+                </template>
+                <v-list-item-title>{{ column.title }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+
           <v-btn
             variant="text"
             icon="mdi-refresh"
@@ -154,16 +186,24 @@
               />
             </template>
 
-             <template #myTemplate="{ props }">
-              <v-card-text class="text-bold">Charging profiles for {{ props.dataItem.manufacturer }} ( {{ props.dataItem.model }})</v-card-text>
+            <template #myTemplate="{ props }">
+              <v-card-text class="text-bold"
+                >Charging profiles for {{ props.dataItem.manufacturer }} (
+                {{ props.dataItem.model }})</v-card-text
+              >
+              <div v-if="props.dataItem._loadingProfiles" class="loading-container">
+                <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>
+                <span class="loading-text">Loading charging profiles...</span>
+              </div>
               <Grid
-              :columns="chargingProfilesColumns"
-              :data-items="chargingProfiles || []"
-              :sortable="false"
-              :groupable="false"
-              :filterable="false"
+                v-else
+                :columns="chargingProfilesColumns"
+                :data-items="props.dataItem._chargingProfiles || []"
+                :sortable="false"
+                :groupable="false"
+                :filterable="false"
               />
-          </template>
+            </template>
           </Grid>
 
           <div v-if="selectedGridChargePoint" class="grid-row-actions">
@@ -396,6 +436,7 @@ import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
 import { useChargePointsStore } from '@/stores/chargepoints'
 import { useSitesStore } from '@/stores/sites'
+import { useChargingProfilesStore } from '@/stores/chargingprofiles'
 import type {
   ChargePoint,
   CreateChargePointRequest,
@@ -414,6 +455,7 @@ const { t } = useI18n()
 const { formatDate } = useLocaleFormatting()
 const chargePointsStore = useChargePointsStore()
 const sitesStore = useSitesStore()
+const chargingProfilesStore = useChargingProfilesStore()
 const selectedField = 'selected'
 const cellTemplate = ref('myTemplate')
 const viewedChargePoint = ref<ChargePoint | null>(null)
@@ -432,7 +474,6 @@ const gridKey = ref(0)
 const globalSearch = ref('')
 const successMessage = ref('')
 const showSuccessAlert = ref(false)
-const chargingProfiles = ref([])
 const forceGridRefresh = () => gridKey.value++
 
 const dataState = ref({
@@ -494,7 +535,6 @@ const availableSites = computed(() =>
 )
 
 const chargingProfilesColumns = [
-
   {
     field: 'stack_level',
     title: t('chargingprofiles.stackLevel'),
@@ -505,98 +545,136 @@ const chargingProfilesColumns = [
   {
     field: 'charging_profile_purpose',
     title: t('chargingprofiles.purpose'),
-    filterable:false
-
+    filterable: false
   },
   {
     field: 'charging_profile_kind',
     title: t('chargingprofiles.kind'),
-    filterable:false
-
+    filterable: false
   },
   {
     field: 'valid_from',
     title: t('chargingprofiles.validFrom'),
-    filterable:false
-
+    filterable: false
   },
   {
     field: 'valid_to',
-    title: t('chargingprofiles.validTo')
-    filterable:false
-
+    title: t('chargingprofiles.validTo'),
+    filterable: false
   }
 ]
 
-const staticColumns = [
+// All available columns with visibility control
+const allColumns = ref([
   {
     field: 'id',
     title: t('chargepoints.id'),
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true
   },
   {
     field: 'ocpp_charge_box_id',
     title: t('chargepoints.ocppChargeBoxId'),
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true,
+    required: true
   },
   {
     field: 'site_id',
     title: t('chargepoints.siteId'),
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true
   },
   {
     field: 'manufacturer',
     title: t('chargepoints.manufacturer'),
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true
   },
   {
     field: 'model',
     title: t('chargepoints.model'),
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true
   },
   {
     field: 'connector_count',
     title: t('chargepoints.connectorCount'),
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true
   },
   {
     field: 'status',
     title: t('chargepoints.status'),
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: true
   },
   {
     field: 'created_at',
     title: t('common.created'),
     filter: 'date',
     columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    headerClassName: 'customMenu',
+    visible: false
   }
+])
+
+// Default visible columns
+const defaultVisibleColumns = [
+  'ocpp_charge_box_id',
+  'site_id',
+  'manufacturer',
+  'model',
+  'connector_count',
+  'status'
 ]
+
+// Computed visible columns
+const staticColumns = computed(() => {
+  return allColumns.value.filter((col) => col.visible)
+})
 
 const areAllSelected = computed(
   () => filteredChargePoints.value.findIndex((item) => item.selected === false) === -1
 )
 
-const columns = ref([...staticColumns])
+const columns = computed(() => staticColumns.value)
 
 const columnsWithSelection = computed(() => [
   { field: 'selected', width: '50px', headerSelectionValue: areAllSelected.value },
   ...columns.value
 ])
+
+// Function to toggle column visibility
+const toggleColumn = (field: string) => {
+  const column = allColumns.value.find((col) => col.field === field)
+  if (column && !column.required) {
+    column.visible = !column.visible
+  }
+}
+
+const onColumnsSubmit = (columnsState: any[]) => {
+  // Update the visible columns based on the column menu state
+  const visibleFields = columnsState.map((col) => col.field)
+  allColumns.value = allColumns.value.map((col) => ({
+    ...col,
+    visible: visibleFields.includes(col.field)
+  }))
+}
 
 const rules = {
   required: (value: string | number) =>
@@ -620,13 +698,42 @@ function createAppState(dataState) {
   refreshData()
 }
 
-const columnReorder = (options) => {
-  const newColumns = options.columns.filter((col) => col.field !== 'selected')
-  columns.value = newColumns
+const columnReorder = (options: any) => {
+  // Handle column reordering while maintaining visibility state
+  const newColumnOrder = options.columns.filter((col: any) => col.field !== 'selected')
+  const reorderedColumns = newColumnOrder.map((newCol: any) => {
+    const existingCol = allColumns.value.find((col) => col.field === newCol.field)
+    return existingCol ? { ...existingCol, ...newCol } : newCol
+  })
+
+  // Update allColumns with new order
+  allColumns.value = reorderedColumns
 }
 
-function expandChange(event) {
+async function expandChange(event) {
   event.dataItem[event.target.$props.expandField] = event.value
+
+  // Fetch charging profiles when expanding a charge point
+  if (event.value && event.dataItem.id) {
+    // Set loading state
+    event.dataItem._loadingProfiles = true
+    try {
+      const profiles = await chargingProfilesStore.fetchChargingProfilesByChargePointId(
+        event.dataItem.id
+      )
+      // Store data in the specific row's data item
+      event.dataItem._chargingProfiles = profiles
+    } catch (error) {
+      console.error('Error fetching charging profiles:', error)
+      event.dataItem._chargingProfiles = []
+    } finally {
+      event.dataItem._loadingProfiles = false
+    }
+  } else if (!event.value) {
+    // Clear data when collapsing
+    event.dataItem._chargingProfiles = []
+    event.dataItem._loadingProfiles = false
+  }
 }
 
 const createDataState = (state) => {
@@ -649,10 +756,6 @@ const dataStateChange = (e) => {
     createAppState(e.data)
   }
   createDataState(e.data)
-}
-
-const onColumnsSubmit = (columnsState) => {
-  columns.value = columnsState
 }
 
 const refreshData = async () => {
@@ -856,7 +959,18 @@ function onSelectionChange(event) {
 }
 
 function onRowClick(event) {
-  if (event.dataItem && !event.dataItem.aggregates && !event.dataItem.templates)  {
+  const nativeEvent = event.event
+  const target = nativeEvent?.target
+
+  if (!target) return
+
+  const isHierarchyExpandClick = target.closest('.k-hierarchy-cell')
+
+  if (isHierarchyExpandClick) {
+    return
+  }
+
+  if (event.dataItem && !event.dataItem.aggregates) {
     viewChargePoint(event.dataItem)
   }
 }
@@ -933,7 +1047,6 @@ const exportToCsv = async () => {
   }
 }
 
-
 onMounted(() => {
   createDataState({
     take: 8,
@@ -994,6 +1107,10 @@ watch(globalSearch, () => {
 }
 
 .export-btn {
+  font-size: 0.875rem;
+}
+
+.column-selector-btn {
   font-size: 0.875rem;
 }
 
@@ -1199,5 +1316,19 @@ th.k-header.active > div > a {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
   transition: all 0.2s ease;
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  background: #fafafa;
+}
+
+.loading-text {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.875rem;
 }
 </style>

@@ -138,6 +138,27 @@ export const useChargingProfilesStore = defineStore('chargingProfiles', {
       }
     },
 
+    async fetchChargingProfilesByChargePointId(chargePointId: number): Promise<ChargingProfile[]> {
+      try {
+        const response: AxiosResponse<ChargingProfilesApiResponse> = await apiClient.get(
+          `/charging-profiles?charge_point_id=${chargePointId}`
+        )
+
+        if (response.data && response.data.charging_profiles) {
+          return response.data.charging_profiles
+        } else if (response.data && !response.data.error) {
+          return Array.isArray(response.data.charging_profiles)
+            ? response.data.charging_profiles
+            : []
+        } else {
+          throw new Error(response.data?.error || 'Failed to fetch charging profiles')
+        }
+      } catch (error) {
+        console.error('Fetch charging profiles by charge point ID error:', error)
+        return []
+      }
+    },
+
     async createChargingProfile(profileData: CreateChargingProfileRequest): Promise<boolean> {
       this.loading = true
       this.error = null

@@ -133,6 +133,27 @@ export const useSchedulePeriodsStore = defineStore('schedulePeriods', {
       }
     },
 
+    async fetchSchedulePeriodsByChargingProfileId(
+      chargingProfileId: number
+    ): Promise<SchedulePeriod[]> {
+      try {
+        const response: AxiosResponse<SchedulePeriodsApiResponse> = await apiClient.get(
+          `/schedule-periods?charging_profile_id=${chargingProfileId}`
+        )
+
+        if (response.data && response.data.schedule_periods) {
+          return response.data.schedule_periods
+        } else if (response.data && !response.data.error) {
+          return Array.isArray(response.data.schedule_periods) ? response.data.schedule_periods : []
+        } else {
+          throw new Error(response.data?.error || 'Failed to fetch schedule periods')
+        }
+      } catch (error) {
+        console.error('Fetch schedule periods by charging profile ID error:', error)
+        return []
+      }
+    },
+
     async createSchedulePeriod(periodData: CreateSchedulePeriodRequest): Promise<boolean> {
       this.loading = true
       this.error = null
