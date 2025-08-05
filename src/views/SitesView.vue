@@ -990,16 +990,24 @@ function onSelectionChange(event) {
   event.dataItem[selectedField] = !event.dataItem[selectedField]
 }
 function onRowClick(event) {
-  const nativeEvent = event.event
-  const target = nativeEvent?.target
+  const nativeEvent = event.event;
+  let target = nativeEvent?.target;
 
-  if (!target) return
+  if (!target) return;
 
-  const isHierarchyExpandClick = target.closest('.k-hierarchy-cell')
-
-  if (isHierarchyExpandClick) {
-    return
+  while (target && target.nodeType !== 1) {
+    target = target.parentNode;
   }
+
+  const isHierarchyClick =
+    target.closest('.k-hierarchy-cell') || target.closest('.k-i-expand') || target.closest('.k-icon');
+
+  const isActionClick = target.closest('.action-column') || target.closest('button') || target.closest('input[type="checkbox"]');
+
+  if (isHierarchyClick || isActionClick) {
+    return;
+  }
+
 
   if (event.dataItem && !event.dataItem.aggregates) {
     viewSite(event.dataItem)

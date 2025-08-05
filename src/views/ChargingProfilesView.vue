@@ -1089,23 +1089,30 @@ function onHeaderSelectionChange(event) {
 function onSelectionChange(event) {
   event.dataItem[selectedField] = !event.dataItem[selectedField]
 }
-
 function onRowClick(event) {
-  const nativeEvent = event.event
-  const target = nativeEvent?.target
+  const nativeEvent = event.event;
+  let target = nativeEvent?.target;
 
-  if (!target) return
+  if (!target) return;
 
-  const isHierarchyExpandClick = target.closest('.k-hierarchy-cell')
+  while (target && target.nodeType !== 1) {
+    target = target.parentNode;
+  }
 
-  if (isHierarchyExpandClick) {
-    return
+  const isHierarchyClick =
+    target.closest('.k-hierarchy-cell') || target.closest('.k-i-expand') || target.closest('.k-icon');
+
+  const isActionClick = target.closest('.action-column') || target.closest('button') || target.closest('input[type="checkbox"]');
+
+  if (isHierarchyClick || isActionClick) {
+    return;
   }
 
   if (event.dataItem && !event.dataItem.aggregates) {
-    viewChargingProfile(event.dataItem)
+    viewChargingProfile(event.dataItem);
   }
 }
+
 const exportToPdf = async () => {
   try {
     const columns: ExportColumn[] = [
