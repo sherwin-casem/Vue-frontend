@@ -1,14 +1,31 @@
 <template>
   <div class="not-found">
-    <v-card class="not-found-card" elevation="2">
+    <v-card
+      class="not-found-card"
+      elevation="2"
+    >
       <v-card-item class="text-center">
-        <v-icon size="64" color="error" class="mb-4">mdi-alert-circle</v-icon>
-        <h1 class="text-h4 mb-2">404 - Page Not Found</h1>
+        <v-icon
+          size="64"
+          color="error"
+          class="mb-4"
+        >
+          mdi-alert-circle
+        </v-icon>
+        <h1 class="text-h4 mb-2">
+          404 - Page Not Found
+        </h1>
         <p class="text-subtitle-1 text-medium-emphasis mb-6">
           The page you are looking for doesn't exist or has been moved.
         </p>
-        <v-btn color="primary" size="large" to="/dashboard">
-          <v-icon start>mdi-home</v-icon>
+        <v-btn
+          color="primary"
+          size="large"
+          to="/dashboard"
+        >
+          <v-icon start>
+            mdi-home
+          </v-icon>
           Return to Dashboard
         </v-btn>
       </v-card-item>

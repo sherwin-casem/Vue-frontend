@@ -1,19 +1,24 @@
 module.exports = {
   root: true,
   env: {
-    node: true
+    node: true,
+    browser: true,
+    es2021: true,
   },
-  extends: ['plugin:vue/vue3-recommended', 'eslint:recommended', 'plugin:prettier/recommended'],
+  parser: "vue-eslint-parser",
   parserOptions: {
-    parser: '@babel/eslint-parser'
+    parser: "@typescript-eslint/parser",
+    ecmaVersion: 2021,
+    sourceType: "module",
   },
+  extends: [
+    "plugin:vue/vue3-recommended",      // Vue 3 style & error rules
+    "plugin:@typescript-eslint/recommended", // TypeScript rules
+  ],
   rules: {
-    'no-console': 'warn',
-    'no-debugger': 'warn',
-    'vue/multi-word-component-names': 'warn',
-    'no-unused-vars': 'warn',
-    'vue/no-unused-vars': 'warn',
-    'vue/valid-v-slot': 'off',
-    'prettier/prettier': ['error', {}, { usePrettierrc: true }]
-  }
-}
+    // Enable some autofixable rules or adjust as needed
+    "no-unused-vars": "off", // disable base rule to avoid conflict with TS
+    "@typescript-eslint/no-unused-vars": ["error"],
+    // Add more rules here if you want
+  },
+};

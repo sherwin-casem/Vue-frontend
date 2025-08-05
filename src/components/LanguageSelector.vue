@@ -1,6 +1,6 @@
 <template>
   <v-menu offset-y>
-    <template v-slot:activator="{ props }">
+    <template #activator="{ props }">
       <v-btn
         v-bind="props"
         icon
@@ -11,17 +11,20 @@
       </v-btn>
     </template>
     
-    <v-list density="compact" min-width="160">
+    <v-list
+      density="compact"
+      min-width="160"
+    >
       <v-list-subheader>{{ $t('language.selectLanguage') }}</v-list-subheader>
       
       <v-list-item
         v-for="locale in supportedLocales"
         :key="locale"
         :value="locale"
-        @click="changeLanguage(locale)"
         :class="{ 'active-language': currentLocale === locale }"
+        @click="changeLanguage(locale)"
       >
-        <template v-slot:prepend>
+        <template #prepend>
           <v-icon 
             v-if="currentLocale === locale" 
             color="primary"
@@ -29,12 +32,15 @@
           >
             mdi-check
           </v-icon>
-          <span v-else class="language-flag">{{ getLanguageFlag(locale) }}</span>
+          <span
+            v-else
+            class="language-flag"
+          >{{ getLanguageFlag(locale) }}</span>
         </template>
         
         <v-list-item-title>{{ getLanguageName(locale) }}</v-list-item-title>
         
-        <template v-slot:append>
+        <template #append>
           <v-chip
             v-if="currentLocale === locale"
             size="x-small"

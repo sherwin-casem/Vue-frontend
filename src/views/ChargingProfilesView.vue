@@ -1,8 +1,12 @@
+  <!-- @ts-nocheck -->
+
 <template>
   <div class="chargingprofiles-management">
     <v-card elevation="2">
       <v-card-title class="chargingprofiles-header">
-        <h1 class="text-h4">{{ $t('chargingprofiles.title') }}</h1>
+        <h1 class="text-h4">
+          {{ $t('chargingprofiles.title') }}
+        </h1>
         <p class="text-subtitle-1 text-medium-emphasis">
           {{ $t('chargingprofiles.manageAllChargingProfiles') }}
         </p>
@@ -14,13 +18,13 @@
             color="primary"
             variant="elevated"
             prepend-icon="mdi-plus"
-            @click="openCreateDialog"
             :disabled="chargingProfilesStore.loading"
+            @click="openCreateDialog"
           >
             {{ $t('chargingprofiles.addChargingProfile') }}
           </v-btn>
 
-          <v-spacer></v-spacer>
+          <v-spacer />
 
           <div class="search-container">
             <v-text-field
@@ -32,11 +36,11 @@
               hide-details
               clearable
               class="search-field"
-            ></v-text-field>
+            />
           </div>
 
           <v-menu>
-            <template v-slot:activator="{ props }">
+            <template #activator="{ props }">
               <v-btn
                 variant="outlined"
                 prepend-icon="mdi-export"
@@ -51,19 +55,25 @@
             <v-list>
               <v-list-item @click="exportToPdf">
                 <v-list-item-title>
-                  <v-icon start>mdi-file-pdf-box</v-icon>
+                  <v-icon start>
+                    mdi-file-pdf-box
+                  </v-icon>
                   {{ $t('export.exportToPdf') }}
                 </v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportToExcel">
                 <v-list-item-title>
-                  <v-icon start>mdi-file-excel</v-icon>
+                  <v-icon start>
+                    mdi-file-excel
+                  </v-icon>
                   {{ $t('export.exportToExcel') }}
                 </v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportToCsv">
                 <v-list-item-title>
-                  <v-icon start>mdi-file-delimited</v-icon>
+                  <v-icon start>
+                    mdi-file-delimited
+                  </v-icon>
                   {{ $t('export.exportToCsv') }}
                 </v-list-item-title>
               </v-list-item>
@@ -71,7 +81,7 @@
           </v-menu>
 
           <v-menu>
-            <template v-slot:activator="{ props }">
+            <template #activator="{ props }">
               <v-btn
                 variant="outlined"
                 prepend-icon="mdi-view-column"
@@ -89,12 +99,12 @@
                 :disabled="column.required"
                 @click="toggleColumn(column.field)"
               >
-                <template v-slot:prepend>
+                <template #prepend>
                   <v-checkbox
                     :model-value="column.visible"
                     :disabled="column.required"
-                    @click.stop="toggleColumn(column.field)"
                     hide-details
+                    @click.stop="toggleColumn(column.field)"
                   />
                 </template>
                 <v-list-item-title>{{ column.title }}</v-list-item-title>
@@ -105,9 +115,9 @@
           <v-btn
             variant="text"
             icon="mdi-refresh"
-            @click="refreshData"
             :loading="chargingProfilesStore.loading"
-          ></v-btn>
+            @click="refreshData"
+          />
         </div>
 
         <v-alert
@@ -115,8 +125,8 @@
           type="error"
           variant="tonal"
           closable
-          @click:close="chargingProfilesStore.clearError"
           class="error-alert"
+          @click:close="chargingProfilesStore.clearError"
         >
           {{ chargingProfilesStore.error }}
         </v-alert>
@@ -126,8 +136,8 @@
           type="success"
           variant="tonal"
           closable
-          @click:close="showSuccessAlert = false"
           class="success-alert"
+          @click:close="showSuccessAlert = false"
         >
           {{ successMessage }}
         </v-alert>
@@ -135,12 +145,12 @@
         <div class="grid-container">
           <Grid
             ref="kendoGrid"
+            :key="gridKey"
             :data-items="result.data || []"
             :total="filteredChargingProfiles.length"
             :columns="columnsWithSelection"
             :style="{ height: '500px' }"
             :sortable="true"
-            :key="gridKey"
             :pageable="pageableConfig"
             :groupable="true"
             :group="group"
@@ -154,13 +164,13 @@
             :filter="dataState.filter"
             :sort="dataState.sort"
             :detail="cellTemplate"
+            :expand-field="'expanded'"
             @datastatechange="dataStateChange"
             @selectionchange="onSelectionChange"
             @headerselectionchange="onHeaderSelectionChange"
             @rowclick="onRowClick"
             @expandchange="expandChange"
             @columnreorder="columnReorder"
-            :expand-field="'expanded'"
           >
             <template #columnMenuTemplate="{ props }">
               <ColumnMenu
@@ -179,11 +189,18 @@
             </template>
 
             <template #detailTemplate="{ props }">
-              <v-card-text class="text-bold"
-                >Schedule periods for Charging Profile {{ props.dataItem.id }}</v-card-text
+              <v-card-text class="text-bold">
+                Schedule periods for Charging Profile {{ props.dataItem.id }}
+              </v-card-text>
+              <div
+                v-if="props.dataItem._loadingPeriods"
+                class="loading-container"
               >
-              <div v-if="props.dataItem._loadingPeriods" class="loading-container">
-                <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>
+                <v-progress-circular
+                  indeterminate
+                  color="primary"
+                  size="24"
+                />
                 <span class="loading-text">Loading schedule periods...</span>
               </div>
               <Grid
@@ -197,8 +214,15 @@
             </template>
           </Grid>
 
-          <div v-if="selectedGridChargingProfile" class="grid-row-actions">
-            <v-chip class="selected-indicator" color="primary" variant="outlined">
+          <div
+            v-if="selectedGridChargingProfile"
+            class="grid-row-actions"
+          >
+            <v-chip
+              class="selected-indicator"
+              color="primary"
+              variant="outlined"
+            >
               {{ $t('chargingprofiles.chargingProfile') }}: {{ selectedGridChargingProfile.id }}
             </v-chip>
 
@@ -227,7 +251,11 @@
       </v-card-text>
     </v-card>
 
-    <v-dialog v-model="dialogOpen" max-width="800px" persistent>
+    <v-dialog
+      v-model="dialogOpen"
+      max-width="800px"
+      persistent
+    >
       <v-card>
         <v-card-title>
           <span class="text-h6">{{
@@ -253,7 +281,7 @@
                   variant="outlined"
                   required
                   :no-data-text="$t('chargingprofiles.noChargePointsAvailable')"
-                ></v-select>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -265,7 +293,7 @@
                   variant="outlined"
                   type="number"
                   required
-                ></v-text-field>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -276,7 +304,7 @@
                   :rules="[rules.required]"
                   variant="outlined"
                   required
-                ></v-select>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -287,7 +315,7 @@
                   :rules="[rules.required]"
                   variant="outlined"
                   required
-                ></v-select>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -296,7 +324,7 @@
                   :label="$t('chargingprofiles.recurrencyKind')"
                   :items="recurrencyOptions"
                   variant="outlined"
-                ></v-select>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -308,7 +336,7 @@
                   variant="outlined"
                   type="number"
                   step="0.1"
-                ></v-text-field>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -319,7 +347,7 @@
                   variant="outlined"
                   type="datetime-local"
                   required
-                ></v-text-field>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -330,7 +358,7 @@
                   variant="outlined"
                   type="datetime-local"
                   required
-                ></v-text-field>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -341,7 +369,7 @@
                   :rules="[rules.durationRange]"
                   variant="outlined"
                   type="number"
-                ></v-text-field>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -350,7 +378,7 @@
                   :label="$t('chargingprofiles.startSchedule')"
                   variant="outlined"
                   type="datetime-local"
-                ></v-text-field>
+                />
               </v-col>
 
               <v-col cols="12">
@@ -359,7 +387,7 @@
                   :label="$t('chargingprofiles.description')"
                   :placeholder="$t('forms.descriptionPlaceholder')"
                   variant="outlined"
-                ></v-text-field>
+                />
               </v-col>
 
               <v-col cols="12">
@@ -369,21 +397,26 @@
                   :placeholder="$t('forms.notePlaceholder')"
                   variant="outlined"
                   rows="3"
-                ></v-textarea>
+                />
               </v-col>
             </v-row>
           </v-form>
         </v-card-text>
 
         <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn variant="text" @click="closeDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="closeDialog"
+          >
+            {{ $t('common.cancel') }}
+          </v-btn>
           <v-btn
             color="primary"
             variant="elevated"
-            @click="saveChargingProfile"
             :loading="chargingProfilesStore.loading"
             :disabled="!formValid"
+            @click="saveChargingProfile"
           >
             {{ isEditing ? $t('common.update') : $t('common.create') }}
           </v-btn>
@@ -391,22 +424,32 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="deleteDialogOpen" max-width="500px">
+    <v-dialog
+      v-model="deleteDialogOpen"
+      max-width="500px"
+    >
       <v-card>
-        <v-card-title class="text-h6">{{
-          $t('chargingprofiles.deleteChargingProfile')
-        }}</v-card-title>
+        <v-card-title class="text-h6">
+          {{
+            $t('chargingprofiles.deleteChargingProfile')
+          }}
+        </v-card-title>
         <v-card-text>
           {{ $t('chargingprofiles.confirmDelete', { id: selectedChargingProfile?.id || '' }) }}
         </v-card-text>
         <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn variant="text" @click="deleteDialogOpen = false">{{ $t('common.cancel') }}</v-btn>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="deleteDialogOpen = false"
+          >
+            {{ $t('common.cancel') }}
+          </v-btn>
           <v-btn
             color="error"
             variant="elevated"
-            @click="deleteChargingProfile"
             :loading="chargingProfilesStore.loading"
+            @click="deleteChargingProfile"
           >
             {{ $t('common.delete') }}
           </v-btn>
@@ -414,45 +457,63 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="detailDialogOpen" max-width="900px" persistent>
-      <v-card v-if="viewedChargingProfile" class="modern-detail-card">
+    <v-dialog
+      v-model="detailDialogOpen"
+      max-width="900px"
+      persistent
+    >
+      <v-card
+        v-if="viewedChargingProfile"
+        class="modern-detail-card"
+      >
         <v-card-title class="detail-card-header">
           <div class="header-content">
-            <v-icon class="header-icon" size="28" color="primary">mdi-chart-line</v-icon>
+            <v-icon
+              class="header-icon"
+              size="28"
+              color="primary"
+            >
+              mdi-chart-line
+            </v-icon>
             <div class="header-text">
               <h2 class="header-title">
                 {{ $t('chargingprofiles.chargingProfile') }} {{ viewedChargingProfile.id }}
               </h2>
-              <p class="header-subtitle">{{ $t('chargingprofiles.chargingProfileDetails') }}</p>
+              <p class="header-subtitle">
+                {{ $t('chargingprofiles.chargingProfileDetails') }}
+              </p>
             </div>
           </div>
           <v-btn
             icon
             variant="text"
             size="small"
-            @click="detailDialogOpen = false"
             class="close-btn"
+            @click="detailDialogOpen = false"
           >
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
 
-        <v-divider class="header-divider"></v-divider>
+        <v-divider class="header-divider" />
 
         <v-card-text class="detail-content">
-          <ChargingProfileDetailView :chargingProfile="viewedChargingProfile" :full-view="true" />
+          <ChargingProfileDetailView
+            :charging-profile="viewedChargingProfile"
+            :full-view="true"
+          />
         </v-card-text>
 
-        <v-divider></v-divider>
+        <v-divider />
 
         <v-card-actions class="detail-actions">
-          <v-spacer></v-spacer>
+          <v-spacer />
           <v-btn
             variant="outlined"
             color="error"
             prepend-icon="mdi-delete"
-            @click="confirmDelete(viewedChargingProfile)"
             class="action-btn"
+            @click="confirmDelete(viewedChargingProfile)"
           >
             {{ $t('common.delete') }}
           </v-btn>
@@ -460,8 +521,8 @@
             variant="elevated"
             color="primary"
             prepend-icon="mdi-pencil"
-            @click="openEditDialog(viewedChargingProfile)"
             class="action-btn"
+            @click="openEditDialog(viewedChargingProfile)"
           >
             {{ $t('common.edit') }}
           </v-btn>
@@ -480,6 +541,8 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
+
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'

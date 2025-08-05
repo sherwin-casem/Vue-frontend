@@ -1,12 +1,22 @@
 <template>
   <v-slide-y-transition>
-    <div v-if="selectedCount > 0" class="selection-toolbar">
-      <v-card elevation="6" class="toolbar-card">
+    <div
+      v-if="selectedCount > 0"
+      class="selection-toolbar"
+    >
+      <v-card
+        elevation="6"
+        class="toolbar-card"
+      >
         <v-card-text class="toolbar-content">
           <div class="toolbar-info">
-            <v-icon class="toolbar-icon" color="primary" size="20"
-              >mdi-checkbox-marked-circle</v-icon
+            <v-icon
+              class="toolbar-icon"
+              color="primary"
+              size="20"
             >
+              mdi-checkbox-marked-circle
+            </v-icon>
             <span class="selection-count">
               {{ $t('selection.itemsSelected', selectedCount) }}
             </span>
@@ -14,7 +24,7 @@
 
           <div class="toolbar-actions">
             <v-menu offset-y>
-              <template v-slot:activator="{ props }">
+              <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
                   variant="outlined"
@@ -23,27 +33,58 @@
                   :disabled="loading"
                   class="action-btn"
                 >
-                  <v-icon size="18">mdi-export</v-icon>
+                  <v-icon size="18">
+                    mdi-export
+                  </v-icon>
                   <span class="btn-text">{{ $t('selection.exportSelected') }}</span>
-                  <v-icon size="16">mdi-chevron-down</v-icon>
+                  <v-icon size="16">
+                    mdi-chevron-down
+                  </v-icon>
                 </v-btn>
               </template>
-              <v-list density="compact" class="export-menu">
-                <v-list-item @click="handleExport('pdf')" class="export-item">
-                  <template v-slot:prepend>
-                    <v-icon size="18" color="error">mdi-file-pdf-box</v-icon>
+              <v-list
+                density="compact"
+                class="export-menu"
+              >
+                <v-list-item
+                  class="export-item"
+                  @click="handleExport('pdf')"
+                >
+                  <template #prepend>
+                    <v-icon
+                      size="18"
+                      color="error"
+                    >
+                      mdi-file-pdf-box
+                    </v-icon>
                   </template>
                   <v-list-item-title>{{ $t('export.exportToPdf') }}</v-list-item-title>
                 </v-list-item>
-                <v-list-item @click="handleExport('excel')" class="export-item">
-                  <template v-slot:prepend>
-                    <v-icon size="18" color="success">mdi-file-excel</v-icon>
+                <v-list-item
+                  class="export-item"
+                  @click="handleExport('excel')"
+                >
+                  <template #prepend>
+                    <v-icon
+                      size="18"
+                      color="success"
+                    >
+                      mdi-file-excel
+                    </v-icon>
                   </template>
                   <v-list-item-title>{{ $t('export.exportToExcel') }}</v-list-item-title>
                 </v-list-item>
-                <v-list-item @click="handleExport('csv')" class="export-item">
-                  <template v-slot:prepend>
-                    <v-icon size="18" color="info">mdi-file-delimited</v-icon>
+                <v-list-item
+                  class="export-item"
+                  @click="handleExport('csv')"
+                >
+                  <template #prepend>
+                    <v-icon
+                      size="18"
+                      color="info"
+                    >
+                      mdi-file-delimited
+                    </v-icon>
                   </template>
                   <v-list-item-title>{{ $t('export.exportToCsv') }}</v-list-item-title>
                 </v-list-item>
@@ -54,12 +95,14 @@
               variant="outlined"
               color="error"
               size="small"
-              @click="handleDelete"
               :disabled="loading"
               :loading="loading"
               class="action-btn"
+              @click="handleDelete"
             >
-              <v-icon size="18">mdi-delete</v-icon>
+              <v-icon size="18">
+                mdi-delete
+              </v-icon>
               <span class="btn-text">{{ $t('selection.deleteSelected') }}</span>
             </v-btn>
 
@@ -67,12 +110,14 @@
               variant="text"
               size="small"
               icon
-              @click="$emit('clear-selection')"
               :disabled="loading"
               class="close-btn"
               :title="$t('selection.clearSelection')"
+              @click="$emit('clear-selection')"
             >
-              <v-icon size="20">mdi-close</v-icon>
+              <v-icon size="20">
+                mdi-close
+              </v-icon>
             </v-btn>
           </div>
         </v-card-text>

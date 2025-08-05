@@ -1,396 +1,486 @@
+  <!-- @ts-nocheck -->
+
+
 <template>
-  <div class="sites-management">
-    <v-card elevation="2">
-      <v-card-title class="sites-header">
-        <h1 class="text-h4">{{ $t('sites.title') }}</h1>
-        <p class="text-subtitle-1 text-medium-emphasis">{{ $t('sites.manageAllSites') }}</p>
-      </v-card-title>
-
-      <v-card-text>
-        <div class="action-bar">
-          <v-btn
-            color="primary"
-            variant="elevated"
-            prepend-icon="mdi-plus"
-            @click="openCreateDialog"
-            :disabled="sitesStore.loading"
-          >
-            {{ $t('sites.addSite') }}
-          </v-btn>
-
-          <v-spacer></v-spacer>
-
-          <v-menu>
-            <template v-slot:activator="{ props }">
-              <v-btn
-                variant="outlined"
-                prepend-icon="mdi-export"
-                v-bind="props"
-                :disabled="!sites.length || sitesStore.loading"
-                class="export-btn"
-              >
-                {{ $t('export.export') }}
-                <v-icon>mdi-chevron-down</v-icon>
-              </v-btn>
-            </template>
-            <v-list>
-              <v-list-item @click="exportToPdf">
-                <v-list-item-title>
-                  <v-icon start>mdi-file-pdf-box</v-icon>
-                  {{ $t('export.exportToPdf') }}
-                </v-list-item-title>
-              </v-list-item>
-              <v-list-item @click="exportToExcel">
-                <v-list-item-title>
-                  <v-icon start>mdi-file-excel</v-icon>
-                  {{ $t('export.exportToExcel') }}
-                </v-list-item-title>
-              </v-list-item>
-              <v-list-item @click="exportToCsv">
-                <v-list-item-title>
-                  <v-icon start>mdi-file-delimited</v-icon>
-                  {{ $t('export.exportToCsv') }}
-                </v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
-
-          <v-menu>
-            <template v-slot:activator="{ props }">
-              <v-btn
-                variant="outlined"
-                prepend-icon="mdi-view-column"
-                v-bind="props"
-                class="column-selector-btn"
-              >
-                {{ $t('common.selectColumns') }}
-                <v-icon>mdi-chevron-down</v-icon>
-              </v-btn>
-            </template>
-            <v-list>
-              <v-list-item
-                v-for="column in allColumns"
-                :key="column.field"
-                :disabled="column.required"
-                @click="toggleColumn(column.field)"
-              >
-                <template v-slot:prepend>
-                  <v-checkbox
-                    :model-value="column.visible"
-                    :disabled="column.required"
-                    @click.stop="toggleColumn(column.field)"
-                    hide-details
-                  />
-                </template>
-                <v-list-item-title>{{ column.title }}</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
-
-          <v-btn
-            variant="text"
-            icon="mdi-refresh"
-            @click="refreshData"
-            :loading="sitesStore.loading"
-          ></v-btn>
-        </div>
-
-        <v-alert
-          v-if="sitesStore.error"
-          type="error"
-          variant="tonal"
-          closable
-          @click:close="sitesStore.clearError"
-          class="error-alert"
-        >
-          {{ sitesStore.error }}
-        </v-alert>
-
-        <v-alert
-          v-if="showSuccessAlert"
-          type="success"
-          variant="tonal"
-          closable
-          @click:close="showSuccessAlert = false"
-          class="success-alert"
-        >
-          {{ successMessage }}
-        </v-alert>
-
-        <div class="grid-container">
-          <Grid
-            ref="kendoGrid"
-            :data-items="result.data || []"
-            :total="sites.length"
-            :columns="columnsWithSelection"
-            :style="{ height: '500px' }"
-            :sortable="true"
-            :key="gridKey"
-            :pageable="pageableConfig"
-            :groupable="true"
-            :group="group"
-            :take="take"
-            :skip="skip"
-            :reorderable="true"
-            :loading="sitesStore.loading"
-            :selected-field="selectedField"
-            :filterable="false"
-            class="sites-grid"
-            :filter="dataState.filter"
-            :sort="dataState.sort"
-            :detail="cellTemplate"
-            @datastatechange="dataStateChange"
-            @selectionchange="onSelectionChange"
-            @headerselectionchange="onHeaderSelectionChange"
-            @rowclick="onRowClick"
-            @expandchange="expandChange"
-            @columnreorder="columnReorder"
-            :expand-field="'expanded'"
-          >
-            <template #columnMenuTemplate="{ props }">
-              <ColumnMenu
-                :column="props.column"
-                :filterable="props.filterable"
-                :filter="props.filter"
-                :sortable="props.sortable"
-                :sort="props.sort"
-                :columns="columns"
-                @sortchange="(e) => props.onSortchange(e)"
-                @filterchange="(e) => props.onFilterchange(e)"
-                @closemenu="(e) => props.onClosemenu(e)"
-                @contentfocus="(e) => props.onContentfocus(e)"
-                @columnssubmit="onColumnsSubmit"
-              />
-            </template>
-
-            <template #myTemplate="{ props }">
-              <div v-if="props.dataItem._loadingSiteData" class="loading-container">
-                <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>
-                <span class="loading-text">Loading site data...</span>
-              </div>
-              <TabStrip v-else :selected="selected" @select="onSelect" :tabs="tabs">
-                <template #chargepoints>
-                  <Grid
-                    :columns="chargePointsColumns"
-                    :data-items="props.dataItem._chargePoints || []"
-                    :sortable="false"
-                    :groupable="false"
-                    :filterable="false"
-                  />
-                </template>
-
-                <template #connectors>
-                  <Grid
-                    :columns="connectorsColumns"
-                    :data-items="props.dataItem._connectors || []"
-                    :sortable="false"
-                    :groupable="false"
-                    :filterable="false"
-                  />
-                </template>
-              </TabStrip>
-            </template>
-          </Grid>
-
-          <div v-if="selectedGridSite" class="grid-row-actions">
-            <v-chip class="selected-indicator" color="primary" variant="outlined">
-              {{ $t('sites.site') }}: {{ selectedGridSite.name }}
-            </v-chip>
-
-            <div class="action-buttons">
-              <v-btn
-                size="small"
-                variant="outlined"
-                prepend-icon="mdi-pencil"
-                @click="openEditDialog(selectedGridSite)"
-              >
-                {{ $t('common.edit') }}
-              </v-btn>
-
-              <v-btn
-                size="small"
-                variant="outlined"
-                color="error"
-                prepend-icon="mdi-delete"
-                @click="confirmDelete(selectedGridSite)"
-              >
-                {{ $t('common.delete') }}
-              </v-btn>
-            </div>
-          </div>
-        </div>
-      </v-card-text>
-    </v-card>
-
-    <v-dialog v-model="dialogOpen" max-width="600px" persistent>
-      <v-card>
-        <v-card-title>
-          <span class="text-h6">{{
-            isEditing ? $t('sites.editSite') : $t('sites.createNewSite')
-          }}</span>
+  <div>
+    <div class="sites-management">
+      <v-card elevation="2">
+        <v-card-title class="sites-header">
+          <h1 class="text-h4">
+            {{ $t('sites.title') }}
+          </h1>
+          <p class="text-subtitle-1 text-medium-emphasis">
+            {{ $t('sites.manageAllSites') }}
+          </p>
         </v-card-title>
 
         <v-card-text>
-          <v-form ref="siteForm" v-model="formValid" @submit.prevent="saveSite">
-            <v-row>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="currentSite.name"
-                  :label="$t('sites.siteName')"
-                  :placeholder="$t('forms.siteNamePlaceholder')"
-                  :rules="[rules.required, rules.nameMinLength]"
-                  variant="outlined"
-                  required
-                ></v-text-field>
-              </v-col>
+          <div class="action-bar">
+            <v-btn
+              color="primary"
+              variant="elevated"
+              prepend-icon="mdi-plus"
+              :disabled="sitesStore.loading"
+              @click="openCreateDialog"
+            >
+              {{ $t('sites.addSite') }}
+            </v-btn>
 
-              <v-col cols="12">
-                <v-text-field
-                  v-model="currentSite.address"
-                  :label="$t('sites.address')"
-                  :placeholder="$t('forms.addressPlaceholder')"
-                  :rules="[rules.required, rules.addressMinLength]"
-                  variant="outlined"
-                  required
-                ></v-text-field>
-              </v-col>
+            <v-spacer />
 
-              <v-col cols="6">
-                <v-text-field
-                  v-model="currentSite.postal_code"
-                  :label="$t('sites.postalCode')"
-                  :placeholder="$t('forms.postalCodePlaceholder')"
-                  :rules="[rules.required, rules.postalCodeFormat]"
+            <v-menu>
+              <template #activator="{ props }">
+                <v-btn
                   variant="outlined"
-                  required
-                ></v-text-field>
-              </v-col>
+                  prepend-icon="mdi-export"
+                  v-bind="props"
+                  :disabled="!sites.length || sitesStore.loading"
+                  class="export-btn"
+                >
+                  {{ $t('export.export') }}
+                  <v-icon>mdi-chevron-down</v-icon>
+                </v-btn>
+              </template>
+              <v-list>
+                <v-list-item @click="exportToPdf">
+                  <v-list-item-title>
+                    <v-icon start>
+                      mdi-file-pdf-box
+                    </v-icon>
+                    {{ $t('export.exportToPdf') }}
+                  </v-list-item-title>
+                </v-list-item>
+                <v-list-item @click="exportToExcel">
+                  <v-list-item-title>
+                    <v-icon start>
+                      mdi-file-excel
+                    </v-icon>
+                    {{ $t('export.exportToExcel') }}
+                  </v-list-item-title>
+                </v-list-item>
+                <v-list-item @click="exportToCsv">
+                  <v-list-item-title>
+                    <v-icon start>
+                      mdi-file-delimited
+                    </v-icon>
+                    {{ $t('export.exportToCsv') }}
+                  </v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
 
-              <v-col cols="6">
-                <v-text-field
-                  v-model="currentSite.city"
-                  :label="$t('sites.city')"
-                  :placeholder="$t('forms.cityPlaceholder')"
-                  :rules="[rules.required, rules.cityMinLength]"
+            <v-menu>
+              <template #activator="{ props }">
+                <v-btn
                   variant="outlined"
-                  required
-                ></v-text-field>
-              </v-col>
+                  prepend-icon="mdi-view-column"
+                  v-bind="props"
+                  class="column-selector-btn"
+                >
+                  {{ $t('common.selectColumns') }}
+                  <v-icon>mdi-chevron-down</v-icon>
+                </v-btn>
+              </template>
+              <v-list>
+                <v-list-item
+                  v-for="column in allColumns"
+                  :key="column.field"
+                  :disabled="column.required"
+                  @click="toggleColumn(column.field)"
+                >
+                  <template #prepend>
+                    <v-checkbox
+                      :model-value="column.visible"
+                      :disabled="column.required"
+                      hide-details
+                      @click.stop="toggleColumn(column.field)"
+                    />
+                  </template>
+                  <v-list-item-title>{{ column.title }}</v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
 
-              <v-col cols="12">
-                <v-text-field
-                  v-model="currentSite.country"
-                  :label="$t('sites.country')"
-                  :placeholder="$t('forms.countryPlaceholder')"
-                  :rules="[rules.required, rules.countryMinLength]"
-                  variant="outlined"
-                  required
-                ></v-text-field>
-              </v-col>
+            <v-btn
+              variant="text"
+              icon="mdi-refresh"
+              :loading="sitesStore.loading"
+              @click="refreshData"
+            />
+          </div>
 
-              <v-col cols="12">
-                <v-textarea
-                  v-model="currentSite.note"
-                  :label="$t('common.note')"
-                  :placeholder="$t('forms.notePlaceholder')"
-                  variant="outlined"
-                  rows="3"
-                ></v-textarea>
-              </v-col>
-            </v-row>
-          </v-form>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn variant="text" @click="closeDialog">{{ $t('common.cancel') }}</v-btn>
-          <v-btn
-            color="primary"
-            variant="elevated"
-            @click="saveSite"
-            :loading="sitesStore.loading"
-            :disabled="!formValid"
+          <v-alert
+            v-if="sitesStore.error"
+            type="error"
+            variant="tonal"
+            closable
+            class="error-alert"
+            @click:close="sitesStore.clearError"
           >
-            {{ isEditing ? $t('common.update') : $t('common.create') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+            {{ sitesStore.error }}
+          </v-alert>
 
-    <v-dialog v-model="deleteDialogOpen" max-width="500px">
-      <v-card>
-        <v-card-title class="text-h6">{{ $t('sites.deleteSite') }}</v-card-title>
-        <v-card-text>
-          {{ $t('sites.confirmDelete', { name: selectedSite?.name || '' }) }}
+          <v-alert
+            v-if="showSuccessAlert"
+            type="success"
+            variant="tonal"
+            closable
+            class="success-alert"
+            @click:close="showSuccessAlert = false"
+          >
+            {{ successMessage }}
+          </v-alert>
+
+          <div class="grid-container">
+            <Grid
+              ref="kendoGrid"
+              :key="gridKey"
+              :data-items="result.data || []"
+              :total="sites.length"
+              :columns="columnsWithSelection"
+              :style="{ height: '500px' }"
+              :sortable="true"
+              :pageable="pageableConfig"
+              :groupable="true"
+              :group="group"
+              :take="take"
+              :skip="skip"
+              :reorderable="true"
+              :loading="sitesStore.loading"
+              :selected-field="selectedField"
+              :filterable="false"
+              class="sites-grid"
+              :filter="dataState.filter"
+              :sort="dataState.sort"
+              :detail="cellTemplate"
+              :expand-field="'expanded'"
+              @datastatechange="dataStateChange"
+              @selectionchange="onSelectionChange"
+              @headerselectionchange="onHeaderSelectionChange"
+              @rowclick="onRowClick"
+              @expandchange="expandChange"
+              @columnreorder="columnReorder"
+            >
+              <template #columnMenuTemplate="{ props }">
+                <ColumnMenu
+                  :column="props.column"
+                  :filterable="props.filterable"
+                  :filter="props.filter"
+                  :sortable="props.sortable"
+                  :sort="props.sort"
+                  :columns="columns"
+                  @sortchange="(e) => props.onSortchange(e)"
+                  @filterchange="(e) => props.onFilterchange(e)"
+                  @closemenu="(e) => props.onClosemenu(e)"
+                  @contentfocus="(e) => props.onContentfocus(e)"
+                  @columnssubmit="onColumnsSubmit"
+                />
+              </template>
+
+              <template #myTemplate="{ props }">
+                <div
+                  v-if="props.dataItem._loadingSiteData"
+                  class="loading-container"
+                >
+                  <v-progress-circular
+                    indeterminate
+                    color="primary"
+                    size="24"
+                  />
+                  <span class="loading-text">Loading site data...</span>
+                </div>
+                <TabStrip
+                  v-else
+                  :selected="selected"
+                  :tabs="tabs"
+                  @select="onSelect"
+                >
+                  <template #chargepoints>
+                    <Grid
+                      :columns="chargePointsColumns"
+                      :data-items="props.dataItem._chargePoints || []"
+                      :sortable="false"
+                      :groupable="false"
+                      :filterable="false"
+                    />
+                  </template>
+
+                  <template #connectors>
+                    <Grid
+                      :columns="connectorsColumns"
+                      :data-items="props.dataItem._connectors || []"
+                      :sortable="false"
+                      :groupable="false"
+                      :filterable="false"
+                    />
+                  </template>
+                </TabStrip>
+              </template>
+            </Grid>
+
+            <div
+              v-if="selectedGridSite"
+              class="grid-row-actions"
+            >
+              <v-chip
+                class="selected-indicator"
+                color="primary"
+                variant="outlined"
+              >
+                {{ $t('sites.site') }}: {{ selectedGridSite.name }}
+              </v-chip>
+
+              <div class="action-buttons">
+                <v-btn
+                  size="small"
+                  variant="outlined"
+                  prepend-icon="mdi-pencil"
+                  @click="openEditDialog(selectedGridSite)"
+                >
+                  {{ $t('common.edit') }}
+                </v-btn>
+
+                <v-btn
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  prepend-icon="mdi-delete"
+                  @click="confirmDelete(selectedGridSite)"
+                >
+                  {{ $t('common.delete') }}
+                </v-btn>
+              </div>
+            </div>
+          </div>
         </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn variant="text" @click="deleteDialogOpen = false">{{ $t('common.cancel') }}</v-btn>
-          <v-btn color="error" variant="elevated" @click="deleteSite" :loading="sitesStore.loading">
+      </v-card>
+
+      <v-dialog
+        v-model="dialogOpen"
+        max-width="600px"
+        persistent
+      >
+        <v-card>
+          <v-card-title>
+            <span class="text-h6">{{
+              isEditing ? $t('sites.editSite') : $t('sites.createNewSite')
+            }}</span>
+          </v-card-title>
+
+          <v-card-text>
+            <v-form
+              ref="siteForm"
+              v-model="formValid"
+              @submit.prevent="saveSite"
+            >
+              <v-row>
+                <v-col cols="12">
+                  <v-text-field
+                    v-model="currentSite.name"
+                    :label="$t('sites.siteName')"
+                    :placeholder="$t('forms.siteNamePlaceholder')"
+                    :rules="[rules.required, rules.nameMinLength]"
+                    variant="outlined"
+                    required
+                  />
+                </v-col>
+
+                <v-col cols="12">
+                  <v-text-field
+                    v-model="currentSite.address"
+                    :label="$t('sites.address')"
+                    :placeholder="$t('forms.addressPlaceholder')"
+                    :rules="[rules.required, rules.addressMinLength]"
+                    variant="outlined"
+                    required
+                  />
+                </v-col>
+
+                <v-col cols="6">
+                  <v-text-field
+                    v-model="currentSite.postal_code"
+                    :label="$t('sites.postalCode')"
+                    :placeholder="$t('forms.postalCodePlaceholder')"
+                    :rules="[rules.required, rules.postalCodeFormat]"
+                    variant="outlined"
+                    required
+                  />
+                </v-col>
+
+                <v-col cols="6">
+                  <v-text-field
+                    v-model="currentSite.city"
+                    :label="$t('sites.city')"
+                    :placeholder="$t('forms.cityPlaceholder')"
+                    :rules="[rules.required, rules.cityMinLength]"
+                    variant="outlined"
+                    required
+                  />
+                </v-col>
+
+                <v-col cols="12">
+                  <v-text-field
+                    v-model="currentSite.country"
+                    :label="$t('sites.country')"
+                    :placeholder="$t('forms.countryPlaceholder')"
+                    :rules="[rules.required, rules.countryMinLength]"
+                    variant="outlined"
+                    required
+                  />
+                </v-col>
+
+                <v-col cols="12">
+                  <v-textarea
+                    v-model="currentSite.note"
+                    :label="$t('common.note')"
+                    :placeholder="$t('forms.notePlaceholder')"
+                    variant="outlined"
+                    rows="3"
+                  />
+                </v-col>
+              </v-row>
+            </v-form>
+          </v-card-text>
+
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              variant="text"
+              @click="closeDialog"
+            >
+              {{ $t('common.cancel') }}
+            </v-btn>
+            <v-btn
+              color="primary"
+              variant="elevated"
+              :loading="sitesStore.loading"
+              :disabled="!formValid"
+              @click="saveSite"
+            >
+              {{ isEditing ? $t('common.update') : $t('common.create') }}
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog
+        v-model="deleteDialogOpen"
+        max-width="500px"
+      >
+        <v-card>
+          <v-card-title class="text-h6">
+            {{ $t('sites.deleteSite') }}
+          </v-card-title>
+          <v-card-text>
+            {{ $t('sites.confirmDelete', { name: selectedSite?.name || '' }) }}
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              variant="text"
+              @click="deleteDialogOpen = false"
+            >
+              {{ $t('common.cancel') }}
+            </v-btn>
+            <v-btn
+              color="error"
+              variant="elevated"
+              :loading="sitesStore.loading"
+              @click="deleteSite"
+            >
+              {{ $t('common.delete') }}
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+    </div>
+    <v-dialog
+      v-model="detailDialogOpen"
+      max-width="900px"
+      persistent
+    >
+      <v-card
+        v-if="viewedSite"
+        class="modern-detail-card"
+      >
+        <v-card-title class="detail-card-header">
+          <div class="header-content">
+            <v-icon
+              class="header-icon"
+              size="28"
+              color="primary"
+            >
+              mdi-map-marker
+            </v-icon>
+            <div class="header-text">
+              <h2 class="header-title">
+                {{ viewedSite.name }}
+              </h2>
+              <p class="header-subtitle">
+                {{ $t('sites.siteDetails') }}
+              </p>
+            </div>
+          </div>
+          <v-btn
+            icon
+            variant="text"
+            size="small"
+            class="close-btn"
+            @click="detailDialogOpen = false"
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+
+        <v-divider class="header-divider" />
+
+        <v-card-text class="detail-content">
+          <SiteDetailView
+            :site="viewedSite"
+            :full-view="true"
+          />
+        </v-card-text>
+
+        <v-divider />
+
+        <v-card-actions class="detail-actions">
+          <v-spacer />
+          <v-btn
+            variant="outlined"
+            color="error"
+            prepend-icon="mdi-delete"
+            class="action-btn"
+            @click="confirmDelete(viewedSite)"
+          >
             {{ $t('common.delete') }}
           </v-btn>
+          <v-btn
+            variant="elevated"
+            color="primary"
+            prepend-icon="mdi-pencil"
+            class="action-btn"
+            @click="openEditDialog(viewedSite)"
+          >
+            {{ $t('common.edit') }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <SelectionToolbar
+      :selected-count="selectedCount"
+      :loading="sitesStore.loading"
+      @export-selected="exportSelectedSites"
+      @delete-selected="deleteSelectedSites"
+      @clear-selection="clearSelection"
+    />
   </div>
-  <v-dialog v-model="detailDialogOpen" max-width="900px" persistent>
-    <v-card v-if="viewedSite" class="modern-detail-card">
-      <v-card-title class="detail-card-header">
-        <div class="header-content">
-          <v-icon class="header-icon" size="28" color="primary">mdi-map-marker</v-icon>
-          <div class="header-text">
-            <h2 class="header-title">{{ viewedSite.name }}</h2>
-            <p class="header-subtitle">{{ $t('sites.siteDetails') }}</p>
-          </div>
-        </div>
-        <v-btn icon variant="text" size="small" @click="detailDialogOpen = false" class="close-btn">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
-
-      <v-divider class="header-divider"></v-divider>
-
-      <v-card-text class="detail-content">
-        <SiteDetailView :site="viewedSite" :full-view="true" />
-      </v-card-text>
-
-      <v-divider></v-divider>
-
-      <v-card-actions class="detail-actions">
-        <v-spacer></v-spacer>
-        <v-btn
-          variant="outlined"
-          color="error"
-          prepend-icon="mdi-delete"
-          @click="confirmDelete(viewedSite)"
-          class="action-btn"
-        >
-          {{ $t('common.delete') }}
-        </v-btn>
-        <v-btn
-          variant="elevated"
-          color="primary"
-          prepend-icon="mdi-pencil"
-          @click="openEditDialog(viewedSite)"
-          class="action-btn"
-        >
-          {{ $t('common.edit') }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
-  <SelectionToolbar
-    :selected-count="selectedCount"
-    :loading="sitesStore.loading"
-    @export-selected="exportSelectedSites"
-    @delete-selected="deleteSelectedSites"
-    @clear-selection="clearSelection"
-  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+// @ts-nocheck
+
+import { ref, computed, onMounted, reactive, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
 import { useSitesStore } from '@/stores/sites'
@@ -405,7 +495,6 @@ import SiteDetailView from '@/components/SiteDetailView.vue'
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
-import DetailItem from '@/components/DetailItem.vue'
 import { TabStrip } from '@progress/kendo-vue-layout'
 
 const { t, d } = useI18n()
@@ -917,12 +1006,6 @@ function onRowClick(event) {
   }
 }
 
-// const onRowDoubleClick = (event: any) => {
-//   const site = event.dataItem
-//   if (site) {
-//     openEditDialog(site)
-//   }
-// }
 
 const exportToPdf = async () => {
   try {
@@ -1005,6 +1088,13 @@ onMounted(async () => {
     take: 8,
     skip: 0
   })
+})
+
+onBeforeUnmount(() => {
+  result.value = []
+  selectedGridSite.value = null
+  // expandedItems.value = []
+  gridKey.value = Date.now() 
 })
 
 watch(

@@ -1,6 +1,9 @@
 <template>
   <div class="scheduleperiod-detail">
-    <div v-if="!fullView" class="detail-row">
+    <div
+      v-if="!fullView"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('scheduleperiods.id') }}:</span>
       <span class="detail-value">{{ schedulePeriod.id }}</span>
     </div>
@@ -22,28 +25,41 @@
 
     <div class="detail-row">
       <span class="detail-label">{{ $t('scheduleperiods.numberPhases') }}:</span>
-      <v-chip :color="getPhaseColor(schedulePeriod.number_phases)" size="small" variant="tonal">
+      <v-chip
+        :color="getPhaseColor(schedulePeriod.number_phases)"
+        size="small"
+        variant="tonal"
+      >
         {{ schedulePeriod.number_phases }} {{ t('scheduleperiods.phases') }}
       </v-chip>
     </div>
 
-    <div v-if="schedulePeriod.created_at" class="detail-row">
+    <div
+      v-if="schedulePeriod.created_at"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('common.created') }}:</span>
       <span class="detail-value">{{ formatDate(schedulePeriod.created_at) }}</span>
     </div>
 
-    <div v-if="schedulePeriod.updated_at" class="detail-row">
+    <div
+      v-if="schedulePeriod.updated_at"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('common.updated') }}:</span>
       <span class="detail-value">{{ formatDate(schedulePeriod.updated_at) }}</span>
     </div>
 
-    <div v-if="!fullView" class="detail-actions">
+    <div
+      v-if="!fullView"
+      class="detail-actions"
+    >
       <v-btn
         size="small"
         variant="outlined"
         prepend-icon="mdi-eye"
-        @click="$emit('view', schedulePeriod)"
         class="detail-btn"
+        @click="$emit('view', schedulePeriod)"
       >
         {{ $t('common.view') }}
       </v-btn>
@@ -52,8 +68,8 @@
         size="small"
         variant="outlined"
         prepend-icon="mdi-pencil"
-        @click="$emit('edit', schedulePeriod)"
         class="detail-btn"
+        @click="$emit('edit', schedulePeriod)"
       >
         {{ $t('common.edit') }}
       </v-btn>
@@ -63,8 +79,8 @@
         variant="outlined"
         color="error"
         prepend-icon="mdi-delete"
-        @click="$emit('delete', schedulePeriod)"
         class="detail-btn"
+        @click="$emit('delete', schedulePeriod)"
       >
         {{ $t('common.delete') }}
       </v-btn>

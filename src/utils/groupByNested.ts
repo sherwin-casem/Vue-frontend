@@ -153,7 +153,7 @@ export function getUniqueFieldValues(data: any[], field: string, includeUnknown 
   const values = new Set<string>()
 
   for (const item of data) {
-    let value = item[field]
+    const value = item[field]
 
     if (value === null || value === undefined || value === '') {
       if (includeUnknown) {

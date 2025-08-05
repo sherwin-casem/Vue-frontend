@@ -1,15 +1,27 @@
 <template>
-  <v-dialog v-model="internalDialog" max-width="500px" persistent>
+  <v-dialog
+    v-model="internalDialog"
+    max-width="500px"
+    persistent
+  >
     <v-card class="confirmation-dialog">
       <v-card-title class="dialog-header">
-        <v-icon class="dialog-icon" :color="iconColor" size="28">{{ icon }}</v-icon>
+        <v-icon
+          class="dialog-icon"
+          :color="iconColor"
+          size="28"
+        >
+          {{ icon }}
+        </v-icon>
         <span class="dialog-title">{{ title }}</span>
       </v-card-title>
 
-      <v-divider></v-divider>
+      <v-divider />
 
       <v-card-text class="dialog-content">
-        <p class="message-text">{{ message }}</p>
+        <p class="message-text">
+          {{ message }}
+        </p>
         <v-alert
           v-if="showWarning"
           type="warning"
@@ -22,16 +34,21 @@
       </v-card-text>
 
       <v-card-actions class="dialog-actions">
-        <v-spacer></v-spacer>
-        <v-btn variant="text" @click="handleCancel" :disabled="loading" class="cancel-btn">
+        <v-spacer />
+        <v-btn
+          variant="text"
+          :disabled="loading"
+          class="cancel-btn"
+          @click="handleCancel"
+        >
           {{ cancelText || $t('common.cancel') }}
         </v-btn>
         <v-btn
           :color="confirmColor"
           variant="elevated"
-          @click="handleConfirm"
           :loading="loading"
           class="confirm-btn"
+          @click="handleConfirm"
         >
           {{ confirmText || $t('common.confirm') }}
         </v-btn>

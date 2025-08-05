@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build || true",
+    "build": "npx kendo-ui-license activate --key $KENDO_UI_LICENSE && vue-cli-service build",
     "lint": "vue-cli-service lint",
     "type-check": "vue-tsc --noEmit",
     "build:type-check": "vue-tsc --noEmit && vue-cli-service build"

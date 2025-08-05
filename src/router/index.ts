@@ -1,15 +1,14 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-
-// Lazy-loaded components
-const LoginView = () => import('@/views/LoginView.vue')
-const DashboardView = () => import('@/views/DashboardView.vue')
-const SitesView = () => import('@/views/SitesView.vue')
-const ChargePointsView = () => import('@/views/ChargePointsView.vue')
-const ConnectorsView = () => import('@/views/ConnectorsView.vue')
-const SchedulePeriodsView = () => import('@/views/SchedulePeriodsView.vue')
-const ChargingProfilesView = () => import('@/views/ChargingProfilesView.vue')
-const NotFoundView = () => import('@/views/NotFoundView.vue')
+import LoginView from '@/views/LoginView.vue'
+import DashboardView from '@/views/DashboardView.vue'
+import SitesView from '@/views/SitesView.vue'
+import ChargePointsView from '@/views/ChargePointsView.vue'
+import ConnectorsView from '@/views/ConnectorsView.vue'
+import SchedulePeriodsView from '@/views/SchedulePeriodsView.vue'
+import ChargingProfilesView from '@/views/ChargingProfilesView.vue'
+import NotFoundView from '@/views/NotFoundView.vue'
+import { useLoadingStore } from '@/stores/loading'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -74,18 +73,25 @@ const router = createRouter({
 // Navigation guard for authentication
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
+  const loadingStore = useLoadingStore()
+
+  loadingStore.start()
+
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
 
-  // If route requires auth and user is not logged in, redirect to login
   if (requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'login', query: { redirect: to.fullPath } })
-  }
-  // If going to login and already authenticated, redirect to dashboard
-  else if (to.name === 'login' && authStore.isAuthenticated) {
+  } else if (to.name === 'login' && authStore.isAuthenticated) {
     next({ name: 'dashboard' })
   } else {
     next()
   }
+})
+
+
+router.afterEach(() => {
+  const loadingStore = useLoadingStore()
+  loadingStore.stop()
 })
 
 export default router

@@ -1,6 +1,11 @@
 <template>
   <div class="site-detail">
-    <div v-if="fullView" class="text-h6 mb-4">{{ $t('sites.siteDetails') }}</div>
+    <div
+      v-if="fullView"
+      class="text-h6 mb-4"
+    >
+      {{ $t('sites.siteDetails') }}
+    </div>
 
     <div class="site-detail-row">
       <span class="site-detail-label">{{ $t('sites.siteId') }}:</span>
@@ -37,12 +42,18 @@
       <span class="site-detail-value">{{ formatDate(site.created_at) }}</span>
     </div>
 
-    <div v-if="site.note" class="site-detail-row">
+    <div
+      v-if="site.note"
+      class="site-detail-row"
+    >
       <span class="site-detail-label">{{ $t('common.note') }}:</span>
       <span class="site-detail-value">{{ site.note }}</span>
     </div>
 
-    <div v-if="!fullView" class="d-flex justify-end mt-4">
+    <div
+      v-if="!fullView"
+      class="d-flex justify-end mt-4"
+    >
       <v-btn
         size="small"
         variant="outlined"
@@ -50,11 +61,26 @@
         class="mr-2"
         @click="$emit('edit', site)"
       >
-        <v-icon left small>mdi-pencil</v-icon>
+        <v-icon
+          left
+          small
+        >
+          mdi-pencil
+        </v-icon>
         {{ $t('common.edit') }}
       </v-btn>
-      <v-btn size="small" variant="outlined" color="error" @click="$emit('delete', site)">
-        <v-icon left small>mdi-delete</v-icon>
+      <v-btn
+        size="small"
+        variant="outlined"
+        color="error"
+        @click="$emit('delete', site)"
+      >
+        <v-icon
+          left
+          small
+        >
+          mdi-delete
+        </v-icon>
         {{ $t('common.delete') }}
       </v-btn>
     </div>

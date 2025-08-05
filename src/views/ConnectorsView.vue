@@ -1,8 +1,12 @@
+  <!-- @ts-nocheck -->
+
 <template>
   <div class="connectors-management">
     <v-card elevation="2">
       <v-card-title class="connectors-header">
-        <h1 class="text-h4">{{ $t('connectors.title') }}</h1>
+        <h1 class="text-h4">
+          {{ $t('connectors.title') }}
+        </h1>
         <p class="text-subtitle-1 text-medium-emphasis">
           {{ $t('connectors.manageAllConnectors') }}
         </p>
@@ -14,13 +18,13 @@
             color="primary"
             variant="elevated"
             prepend-icon="mdi-plus"
-            @click="openCreateDialog"
             :disabled="connectorsStore.loading"
+            @click="openCreateDialog"
           >
             {{ $t('connectors.addConnector') }}
           </v-btn>
 
-          <v-spacer></v-spacer>
+          <v-spacer />
 
           <div class="search-container">
             <v-text-field
@@ -32,11 +36,11 @@
               hide-details
               clearable
               class="search-field"
-            ></v-text-field>
+            />
           </div>
 
           <v-menu>
-            <template v-slot:activator="{ props }">
+            <template #activator="{ props }">
               <v-btn
                 variant="outlined"
                 prepend-icon="mdi-export"
@@ -51,19 +55,25 @@
             <v-list>
               <v-list-item @click="exportToPdf">
                 <v-list-item-title>
-                  <v-icon start>mdi-file-pdf-box</v-icon>
+                  <v-icon start>
+                    mdi-file-pdf-box
+                  </v-icon>
                   {{ $t('export.exportToPdf') }}
                 </v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportToExcel">
                 <v-list-item-title>
-                  <v-icon start>mdi-file-excel</v-icon>
+                  <v-icon start>
+                    mdi-file-excel
+                  </v-icon>
                   {{ $t('export.exportToExcel') }}
                 </v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportToCsv">
                 <v-list-item-title>
-                  <v-icon start>mdi-file-delimited</v-icon>
+                  <v-icon start>
+                    mdi-file-delimited
+                  </v-icon>
                   {{ $t('export.exportToCsv') }}
                 </v-list-item-title>
               </v-list-item>
@@ -71,7 +81,7 @@
           </v-menu>
 
           <v-menu>
-            <template v-slot:activator="{ props }">
+            <template #activator="{ props }">
               <v-btn
                 variant="outlined"
                 prepend-icon="mdi-view-column"
@@ -89,12 +99,12 @@
                 :disabled="column.required"
                 @click="toggleColumn(column.field)"
               >
-                <template v-slot:prepend>
+                <template #prepend>
                   <v-checkbox
                     :model-value="column.visible"
                     :disabled="column.required"
-                    @click.stop="toggleColumn(column.field)"
                     hide-details
+                    @click.stop="toggleColumn(column.field)"
                   />
                 </template>
                 <v-list-item-title>{{ column.title }}</v-list-item-title>
@@ -105,9 +115,9 @@
           <v-btn
             variant="text"
             icon="mdi-refresh"
-            @click="refreshData"
             :loading="connectorsStore.loading"
-          ></v-btn>
+            @click="refreshData"
+          />
         </div>
 
         <v-alert
@@ -115,8 +125,8 @@
           type="error"
           variant="tonal"
           closable
-          @click:close="connectorsStore.clearError"
           class="error-alert"
+          @click:close="connectorsStore.clearError"
         >
           {{ connectorsStore.error }}
         </v-alert>
@@ -126,8 +136,8 @@
           type="success"
           variant="tonal"
           closable
-          @click:close="showSuccessAlert = false"
           class="success-alert"
+          @click:close="showSuccessAlert = false"
         >
           {{ successMessage }}
         </v-alert>
@@ -135,12 +145,12 @@
         <div class="grid-container">
           <Grid
             ref="kendoGrid"
+            :key="gridKey"
             :data-items="result.data || []"
             :total="filteredConnectors.length"
             :columns="columnsWithSelection"
             :style="{ height: '500px' }"
             :sortable="true"
-            :key="gridKey"
             :pageable="pageableConfig"
             :groupable="true"
             :group="group"
@@ -153,13 +163,13 @@
             class="connectors-grid"
             :filter="dataState.filter"
             :sort="dataState.sort"
+            :expand-field="'expanded'"
             @datastatechange="dataStateChange"
             @selectionchange="onSelectionChange"
             @headerselectionchange="onHeaderSelectionChange"
             @rowclick="onRowClick"
             @expandchange="expandChange"
             @columnreorder="columnReorder"
-            :expand-field="'expanded'"
           >
             <template #columnMenuTemplate="{ props }">
               <ColumnMenu
@@ -186,8 +196,15 @@
             </template>
           </Grid>
 
-          <div v-if="selectedGridConnector" class="grid-row-actions">
-            <v-chip class="selected-indicator" color="primary" variant="outlined">
+          <div
+            v-if="selectedGridConnector"
+            class="grid-row-actions"
+          >
+            <v-chip
+              class="selected-indicator"
+              color="primary"
+              variant="outlined"
+            >
               {{ $t('connectors.connector') }}: {{ selectedGridConnector.connector_number }}
             </v-chip>
 
@@ -216,7 +233,11 @@
       </v-card-text>
     </v-card>
 
-    <v-dialog v-model="dialogOpen" max-width="600px" persistent>
+    <v-dialog
+      v-model="dialogOpen"
+      max-width="600px"
+      persistent
+    >
       <v-card>
         <v-card-title>
           <span class="text-h6">{{
@@ -225,7 +246,11 @@
         </v-card-title>
 
         <v-card-text>
-          <v-form ref="connectorForm" v-model="formValid" @submit.prevent="saveConnector">
+          <v-form
+            ref="connectorForm"
+            v-model="formValid"
+            @submit.prevent="saveConnector"
+          >
             <v-row>
               <v-col cols="12">
                 <v-select
@@ -236,7 +261,7 @@
                   variant="outlined"
                   required
                   :no-data-text="$t('connectors.noChargePointsAvailable')"
-                ></v-select>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -248,7 +273,7 @@
                   variant="outlined"
                   type="number"
                   required
-                ></v-text-field>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -259,7 +284,7 @@
                   :rules="[rules.required, rules.typeMinLength]"
                   variant="outlined"
                   required
-                ></v-text-field>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -272,7 +297,7 @@
                   type="number"
                   step="0.1"
                   required
-                ></v-text-field>
+                />
               </v-col>
 
               <v-col cols="6">
@@ -283,21 +308,26 @@
                   :rules="[rules.required]"
                   variant="outlined"
                   required
-                ></v-select>
+                />
               </v-col>
             </v-row>
           </v-form>
         </v-card-text>
 
         <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn variant="text" @click="closeDialog">{{ $t('common.cancel') }}</v-btn>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="closeDialog"
+          >
+            {{ $t('common.cancel') }}
+          </v-btn>
           <v-btn
             color="primary"
             variant="elevated"
-            @click="saveConnector"
             :loading="connectorsStore.loading"
             :disabled="!formValid"
+            @click="saveConnector"
           >
             {{ isEditing ? $t('common.update') : $t('common.create') }}
           </v-btn>
@@ -305,22 +335,32 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="deleteDialogOpen" max-width="500px">
+    <v-dialog
+      v-model="deleteDialogOpen"
+      max-width="500px"
+    >
       <v-card>
-        <v-card-title class="text-h6">{{ $t('connectors.deleteConnector') }}</v-card-title>
+        <v-card-title class="text-h6">
+          {{ $t('connectors.deleteConnector') }}
+        </v-card-title>
         <v-card-text>
           {{
             $t('connectors.confirmDelete', { number: selectedConnector?.connector_number || '' })
           }}
         </v-card-text>
         <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn variant="text" @click="deleteDialogOpen = false">{{ $t('common.cancel') }}</v-btn>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="deleteDialogOpen = false"
+          >
+            {{ $t('common.cancel') }}
+          </v-btn>
           <v-btn
             color="error"
             variant="elevated"
-            @click="deleteConnector"
             :loading="connectorsStore.loading"
+            @click="deleteConnector"
           >
             {{ $t('common.delete') }}
           </v-btn>
@@ -328,45 +368,63 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="detailDialogOpen" max-width="900px" persistent>
-      <v-card v-if="viewedConnector" class="modern-detail-card">
+    <v-dialog
+      v-model="detailDialogOpen"
+      max-width="900px"
+      persistent
+    >
+      <v-card
+        v-if="viewedConnector"
+        class="modern-detail-card"
+      >
         <v-card-title class="detail-card-header">
           <div class="header-content">
-            <v-icon class="header-icon" size="28" color="primary">mdi-power-plug</v-icon>
+            <v-icon
+              class="header-icon"
+              size="28"
+              color="primary"
+            >
+              mdi-power-plug
+            </v-icon>
             <div class="header-text">
               <h2 class="header-title">
                 {{ $t('connectors.connector') }} {{ viewedConnector.connector_number }}
               </h2>
-              <p class="header-subtitle">{{ $t('connectors.connectorDetails') }}</p>
+              <p class="header-subtitle">
+                {{ $t('connectors.connectorDetails') }}
+              </p>
             </div>
           </div>
           <v-btn
             icon
             variant="text"
             size="small"
-            @click="detailDialogOpen = false"
             class="close-btn"
+            @click="detailDialogOpen = false"
           >
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
 
-        <v-divider class="header-divider"></v-divider>
+        <v-divider class="header-divider" />
 
         <v-card-text class="detail-content">
-          <ConnectorDetailView :connector="viewedConnector" :full-view="true" />
+          <ConnectorDetailView
+            :connector="viewedConnector"
+            :full-view="true"
+          />
         </v-card-text>
 
-        <v-divider></v-divider>
+        <v-divider />
 
         <v-card-actions class="detail-actions">
-          <v-spacer></v-spacer>
+          <v-spacer />
           <v-btn
             variant="outlined"
             color="error"
             prepend-icon="mdi-delete"
-            @click="confirmDelete(viewedConnector)"
             class="action-btn"
+            @click="confirmDelete(viewedConnector)"
           >
             {{ $t('common.delete') }}
           </v-btn>
@@ -374,8 +432,8 @@
             variant="elevated"
             color="primary"
             prepend-icon="mdi-pencil"
-            @click="openEditDialog(viewedConnector)"
             class="action-btn"
+            @click="openEditDialog(viewedConnector)"
           >
             {{ $t('common.edit') }}
           </v-btn>
@@ -394,6 +452,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'

@@ -1,6 +1,9 @@
 <template>
   <div class="chargingprofile-detail">
-    <div v-if="!fullView" class="detail-row">
+    <div
+      v-if="!fullView"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('chargingprofiles.id') }}:</span>
       <span class="detail-value">{{ chargingProfile.id }}</span>
     </div>
@@ -37,7 +40,10 @@
       </v-chip>
     </div>
 
-    <div v-if="chargingProfile.recurrency_kind" class="detail-row">
+    <div
+      v-if="chargingProfile.recurrency_kind"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('chargingprofiles.recurrencyKind') }}:</span>
       <span class="detail-value">{{ chargingProfile.recurrency_kind }}</span>
     </div>
@@ -52,48 +58,72 @@
       <span class="detail-value">{{ formatDate(chargingProfile.valid_to) }}</span>
     </div>
 
-    <div v-if="chargingProfile.duration_in_seconds" class="detail-row">
+    <div
+      v-if="chargingProfile.duration_in_seconds"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('chargingprofiles.durationInSeconds') }}:</span>
       <span class="detail-value">{{ chargingProfile.duration_in_seconds }}s</span>
     </div>
 
-    <div v-if="chargingProfile.start_schedule" class="detail-row">
+    <div
+      v-if="chargingProfile.start_schedule"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('chargingprofiles.startSchedule') }}:</span>
       <span class="detail-value">{{ formatDate(chargingProfile.start_schedule) }}</span>
     </div>
 
-    <div v-if="chargingProfile.min_charging_rate" class="detail-row">
+    <div
+      v-if="chargingProfile.min_charging_rate"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('chargingprofiles.minChargingRate') }}:</span>
       <span class="detail-value">{{ chargingProfile.min_charging_rate }} kW</span>
     </div>
 
-    <div v-if="chargingProfile.description" class="detail-row">
+    <div
+      v-if="chargingProfile.description"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('chargingprofiles.description') }}:</span>
       <span class="detail-value">{{ chargingProfile.description }}</span>
     </div>
 
-    <div v-if="chargingProfile.note" class="detail-row">
+    <div
+      v-if="chargingProfile.note"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('common.note') }}:</span>
       <span class="detail-value">{{ chargingProfile.note }}</span>
     </div>
 
-    <div v-if="chargingProfile.created_at" class="detail-row">
+    <div
+      v-if="chargingProfile.created_at"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('common.created') }}:</span>
       <span class="detail-value">{{ formatDate(chargingProfile.created_at) }}</span>
     </div>
 
-    <div v-if="chargingProfile.updated_at" class="detail-row">
+    <div
+      v-if="chargingProfile.updated_at"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('common.updated') }}:</span>
       <span class="detail-value">{{ formatDate(chargingProfile.updated_at) }}</span>
     </div>
 
-    <div v-if="!fullView" class="detail-actions">
+    <div
+      v-if="!fullView"
+      class="detail-actions"
+    >
       <v-btn
         size="small"
         variant="outlined"
         prepend-icon="mdi-eye"
-        @click="$emit('view', chargingProfile)"
         class="detail-btn"
+        @click="$emit('view', chargingProfile)"
       >
         {{ $t('common.view') }}
       </v-btn>
@@ -102,8 +132,8 @@
         size="small"
         variant="outlined"
         prepend-icon="mdi-pencil"
-        @click="$emit('edit', chargingProfile)"
         class="detail-btn"
+        @click="$emit('edit', chargingProfile)"
       >
         {{ $t('common.edit') }}
       </v-btn>
@@ -113,8 +143,8 @@
         variant="outlined"
         color="error"
         prepend-icon="mdi-delete"
-        @click="$emit('delete', chargingProfile)"
         class="detail-btn"
+        @click="$emit('delete', chargingProfile)"
       >
         {{ $t('common.delete') }}
       </v-btn>

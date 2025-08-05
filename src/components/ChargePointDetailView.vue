@@ -1,6 +1,9 @@
 <template>
   <div class="chargepoint-detail">
-    <div v-if="!fullView" class="detail-row">
+    <div
+      v-if="!fullView"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('chargepoints.id') }}:</span>
       <span class="detail-value">{{ chargePoint.id }}</span>
     </div>
@@ -32,33 +35,49 @@
 
     <div class="detail-row">
       <span class="detail-label">{{ $t('chargepoints.status') }}:</span>
-      <v-chip :color="getStatusColor(chargePoint.status)" size="small" variant="tonal">
+      <v-chip
+        :color="getStatusColor(chargePoint.status)"
+        size="small"
+        variant="tonal"
+      >
         {{ getStatusLabel(chargePoint.status) }}
       </v-chip>
     </div>
 
-    <div v-if="chargePoint.note" class="detail-row">
+    <div
+      v-if="chargePoint.note"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('common.note') }}:</span>
       <span class="detail-value">{{ chargePoint.note }}</span>
     </div>
 
-    <div v-if="chargePoint.created_at" class="detail-row">
+    <div
+      v-if="chargePoint.created_at"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('common.created') }}:</span>
       <span class="detail-value">{{ formatDate(chargePoint.created_at) }}</span>
     </div>
 
-    <div v-if="chargePoint.updated_at" class="detail-row">
+    <div
+      v-if="chargePoint.updated_at"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('common.updated') }}:</span>
       <span class="detail-value">{{ formatDate(chargePoint.updated_at) }}</span>
     </div>
 
-    <div v-if="!fullView" class="detail-actions">
+    <div
+      v-if="!fullView"
+      class="detail-actions"
+    >
       <v-btn
         size="small"
         variant="outlined"
         prepend-icon="mdi-eye"
-        @click="$emit('view', chargePoint)"
         class="detail-btn"
+        @click="$emit('view', chargePoint)"
       >
         {{ $t('common.view') }}
       </v-btn>
@@ -67,8 +86,8 @@
         size="small"
         variant="outlined"
         prepend-icon="mdi-pencil"
-        @click="$emit('edit', chargePoint)"
         class="detail-btn"
+        @click="$emit('edit', chargePoint)"
       >
         {{ $t('common.edit') }}
       </v-btn>
@@ -78,8 +97,8 @@
         variant="outlined"
         color="error"
         prepend-icon="mdi-delete"
-        @click="$emit('delete', chargePoint)"
         class="detail-btn"
+        @click="$emit('delete', chargePoint)"
       >
         {{ $t('common.delete') }}
       </v-btn>

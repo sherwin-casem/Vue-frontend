@@ -1,12 +1,25 @@
 <template>
   <v-app :theme="theme">
+    <v-progress-linear
+      v-if="loadingStore.isRouteLoading"
+      color="primary"
+      height="4"
+      indeterminate
+      absolute
+      top
+    />
+
     <!-- App Bar -->
-    <v-app-bar v-if="authStore.isAuthenticated" color="primary" app>
-      <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
+    <v-app-bar
+      v-if="authStore.isAuthenticated"
+      color="primary"
+      app
+    >
+      <v-app-bar-nav-icon @click="drawer = !drawer" />
       <!--      <v-toolbar-title class="text-h6 font-weight-bold">-->
       <!--        eh-systemhaus-->
       <!--      </v-toolbar-title>-->
-      <v-spacer></v-spacer>
+      <v-spacer />
 
       <!-- Language selector -->
       <LanguageSelector />
@@ -18,16 +31,27 @@
 
       <!-- User menu -->
       <v-menu offset-y>
-        <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" class="ml-2">
-            <v-icon class="mr-3" size="36" left>mdi-account-circle</v-icon>
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            class="ml-2"
+          >
+            <v-icon
+              class="mr-3"
+              size="36"
+              left
+            >
+              mdi-account-circle
+            </v-icon>
             {{ authStore.userFullName }}
           </v-btn>
         </template>
         <v-list>
           <v-list-item @click="logout">
             <v-list-item-title>
-              <v-icon left>mdi-logout</v-icon>
+              <v-icon left>
+                mdi-logout
+              </v-icon>
               {{ $t('navigation.logout') }}
             </v-list-item-title>
           </v-list-item>
@@ -42,8 +66,15 @@
       app
       :color="theme === 'light' ? 'background' : 'background'"
     >
-      <v-container class="d-flex justify-center align-center" style="height: 100px">
-        <v-img src="fleeton_main.png" width="100" height="100" />
+      <v-container
+        class="d-flex justify-center align-center"
+        style="height: 100px"
+      >
+        <v-img
+          src="fleeton_main.png"
+          width="100"
+          height="100"
+        />
       </v-container>
       <v-list>
         <v-list-item
@@ -53,7 +84,7 @@
           :prepend-icon="item.icon"
           :title="item.title"
           link
-        ></v-list-item>
+        />
       </v-list>
     </v-navigation-drawer>
 
@@ -61,8 +92,14 @@
     <v-main>
       <v-container fluid>
         <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" />
+          <transition
+            name="fade"
+            mode="out-in"
+          >
+            <component
+              :is="Component"
+              :key="$route.fullPath"
+            />
           </transition>
         </router-view>
       </v-container>
@@ -76,7 +113,8 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import LanguageSelector from '@/components/LanguageSelector.vue'
-
+import { useLoadingStore } from '@/stores/loading'
+const loadingStore = useLoadingStore()
 interface NavigationItem {
   title: string
   icon: string

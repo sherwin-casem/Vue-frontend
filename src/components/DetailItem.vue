@@ -1,5 +1,8 @@
 <template>
-  <Grid :data-items="getFilteredItem" :columns="props.columns" />
+  <Grid
+    :data-items="getFilteredItem"
+    :columns="props.columns"
+  />
 </template>
 
 <script setup>

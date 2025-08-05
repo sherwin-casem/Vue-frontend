@@ -1,6 +1,9 @@
 <template>
   <div class="connector-detail">
-    <div v-if="!fullView" class="detail-row">
+    <div
+      v-if="!fullView"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('connectors.id') }}:</span>
       <span class="detail-value">{{ connector.id }}</span>
     </div>
@@ -27,28 +30,41 @@
 
     <div class="detail-row">
       <span class="detail-label">{{ $t('connectors.status') }}:</span>
-      <v-chip :color="getStatusColor(connector.status)" size="small" variant="tonal">
+      <v-chip
+        :color="getStatusColor(connector.status)"
+        size="small"
+        variant="tonal"
+      >
         {{ getStatusLabel(connector.status) }}
       </v-chip>
     </div>
 
-    <div v-if="connector.created_at" class="detail-row">
+    <div
+      v-if="connector.created_at"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('common.created') }}:</span>
       <span class="detail-value">{{ formatDate(connector.created_at) }}</span>
     </div>
 
-    <div v-if="connector.updated_at" class="detail-row">
+    <div
+      v-if="connector.updated_at"
+      class="detail-row"
+    >
       <span class="detail-label">{{ $t('common.updated') }}:</span>
       <span class="detail-value">{{ formatDate(connector.updated_at) }}</span>
     </div>
 
-    <div v-if="!fullView" class="detail-actions">
+    <div
+      v-if="!fullView"
+      class="detail-actions"
+    >
       <v-btn
         size="small"
         variant="outlined"
         prepend-icon="mdi-eye"
-        @click="$emit('view', connector)"
         class="detail-btn"
+        @click="$emit('view', connector)"
       >
         {{ $t('common.view') }}
       </v-btn>
@@ -57,8 +73,8 @@
         size="small"
         variant="outlined"
         prepend-icon="mdi-pencil"
-        @click="$emit('edit', connector)"
         class="detail-btn"
+        @click="$emit('edit', connector)"
       >
         {{ $t('common.edit') }}
       </v-btn>
@@ -68,8 +84,8 @@
         variant="outlined"
         color="error"
         prepend-icon="mdi-delete"
-        @click="$emit('delete', connector)"
         class="detail-btn"
+        @click="$emit('delete', connector)"
       >
         {{ $t('common.delete') }}
       </v-btn>

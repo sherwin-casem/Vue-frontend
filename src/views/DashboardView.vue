@@ -1,19 +1,40 @@
 <template>
   <div class="dashboard">
-    <h1 class="text-h4 mb-6">{{ $t('dashboard.title') }}</h1>
+    <h1 class="text-h4 mb-6">
+      {{ $t('dashboard.title') }}
+    </h1>
 
     <!-- Summary Cards -->
     <v-row>
-      <v-col cols="12" sm="6" md="4">
-        <v-card class="summary-card" elevation="2">
+      <v-col
+        cols="12"
+        sm="6"
+        md="4"
+      >
+        <v-card
+          class="summary-card"
+          elevation="2"
+        >
           <v-card-item>
-            <v-card-title class="text-subtitle-1 text-medium-emphasis">{{
-              $t('dashboard.totalSites')
-            }}</v-card-title>
+            <v-card-title class="text-subtitle-1 text-medium-emphasis">
+              {{
+                $t('dashboard.totalSites')
+              }}
+            </v-card-title>
             <div class="d-flex align-center mt-2">
               <span class="text-h4 font-weight-bold">{{ totalSites }}</span>
-              <v-chip class="ml-4" color="info" size="small" variant="outlined">
-                <v-icon size="small" start>mdi-map-marker</v-icon>
+              <v-chip
+                class="ml-4"
+                color="info"
+                size="small"
+                variant="outlined"
+              >
+                <v-icon
+                  size="small"
+                  start
+                >
+                  mdi-map-marker
+                </v-icon>
                 Sites
               </v-chip>
             </div>
@@ -26,16 +47,35 @@
         </v-card>
       </v-col>
 
-      <v-col cols="12" sm="6" md="4">
-        <v-card class="summary-card" elevation="2">
+      <v-col
+        cols="12"
+        sm="6"
+        md="4"
+      >
+        <v-card
+          class="summary-card"
+          elevation="2"
+        >
           <v-card-item>
-            <v-card-title class="text-subtitle-1 text-medium-emphasis">{{
-              $t('dashboard.totalChargePoints')
-            }}</v-card-title>
+            <v-card-title class="text-subtitle-1 text-medium-emphasis">
+              {{
+                $t('dashboard.totalChargePoints')
+              }}
+            </v-card-title>
             <div class="d-flex align-center mt-2">
               <span class="text-h4 font-weight-bold">{{ totalChargePoints }}</span>
-              <v-chip class="ml-4" color="success" size="small" variant="outlined">
-                <v-icon size="small" start>mdi-ev-station</v-icon>
+              <v-chip
+                class="ml-4"
+                color="success"
+                size="small"
+                variant="outlined"
+              >
+                <v-icon
+                  size="small"
+                  start
+                >
+                  mdi-ev-station
+                </v-icon>
                 EVSEs
               </v-chip>
             </div>
@@ -48,16 +88,35 @@
         </v-card>
       </v-col>
 
-      <v-col cols="12" sm="6" md="4">
-        <v-card class="summary-card" elevation="2">
+      <v-col
+        cols="12"
+        sm="6"
+        md="4"
+      >
+        <v-card
+          class="summary-card"
+          elevation="2"
+        >
           <v-card-item>
-            <v-card-title class="text-subtitle-1 text-medium-emphasis">{{
-              $t('dashboard.totalConnectors')
-            }}</v-card-title>
+            <v-card-title class="text-subtitle-1 text-medium-emphasis">
+              {{
+                $t('dashboard.totalConnectors')
+              }}
+            </v-card-title>
             <div class="d-flex align-center mt-2">
               <span class="text-h4 font-weight-bold">{{ totalConnectors }}</span>
-              <v-chip class="ml-4" color="warning" size="small" variant="outlined">
-                <v-icon size="small" start>mdi-power-plug</v-icon>
+              <v-chip
+                class="ml-4"
+                color="warning"
+                size="small"
+                variant="outlined"
+              >
+                <v-icon
+                  size="small"
+                  start
+                >
+                  mdi-power-plug
+                </v-icon>
                 Connectors
               </v-chip>
             </div>
@@ -72,14 +131,26 @@
     </v-row>
 
     <!-- Time Period Selector -->
-    <v-card class="mt-6" elevation="2">
+    <v-card
+      class="mt-6"
+      elevation="2"
+    >
       <v-card-item>
         <v-card-title>{{ $t('dashboard.energyConsumption') }}</v-card-title>
-        <template v-slot:append>
-          <v-tabs v-model="timeRange" color="primary">
-            <v-tab value="daily">{{ $t('dashboard.daily') }}</v-tab>
-            <v-tab value="weekly">{{ $t('dashboard.weekly') }}</v-tab>
-            <v-tab value="monthly">{{ $t('dashboard.monthly') }}</v-tab>
+        <template #append>
+          <v-tabs
+            v-model="timeRange"
+            color="primary"
+          >
+            <v-tab value="daily">
+              {{ $t('dashboard.daily') }}
+            </v-tab>
+            <v-tab value="weekly">
+              {{ $t('dashboard.weekly') }}
+            </v-tab>
+            <v-tab value="monthly">
+              {{ $t('dashboard.monthly') }}
+            </v-tab>
           </v-tabs>
         </template>
       </v-card-item>
@@ -101,7 +172,11 @@
                   </div>
                 </div>
                 <div class="chart-labels">
-                  <div v-for="(label, index) in dailyLabels" :key="index" class="chart-label">
+                  <div
+                    v-for="(label, index) in dailyLabels"
+                    :key="index"
+                    class="chart-label"
+                  >
                     {{ label }}
                   </div>
                 </div>
@@ -124,7 +199,11 @@
                   </div>
                 </div>
                 <div class="chart-labels">
-                  <div v-for="(label, index) in weeklyLabels" :key="index" class="chart-label">
+                  <div
+                    v-for="(label, index) in weeklyLabels"
+                    :key="index"
+                    class="chart-label"
+                  >
                     {{ label }}
                   </div>
                 </div>
@@ -147,7 +226,11 @@
                   </div>
                 </div>
                 <div class="chart-labels">
-                  <div v-for="(label, index) in monthlyLabels" :key="index" class="chart-label">
+                  <div
+                    v-for="(label, index) in monthlyLabels"
+                    :key="index"
+                    class="chart-label"
+                  >
                     {{ label }}
                   </div>
                 </div>
@@ -159,13 +242,22 @@
     </v-card>
 
     <!-- Recent Activity Table -->
-    <v-card class="mt-6" elevation="2">
+    <v-card
+      class="mt-6"
+      elevation="2"
+    >
       <v-card-title class="d-flex align-center">
         {{ $t('dashboard.recentChargePoints') }}
-        <v-spacer></v-spacer>
-        <v-btn variant="text" color="primary" size="small">
+        <v-spacer />
+        <v-btn
+          variant="text"
+          color="primary"
+          size="small"
+        >
           {{ $t('dashboard.viewAll') }}
-          <v-icon end>mdi-chevron-right</v-icon>
+          <v-icon end>
+            mdi-chevron-right
+          </v-icon>
         </v-btn>
       </v-card-title>
 
@@ -179,14 +271,18 @@
           hide-default-footer
         >
           <!-- Status column with chip -->
-          <template v-slot:item.status="{ item }">
-            <v-chip :color="getStatusColor(item.status)" size="small" variant="outlined">
+          <template #item.status="{ item }">
+            <v-chip
+              :color="getStatusColor(item.status)"
+              size="small"
+              variant="outlined"
+            >
               {{ $t(`status.${item.status?.toLowerCase()}`) }}
             </v-chip>
           </template>
 
           <!-- Last Update column -->
-          <template v-slot:item.lastUpdate="{ item }">
+          <template #item.lastUpdate="{ item }">
             {{ item.lastUpdate ? formatDate(item.lastUpdate) : '-' }}
           </template>
         </v-data-table>

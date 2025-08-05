@@ -28,7 +28,7 @@ window.console.error = (...args: any[]) => {
 // Debounced resize observer helper
 export function createDebouncedResizeObserver(
   callback: ResizeObserverCallback,
-  delay: number = 100
+  delay = 100
 ): ResizeObserver {
   let timeoutId: NodeJS.Timeout | null = null
 

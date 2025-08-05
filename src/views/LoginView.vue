@@ -1,41 +1,53 @@
 <template>
   <div class="login-container">
-    <v-card class="login-card" elevation="8" :theme="theme">
+    <v-card
+      class="login-card"
+      elevation="8"
+      :theme="theme"
+    >
       <v-card-item class="text-center">
         <div class="d-flex flex-column align-center mb-6">
           <!-- Logo placeholder - in production, use actual logo -->
           <div class="w-50 pt-6 pb-6">
-            <v-img alt="FLEET Velia logo" src="fleeton_login.png" class="w-100" cover />
+            <v-img
+              alt="FLEET Velia logo"
+              src="fleeton_login.png"
+              class="w-100"
+              cover
+            />
           </div>
           <!-- <h1 class="text-h4 font-weight-bold primary--text">FLEET Velia</h1> -->
         </div>
       </v-card-item>
 
       <v-card-text>
-        <v-form @submit.prevent="handleLogin" ref="form">
+        <v-form
+          ref="form"
+          @submit.prevent="handleLogin"
+        >
           <v-text-field
             v-model="username"
-:label="$t('auth.username')"
+            :label="$t('auth.username')"
             prepend-inner-icon="mdi-account"
             type="text"
             :rules="[rules.required]"
             variant="outlined"
             class="mb-4"
             :disabled="authStore.loading"
-          ></v-text-field>
+          />
 
           <v-text-field
             v-model="password"
-:label="$t('auth.password')"
+            :label="$t('auth.password')"
             prepend-inner-icon="mdi-lock"
             :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
             :type="showPassword ? 'text' : 'password'"
-            @click:append-inner="showPassword = !showPassword"
             :rules="[rules.required]"
             variant="outlined"
             class="mb-2"
             :disabled="authStore.loading"
-          ></v-text-field>
+            @click:append-inner="showPassword = !showPassword"
+          />
 
 
           <v-alert
