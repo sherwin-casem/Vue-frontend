@@ -26,3 +26,12 @@ jobs:
 
       - name: Build app
         run: npm run build
+
+      # - name: Copy files to VirtualBox VM
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.DEPLOY_HOST }}
+      #     username: ${{ secrets.DEPLOY_USER }}
+      #     key: ${{ secrets.DEPLOY_KEY }}
+      #     source: "dist/*"
+      #     target: "/home/${{ secrets.DEPLOY_USER }}/ocpp-frontend"
