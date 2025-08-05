@@ -138,6 +138,8 @@ const getStatusLabel = (status: string) => {
 <style scoped>
 .chargepoint-detail {
   padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .detail-row {

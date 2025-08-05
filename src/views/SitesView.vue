@@ -315,6 +315,14 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <SelectionToolbar
+    :selected-count="selectedCount"
+    :loading="sitesStore.loading"
+    @export-selected="exportSelectedSites"
+    @delete-selected="deleteSelectedSites"
+    @clear-selection="clearSelection"
+  />
 </template>
 
 <script setup lang="ts">
@@ -328,6 +336,7 @@ import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import SiteDetailView from '@/components/SiteDetailView.vue'
+import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 import DetailItem from '@/components/DetailItem.vue'
@@ -368,6 +377,10 @@ const currentSite = reactive<Partial<Site>>({
 })
 
 const sites = computed(() => sitesStore.sites)
+
+const selectedSites = computed(() => sites.value.filter((site) => site.selected === true))
+
+const selectedCount = computed(() => selectedSites.value.length)
 
 const pageableConfig = {
   buttonCount: 5,
@@ -560,6 +573,8 @@ const saveSite = async () => {
 
   if (success) {
     closeDialog()
+    detailDialogOpen.value = false
+    viewedSite.value = null
   }
 }
 
@@ -573,9 +588,62 @@ const deleteSite = async () => {
     const success = await sitesStore.deleteSite(selectedSite.value.site_id)
     if (success) {
       deleteDialogOpen.value = false
+      detailDialogOpen.value = false
       selectedSite.value = null
       selectedGridSite.value = null
+      viewedSite.value = null
     }
+  }
+}
+
+const clearSelection = () => {
+  sitesStore.sites = sitesStore.sites.map((item) => ({
+    ...item,
+    selected: false
+  }))
+}
+
+const deleteSelectedSites = async () => {
+  const selectedIds = selectedSites.value
+    .map((site) => site.site_id)
+    .filter((id) => id !== undefined)
+
+  if (selectedIds.length === 0) return
+
+  const confirmMessage = t('sites.confirmDeleteMultiple', { count: selectedIds.length })
+  if (!confirm(confirmMessage)) return
+
+  let allSuccess = true
+  for (const id of selectedIds) {
+    const success = await sitesStore.deleteSite(id!)
+    if (!success) allSuccess = false
+  }
+
+  if (allSuccess) {
+    clearSelection()
+  }
+}
+
+const exportSelectedSites = async () => {
+  try {
+    const columns: ExportColumn[] = [
+      { key: 'site_id', title: t('sites.siteId'), type: 'number' },
+      { key: 'name', title: t('sites.siteName'), type: 'text' },
+      { key: 'address', title: t('sites.address'), type: 'text' },
+      { key: 'postal_code', title: t('sites.postalCode'), type: 'text' },
+      { key: 'city', title: t('sites.city'), type: 'text' },
+      { key: 'country', title: t('sites.country'), type: 'text' },
+      { key: 'created_at', title: t('common.created'), type: 'date' }
+    ]
+
+    await ExportUtils.exportToPDF({
+      data: selectedSites.value,
+      columns,
+      title: t('sites.selectedSites'),
+      filename: `selected_sites_${new Date().toISOString().split('T')[0]}.pdf`
+    })
+  } catch (error) {
+    console.error('Selected export error:', error)
   }
 }
 

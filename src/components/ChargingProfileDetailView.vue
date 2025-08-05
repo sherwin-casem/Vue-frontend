@@ -173,6 +173,8 @@ const getKindColor = (kind: string) => {
 <style scoped>
 .chargingprofile-detail {
   padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .detail-row {

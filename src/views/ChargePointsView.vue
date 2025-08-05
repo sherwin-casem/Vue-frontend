@@ -356,6 +356,14 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <SelectionToolbar
+      :selected-count="selectedCount"
+      :loading="chargePointsStore.loading"
+      @export-selected="exportSelectedChargePoints"
+      @delete-selected="deleteSelectedChargePoints"
+      @clear-selection="clearSelection"
+    />
   </div>
 </template>
 
@@ -375,6 +383,7 @@ import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import ChargePointDetailView from '@/components/ChargePointDetailView.vue'
+import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 
@@ -418,6 +427,10 @@ const currentChargePoint = reactive<Partial<ChargePoint>>({
 })
 
 const chargePoints = computed(() => chargePointsStore.chargePoints)
+
+const selectedChargePoints = computed(() => chargePoints.value.filter((cp) => cp.selected === true))
+
+const selectedCount = computed(() => selectedChargePoints.value.length)
 
 const filteredChargePoints = computed(() => {
   if (!globalSearch.value) {
@@ -655,6 +668,8 @@ const saveChargePoint = async () => {
 
   if (success) {
     closeDialog()
+    detailDialogOpen.value = false
+    viewedChargePoint.value = null
   }
 }
 
@@ -668,9 +683,61 @@ const deleteChargePoint = async () => {
     const success = await chargePointsStore.deleteChargePoint(selectedChargePoint.value.id)
     if (success) {
       deleteDialogOpen.value = false
+      detailDialogOpen.value = false
       selectedChargePoint.value = null
       selectedGridChargePoint.value = null
+      viewedChargePoint.value = null
     }
+  }
+}
+
+const clearSelection = () => {
+  chargePointsStore.chargePoints = chargePointsStore.chargePoints.map((item) => ({
+    ...item,
+    selected: false
+  }))
+}
+
+const deleteSelectedChargePoints = async () => {
+  const selectedIds = selectedChargePoints.value.map((cp) => cp.id).filter((id) => id !== undefined)
+
+  if (selectedIds.length === 0) return
+
+  const confirmMessage = t('chargepoints.confirmDeleteMultiple', { count: selectedIds.length })
+  if (!confirm(confirmMessage)) return
+
+  let allSuccess = true
+  for (const id of selectedIds) {
+    const success = await chargePointsStore.deleteChargePoint(id!)
+    if (!success) allSuccess = false
+  }
+
+  if (allSuccess) {
+    clearSelection()
+  }
+}
+
+const exportSelectedChargePoints = async () => {
+  try {
+    const columns: ExportColumn[] = [
+      { key: 'id', title: t('chargepoints.id'), type: 'number' },
+      { key: 'ocpp_charge_box_id', title: t('chargepoints.ocppChargeBoxId'), type: 'text' },
+      { key: 'site_id', title: t('chargepoints.siteId'), type: 'number' },
+      { key: 'manufacturer', title: t('chargepoints.manufacturer'), type: 'text' },
+      { key: 'model', title: t('chargepoints.model'), type: 'text' },
+      { key: 'connector_count', title: t('chargepoints.connectorCount'), type: 'number' },
+      { key: 'status', title: t('chargepoints.status'), type: 'text' },
+      { key: 'created_at', title: t('common.created'), type: 'date' }
+    ]
+
+    await ExportUtils.exportToPDF({
+      data: selectedChargePoints.value,
+      columns,
+      title: t('chargepoints.selectedChargePoints'),
+      filename: `selected_chargepoints_${new Date().toISOString().split('T')[0]}.pdf`
+    })
+  } catch (error) {
+    console.error('Selected export error:', error)
   }
 }
 

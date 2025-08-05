@@ -110,6 +110,8 @@ const getPhaseColor = (phases: number) => {
 <style scoped>
 .scheduleperiod-detail {
   padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .detail-row {

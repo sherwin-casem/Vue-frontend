@@ -339,6 +339,14 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <SelectionToolbar
+      :selected-count="selectedCount"
+      :loading="connectorsStore.loading"
+      @export-selected="exportSelectedConnectors"
+      @delete-selected="deleteSelectedConnectors"
+      @clear-selection="clearSelection"
+    />
   </div>
 </template>
 
@@ -354,6 +362,7 @@ import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import ConnectorDetailView from '@/components/ConnectorDetailView.vue'
+import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 
@@ -395,6 +404,12 @@ const currentConnector = reactive<Partial<Connector>>({
 })
 
 const connectors = computed(() => connectorsStore.connectors)
+
+const selectedConnectors = computed(() =>
+  connectors.value.filter((connector) => connector.selected === true)
+)
+
+const selectedCount = computed(() => selectedConnectors.value.length)
 
 const filteredConnectors = computed(() => {
   if (!globalSearch.value) {
@@ -617,6 +632,8 @@ const saveConnector = async () => {
 
   if (success) {
     closeDialog()
+    detailDialogOpen.value = false
+    viewedConnector.value = null
   }
 }
 
@@ -630,9 +647,60 @@ const deleteConnector = async () => {
     const success = await connectorsStore.deleteConnector(selectedConnector.value.id)
     if (success) {
       deleteDialogOpen.value = false
+      detailDialogOpen.value = false
       selectedConnector.value = null
       selectedGridConnector.value = null
+      viewedConnector.value = null
     }
+  }
+}
+
+const clearSelection = () => {
+  connectorsStore.connectors = connectorsStore.connectors.map((item) => ({
+    ...item,
+    selected: false
+  }))
+}
+
+const deleteSelectedConnectors = async () => {
+  const selectedIds = selectedConnectors.value.map((c) => c.id).filter((id) => id !== undefined)
+
+  if (selectedIds.length === 0) return
+
+  const confirmMessage = t('connectors.confirmDeleteMultiple', { count: selectedIds.length })
+  if (!confirm(confirmMessage)) return
+
+  let allSuccess = true
+  for (const id of selectedIds) {
+    const success = await connectorsStore.deleteConnector(id!)
+    if (!success) allSuccess = false
+  }
+
+  if (allSuccess) {
+    clearSelection()
+  }
+}
+
+const exportSelectedConnectors = async () => {
+  try {
+    const columns: ExportColumn[] = [
+      { key: 'id', title: t('connectors.id'), type: 'number' },
+      { key: 'charge_point_id', title: t('connectors.chargePointId'), type: 'number' },
+      { key: 'connector_number', title: t('connectors.connectorNumber'), type: 'number' },
+      { key: 'type', title: t('connectors.type'), type: 'text' },
+      { key: 'max_power_kw', title: t('connectors.maxPowerKw'), type: 'number' },
+      { key: 'status', title: t('connectors.status'), type: 'text' },
+      { key: 'last_status_change', title: t('connectors.lastStatusChange'), type: 'date' }
+    ]
+
+    await ExportUtils.exportToPDF({
+      data: selectedConnectors.value,
+      columns,
+      title: t('connectors.selectedConnectors'),
+      filename: `selected_connectors_${new Date().toISOString().split('T')[0]}.pdf`
+    })
+  } catch (error) {
+    console.error('Selected export error:', error)
   }
 }
 

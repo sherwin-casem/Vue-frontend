@@ -330,6 +330,14 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <SelectionToolbar
+      :selected-count="selectedCount"
+      :loading="schedulePeriodsStore.loading"
+      @export-selected="exportSelectedSchedulePeriods"
+      @delete-selected="deleteSelectedSchedulePeriods"
+      @clear-selection="clearSelection"
+    />
   </div>
 </template>
 
@@ -349,6 +357,7 @@ import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import SchedulePeriodDetailView from '@/components/SchedulePeriodDetailView.vue'
+import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 
@@ -389,6 +398,12 @@ const currentSchedulePeriod = reactive<Partial<SchedulePeriod>>({
 })
 
 const schedulePeriods = computed(() => schedulePeriodsStore.schedulePeriods)
+
+const selectedSchedulePeriods = computed(() =>
+  schedulePeriods.value.filter((period) => period.selected === true)
+)
+
+const selectedCount = computed(() => selectedSchedulePeriods.value.length)
 
 const filteredSchedulePeriods = computed(() => {
   if (!globalSearch.value) {
@@ -597,6 +612,8 @@ const saveSchedulePeriod = async () => {
 
   if (success) {
     closeDialog()
+    detailDialogOpen.value = false
+    viewedSchedulePeriod.value = null
   }
 }
 
@@ -610,9 +627,64 @@ const deleteSchedulePeriod = async () => {
     const success = await schedulePeriodsStore.deleteSchedulePeriod(selectedSchedulePeriod.value.id)
     if (success) {
       deleteDialogOpen.value = false
+      detailDialogOpen.value = false
       selectedSchedulePeriod.value = null
       selectedGridSchedulePeriod.value = null
+      viewedSchedulePeriod.value = null
     }
+  }
+}
+
+const clearSelection = () => {
+  schedulePeriodsStore.schedulePeriods = schedulePeriodsStore.schedulePeriods.map((item) => ({
+    ...item,
+    selected: false
+  }))
+}
+
+const deleteSelectedSchedulePeriods = async () => {
+  const selectedIds = selectedSchedulePeriods.value
+    .map((p) => p.id)
+    .filter((id) => id !== undefined)
+
+  if (selectedIds.length === 0) return
+
+  const confirmMessage = t('scheduleperiods.confirmDeleteMultiple', { count: selectedIds.length })
+  if (!confirm(confirmMessage)) return
+
+  let allSuccess = true
+  for (const id of selectedIds) {
+    const success = await schedulePeriodsStore.deleteSchedulePeriod(id!)
+    if (!success) allSuccess = false
+  }
+
+  if (allSuccess) {
+    clearSelection()
+  }
+}
+
+const exportSelectedSchedulePeriods = async () => {
+  try {
+    const columns: ExportColumn[] = [
+      { key: 'id', title: t('scheduleperiods.id'), type: 'number' },
+      { key: 'charging_profile_id', title: t('scheduleperiods.chargingProfileId'), type: 'number' },
+      {
+        key: 'start_period_in_seconds',
+        title: t('scheduleperiods.startPeriodInSeconds'),
+        type: 'number'
+      },
+      { key: 'limit', title: t('scheduleperiods.limit'), type: 'number' },
+      { key: 'number_phases', title: t('scheduleperiods.numberPhases'), type: 'number' }
+    ]
+
+    await ExportUtils.exportToPDF({
+      data: selectedSchedulePeriods.value,
+      columns,
+      title: t('scheduleperiods.selectedSchedulePeriods'),
+      filename: `selected_scheduleperiods_${new Date().toISOString().split('T')[0]}.pdf`
+    })
+  } catch (error) {
+    console.error('Selected export error:', error)
   }
 }
 

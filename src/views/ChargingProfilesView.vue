@@ -414,6 +414,14 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <SelectionToolbar
+      :selected-count="selectedCount"
+      :loading="chargingProfilesStore.loading"
+      @export-selected="exportSelectedChargingProfiles"
+      @delete-selected="deleteSelectedChargingProfiles"
+      @clear-selection="clearSelection"
+    />
   </div>
 </template>
 
@@ -433,6 +441,7 @@ import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import ChargingProfileDetailView from '@/components/ChargingProfileDetailView.vue'
+import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 
@@ -481,6 +490,12 @@ const currentChargingProfile = reactive<Partial<ChargingProfile>>({
 })
 
 const chargingProfiles = computed(() => chargingProfilesStore.chargingProfiles)
+
+const selectedChargingProfiles = computed(() =>
+  chargingProfiles.value.filter((profile) => profile.selected === true)
+)
+
+const selectedCount = computed(() => selectedChargingProfiles.value.length)
 
 const filteredChargingProfiles = computed(() => {
   if (!globalSearch.value) {
@@ -574,7 +589,7 @@ const staticColumns = [
   },
   {
     field: 'valid_to',
-    title: t('chargingprofiles.validTo'),
+    title: t('chargingprofiles.validTo')
   }
 ]
 
@@ -741,6 +756,8 @@ const saveChargingProfile = async () => {
 
   if (success) {
     closeDialog()
+    detailDialogOpen.value = false
+    viewedChargingProfile.value = null
   }
 }
 
@@ -756,9 +773,62 @@ const deleteChargingProfile = async () => {
     )
     if (success) {
       deleteDialogOpen.value = false
+      detailDialogOpen.value = false
       selectedChargingProfile.value = null
       selectedGridChargingProfile.value = null
+      viewedChargingProfile.value = null
     }
+  }
+}
+
+const clearSelection = () => {
+  chargingProfilesStore.chargingProfiles = chargingProfilesStore.chargingProfiles.map((item) => ({
+    ...item,
+    selected: false
+  }))
+}
+
+const deleteSelectedChargingProfiles = async () => {
+  const selectedIds = selectedChargingProfiles.value
+    .map((p) => p.id)
+    .filter((id) => id !== undefined)
+
+  if (selectedIds.length === 0) return
+
+  const confirmMessage = t('chargingprofiles.confirmDeleteMultiple', { count: selectedIds.length })
+  if (!confirm(confirmMessage)) return
+
+  let allSuccess = true
+  for (const id of selectedIds) {
+    const success = await chargingProfilesStore.deleteChargingProfile(id!)
+    if (!success) allSuccess = false
+  }
+
+  if (allSuccess) {
+    clearSelection()
+  }
+}
+
+const exportSelectedChargingProfiles = async () => {
+  try {
+    const columns: ExportColumn[] = [
+      { key: 'id', title: t('chargingprofiles.id'), type: 'number' },
+      { key: 'charge_point_id', title: t('chargingprofiles.chargePointId'), type: 'number' },
+      { key: 'stack_level', title: t('chargingprofiles.stackLevel'), type: 'number' },
+      { key: 'charging_profile_purpose', title: t('chargingprofiles.purpose'), type: 'text' },
+      { key: 'charging_profile_kind', title: t('chargingprofiles.kind'), type: 'text' },
+      { key: 'valid_from', title: t('chargingprofiles.validFrom'), type: 'date' },
+      { key: 'valid_to', title: t('chargingprofiles.validTo'), type: 'date' }
+    ]
+
+    await ExportUtils.exportToPDF({
+      data: selectedChargingProfiles.value,
+      columns,
+      title: t('chargingprofiles.selectedChargingProfiles'),
+      filename: `selected_chargingprofiles_${new Date().toISOString().split('T')[0]}.pdf`
+    })
+  } catch (error) {
+    console.error('Selected export error:', error)
   }
 }
 

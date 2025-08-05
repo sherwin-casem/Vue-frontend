@@ -124,6 +124,8 @@ const getStatusLabel = (status: string) => {
 <style scoped>
 .connector-detail {
   padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .detail-row {
