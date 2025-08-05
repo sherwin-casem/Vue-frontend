@@ -89,6 +89,17 @@
           {{ chargePointsStore.error }}
         </v-alert>
 
+        <v-alert
+          v-if="showSuccessAlert"
+          type="success"
+          variant="tonal"
+          closable
+          @click:close="showSuccessAlert = false"
+          class="success-alert"
+        >
+          {{ successMessage }}
+        </v-alert>
+
         <div class="grid-container">
           <Grid
             ref="kendoGrid"
@@ -407,6 +418,8 @@ const group = ref([])
 const result = ref([])
 const gridKey = ref(0)
 const globalSearch = ref('')
+const successMessage = ref('')
+const showSuccessAlert = ref(false)
 const forceGridRefresh = () => gridKey.value++
 
 const dataState = ref({
@@ -661,9 +674,25 @@ const saveChargePoint = async () => {
       id: currentChargePoint.id
     }
     success = await chargePointsStore.updateChargePoint(updateData)
+    if (success) {
+      successMessage.value = t('chargepoints.updated', {
+        id: currentChargePoint.ocpp_charge_box_id
+      })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
   } else {
     const createData: CreateChargePointRequest = chargePointData
     success = await chargePointsStore.createChargePoint(createData)
+    if (success) {
+      successMessage.value = t('chargepoints.created', { id: chargePointData.ocpp_charge_box_id })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
   }
 
   if (success) {
@@ -680,8 +709,14 @@ const confirmDelete = (chargePoint: ChargePoint) => {
 
 const deleteChargePoint = async () => {
   if (selectedChargePoint.value?.id) {
+    const chargePointId = selectedChargePoint.value.ocpp_charge_box_id
     const success = await chargePointsStore.deleteChargePoint(selectedChargePoint.value.id)
     if (success) {
+      successMessage.value = t('chargepoints.deleted', { id: chargePointId })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
       deleteDialogOpen.value = false
       detailDialogOpen.value = false
       selectedChargePoint.value = null
@@ -769,11 +804,11 @@ function onHeaderSelectionChange(event) {
   }))
 }
 function onSelectionChange(event) {
-    event.dataItem[selectedField] = !event.dataItem[selectedField];
+  event.dataItem[selectedField] = !event.dataItem[selectedField]
 }
 
 function onRowClick(event) {
-  if (event.dataItem) {
+  if (event.dataItem && !event.dataItem.aggregates) {
     viewChargePoint(event.dataItem)
   }
 }
@@ -913,7 +948,8 @@ watch(globalSearch, () => {
   font-size: 0.875rem;
 }
 
-.error-alert {
+.error-alert,
+.success-alert {
   margin-bottom: 16px;
 }
 

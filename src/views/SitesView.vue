@@ -74,6 +74,17 @@
           {{ sitesStore.error }}
         </v-alert>
 
+        <v-alert
+          v-if="showSuccessAlert"
+          type="success"
+          variant="tonal"
+          closable
+          @click:close="showSuccessAlert = false"
+          class="success-alert"
+        >
+          {{ successMessage }}
+        </v-alert>
+
         <div class="grid-container">
           <Grid
             ref="kendoGrid"
@@ -359,6 +370,8 @@ const kendoGrid = ref()
 const group = ref([])
 const result = ref([])
 const gridKey = ref(0)
+const successMessage = ref('')
+const showSuccessAlert = ref(false)
 const forceGridRefresh = () => gridKey.value++
 const dataState = ref({
   take: 8,
@@ -509,7 +522,6 @@ const refreshData = async () => {
       site.selected = false
     }
   })
-
 }
 
 const openCreateDialog = () => {
@@ -567,9 +579,23 @@ const saveSite = async () => {
       site_id: currentSite.site_id
     }
     success = await sitesStore.updateSite(updateData)
+    if (success) {
+      successMessage.value = t('sites.updated', { name: currentSite.name })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
   } else {
     const createData: CreateSiteRequest = siteData
     success = await sitesStore.createSite(createData)
+    if (success) {
+      successMessage.value = t('sites.created', { name: siteData.name })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
   }
 
   if (success) {
@@ -586,8 +612,14 @@ const confirmDelete = (site: Site) => {
 
 const deleteSite = async () => {
   if (selectedSite.value?.site_id) {
+    const siteName = selectedSite.value.name
     const success = await sitesStore.deleteSite(selectedSite.value.site_id)
     if (success) {
+      successMessage.value = t('sites.deleted', { name: siteName })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
       deleteDialogOpen.value = false
       detailDialogOpen.value = false
       selectedSite.value = null
@@ -669,20 +701,19 @@ const exportSelectedSites = async (format: 'pdf' | 'excel' | 'csv') => {
 }
 
 function onHeaderSelectionChange(event) {
-    const checked = event.event.target.checked;
-    sites.value = sites.value.map((item) => ({
-        ...item,
-        selected: checked,
-    }));
+  const checked = event.event.target.checked
+  sites.value = sites.value.map((item) => ({
+    ...item,
+    selected: checked
+  }))
 }
 
-
 function onSelectionChange(event) {
-    event.dataItem[selectedField] = !event.dataItem[selectedField];
+  event.dataItem[selectedField] = !event.dataItem[selectedField]
 }
 
 function onRowClick(event) {
-  if (event.dataItem) {
+  if (event.dataItem && !event.dataItem.aggregates) {
     viewSite(event.dataItem)
   }
 }
@@ -822,7 +853,8 @@ watch(
   font-size: 0.875rem;
 }
 
-.error-alert {
+.error-alert,
+.success-alert {
   margin-bottom: 16px;
 }
 

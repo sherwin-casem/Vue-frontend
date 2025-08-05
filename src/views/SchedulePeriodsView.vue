@@ -89,6 +89,17 @@
           {{ schedulePeriodsStore.error }}
         </v-alert>
 
+        <v-alert
+          v-if="showSuccessAlert"
+          type="success"
+          variant="tonal"
+          closable
+          @click:close="showSuccessAlert = false"
+          class="success-alert"
+        >
+          {{ successMessage }}
+        </v-alert>
+
         <div class="grid-container">
           <Grid
             ref="kendoGrid"
@@ -381,6 +392,8 @@ const group = ref([])
 const result = ref([])
 const gridKey = ref(0)
 const globalSearch = ref('')
+const successMessage = ref('')
+const showSuccessAlert = ref(false)
 const forceGridRefresh = () => gridKey.value++
 
 const dataState = ref({
@@ -605,9 +618,23 @@ const saveSchedulePeriod = async () => {
       id: currentSchedulePeriod.id
     }
     success = await schedulePeriodsStore.updateSchedulePeriod(updateData)
+    if (success) {
+      successMessage.value = t('scheduleperiods.updated')
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
   } else {
     const createData: CreateSchedulePeriodRequest = periodData
     success = await schedulePeriodsStore.createSchedulePeriod(createData)
+    if (success) {
+      successMessage.value = t('scheduleperiods.created')
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
   }
 
   if (success) {
@@ -626,6 +653,11 @@ const deleteSchedulePeriod = async () => {
   if (selectedSchedulePeriod.value?.id) {
     const success = await schedulePeriodsStore.deleteSchedulePeriod(selectedSchedulePeriod.value.id)
     if (success) {
+      successMessage.value = t('scheduleperiods.deleted')
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
       deleteDialogOpen.value = false
       detailDialogOpen.value = false
       selectedSchedulePeriod.value = null
@@ -717,11 +749,11 @@ function onHeaderSelectionChange(event) {
 }
 
 function onSelectionChange(event) {
-    event.dataItem[selectedField] = !event.dataItem[selectedField];
+  event.dataItem[selectedField] = !event.dataItem[selectedField]
 }
 
 function onRowClick(event) {
-  if (event.dataItem) {
+  if (event.dataItem && !event.dataItem.aggregates) {
     viewSchedulePeriod(event.dataItem)
   }
 }
@@ -873,7 +905,8 @@ watch(globalSearch, () => {
   font-size: 0.875rem;
 }
 
-.error-alert {
+.error-alert,
+.success-alert {
   margin-bottom: 16px;
 }
 

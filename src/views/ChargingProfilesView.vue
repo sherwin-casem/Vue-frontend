@@ -89,6 +89,17 @@
           {{ chargingProfilesStore.error }}
         </v-alert>
 
+        <v-alert
+          v-if="showSuccessAlert"
+          type="success"
+          variant="tonal"
+          closable
+          @click:close="showSuccessAlert = false"
+          class="success-alert"
+        >
+          {{ successMessage }}
+        </v-alert>
+
         <div class="grid-container">
           <Grid
             ref="kendoGrid"
@@ -465,6 +476,8 @@ const group = ref([])
 const result = ref([])
 const gridKey = ref(0)
 const globalSearch = ref('')
+const successMessage = ref('')
+const showSuccessAlert = ref(false)
 const forceGridRefresh = () => gridKey.value++
 
 const dataState = ref({
@@ -749,9 +762,23 @@ const saveChargingProfile = async () => {
       id: currentChargingProfile.id
     }
     success = await chargingProfilesStore.updateChargingProfile(updateData)
+    if (success) {
+      successMessage.value = t('chargingprofiles.updated', { id: currentChargingProfile.id })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
   } else {
     const createData: CreateChargingProfileRequest = profileData
     success = await chargingProfilesStore.createChargingProfile(createData)
+    if (success) {
+      successMessage.value = t('chargingprofiles.created', { id: 'Profile' })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
   }
 
   if (success) {
@@ -768,10 +795,16 @@ const confirmDelete = (profile: ChargingProfile) => {
 
 const deleteChargingProfile = async () => {
   if (selectedChargingProfile.value?.id) {
+    const profileId = selectedChargingProfile.value.id
     const success = await chargingProfilesStore.deleteChargingProfile(
       selectedChargingProfile.value.id
     )
     if (success) {
+      successMessage.value = t('chargingprofiles.deleted', { id: profileId })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
       deleteDialogOpen.value = false
       detailDialogOpen.value = false
       selectedChargingProfile.value = null
@@ -860,11 +893,11 @@ function onHeaderSelectionChange(event) {
   }))
 }
 function onSelectionChange(event) {
-    event.dataItem[selectedField] = !event.dataItem[selectedField];
+  event.dataItem[selectedField] = !event.dataItem[selectedField]
 }
 
 function onRowClick(event) {
-  if (event.dataItem) {
+  if (event.dataItem && !event.dataItem.aggregates) {
     viewChargingProfile(event.dataItem)
   }
 }
@@ -1010,7 +1043,8 @@ watch(globalSearch, () => {
   font-size: 0.875rem;
 }
 
-.error-alert {
+.error-alert,
+.success-alert {
   margin-bottom: 16px;
 }
 

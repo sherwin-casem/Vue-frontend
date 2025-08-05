@@ -89,6 +89,17 @@
           {{ connectorsStore.error }}
         </v-alert>
 
+        <v-alert
+          v-if="showSuccessAlert"
+          type="success"
+          variant="tonal"
+          closable
+          @click:close="showSuccessAlert = false"
+          class="success-alert"
+        >
+          {{ successMessage }}
+        </v-alert>
+
         <div class="grid-container">
           <Grid
             ref="kendoGrid"
@@ -386,6 +397,8 @@ const group = ref([])
 const result = ref([])
 const gridKey = ref(0)
 const globalSearch = ref('')
+const successMessage = ref('')
+const showSuccessAlert = ref(false)
 const forceGridRefresh = () => gridKey.value++
 
 const dataState = ref({
@@ -625,9 +638,23 @@ const saveConnector = async () => {
       id: currentConnector.id
     }
     success = await connectorsStore.updateConnector(updateData)
+    if (success) {
+      successMessage.value = t('connectors.updated', { number: currentConnector.connector_number })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
   } else {
     const createData: CreateConnectorRequest = connectorData
     success = await connectorsStore.createConnector(createData)
+    if (success) {
+      successMessage.value = t('connectors.created', { number: connectorData.connector_number })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
   }
 
   if (success) {
@@ -644,8 +671,14 @@ const confirmDelete = (connector: Connector) => {
 
 const deleteConnector = async () => {
   if (selectedConnector.value?.id) {
+    const connectorNumber = selectedConnector.value.connector_number
     const success = await connectorsStore.deleteConnector(selectedConnector.value.id)
     if (success) {
+      successMessage.value = t('connectors.deleted', { number: connectorNumber })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
       deleteDialogOpen.value = false
       detailDialogOpen.value = false
       selectedConnector.value = null
@@ -733,10 +766,10 @@ function onHeaderSelectionChange(event) {
 }
 
 function onSelectionChange(event) {
-    event.dataItem[selectedField] = !event.dataItem[selectedField];
+  event.dataItem[selectedField] = !event.dataItem[selectedField]
 }
 function onRowClick(event) {
-  if (event.dataItem) {
+  if (event.dataItem && !event.dataItem.aggregates) {
     viewConnector(event.dataItem)
   }
 }
@@ -882,7 +915,8 @@ watch(globalSearch, () => {
   font-size: 0.875rem;
 }
 
-.error-alert {
+.error-alert,
+.success-alert {
   margin-bottom: 16px;
 }
 
