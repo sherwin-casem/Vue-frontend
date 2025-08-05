@@ -777,6 +777,7 @@ const deleteChargingProfile = async () => {
       selectedChargingProfile.value = null
       selectedGridChargingProfile.value = null
       viewedChargingProfile.value = null
+      refreshData()
     }
   }
 }
@@ -795,9 +796,6 @@ const deleteSelectedChargingProfiles = async () => {
 
   if (selectedIds.length === 0) return
 
-  const confirmMessage = t('chargingprofiles.confirmDeleteMultiple', { count: selectedIds.length })
-  if (!confirm(confirmMessage)) return
-
   let allSuccess = true
   for (const id of selectedIds) {
     const success = await chargingProfilesStore.deleteChargingProfile(id!)
@@ -806,10 +804,11 @@ const deleteSelectedChargingProfiles = async () => {
 
   if (allSuccess) {
     clearSelection()
+    refreshData()
   }
 }
 
-const exportSelectedChargingProfiles = async () => {
+const exportSelectedChargingProfiles = async (format: 'pdf' | 'excel' | 'csv') => {
   try {
     const columns: ExportColumn[] = [
       { key: 'id', title: t('chargingprofiles.id'), type: 'number' },
@@ -821,12 +820,33 @@ const exportSelectedChargingProfiles = async () => {
       { key: 'valid_to', title: t('chargingprofiles.validTo'), type: 'date' }
     ]
 
-    await ExportUtils.exportToPDF({
+    const exportOptions = {
       data: selectedChargingProfiles.value,
       columns,
       title: t('chargingprofiles.selectedChargingProfiles'),
-      filename: `selected_chargingprofiles_${new Date().toISOString().split('T')[0]}.pdf`
-    })
+      filename: `selected_chargingprofiles_${new Date().toISOString().split('T')[0]}`
+    }
+
+    switch (format) {
+      case 'pdf':
+        await ExportUtils.exportToPDF({
+          ...exportOptions,
+          filename: exportOptions.filename + '.pdf'
+        })
+        break
+      case 'excel':
+        await ExportUtils.exportToExcel({
+          ...exportOptions,
+          filename: exportOptions.filename + '.xlsx'
+        })
+        break
+      case 'csv':
+        await ExportUtils.exportToCSV({
+          ...exportOptions,
+          filename: exportOptions.filename + '.csv'
+        })
+        break
+    }
   } catch (error) {
     console.error('Selected export error:', error)
   }

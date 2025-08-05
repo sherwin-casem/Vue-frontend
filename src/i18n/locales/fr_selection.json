@@ -1,0 +1,10 @@
+{
+  "selection": {
+    "itemsSelected": "{count} élément sélectionné | {count} éléments sélectionnés",
+    "exportSelected": "Exporter la Sélection",
+    "clearSelection": "Effacer la Sélection",
+    "deleteSelected": "Supprimer la Sélection",
+    "confirmBatchDelete": "Confirmer la Suppression en Lot",
+    "confirmBatchDeleteMessage": "Êtes-vous sûr de vouloir supprimer {count} éléments sélectionnés ? Cette action ne peut pas être annulée."
+  }
+}

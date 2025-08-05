@@ -12,9 +12,9 @@
       <LanguageSelector />
 
       <!-- Theme toggle -->
-      <v-btn icon @click="toggleTheme">
+      <!-- <v-btn icon @click="toggleTheme">
         <v-icon>{{ theme === 'light' ? 'mdi-weather-night' : 'mdi-weather-sunny' }}</v-icon>
-      </v-btn>
+      </v-btn> -->
 
       <!-- User menu -->
       <v-menu offset-y>

@@ -1,0 +1,10 @@
+{
+  "selection": {
+    "itemsSelected": "{count} элемент выбран | {count} элементов выбрано",
+    "exportSelected": "Экспорт Выбранного",
+    "clearSelection": "Очистить Выбор",
+    "deleteSelected": "Удалить Выбранное",
+    "confirmBatchDelete": "Подтвердить Массовое Удаление",
+    "confirmBatchDeleteMessage": "Вы уверены, что хотите удалить {count} выбранных элементов? Это действие нельзя отменить."
+  }
+}

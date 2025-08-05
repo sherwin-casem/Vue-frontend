@@ -651,6 +651,7 @@ const deleteConnector = async () => {
       selectedConnector.value = null
       selectedGridConnector.value = null
       viewedConnector.value = null
+      refreshData()
     }
   }
 }
@@ -667,9 +668,6 @@ const deleteSelectedConnectors = async () => {
 
   if (selectedIds.length === 0) return
 
-  const confirmMessage = t('connectors.confirmDeleteMultiple', { count: selectedIds.length })
-  if (!confirm(confirmMessage)) return
-
   let allSuccess = true
   for (const id of selectedIds) {
     const success = await connectorsStore.deleteConnector(id!)
@@ -678,10 +676,11 @@ const deleteSelectedConnectors = async () => {
 
   if (allSuccess) {
     clearSelection()
+    refreshData()
   }
 }
 
-const exportSelectedConnectors = async () => {
+const exportSelectedConnectors = async (format: 'pdf' | 'excel' | 'csv') => {
   try {
     const columns: ExportColumn[] = [
       { key: 'id', title: t('connectors.id'), type: 'number' },
@@ -693,12 +692,33 @@ const exportSelectedConnectors = async () => {
       { key: 'last_status_change', title: t('connectors.lastStatusChange'), type: 'date' }
     ]
 
-    await ExportUtils.exportToPDF({
+    const exportOptions = {
       data: selectedConnectors.value,
       columns,
       title: t('connectors.selectedConnectors'),
-      filename: `selected_connectors_${new Date().toISOString().split('T')[0]}.pdf`
-    })
+      filename: `selected_connectors_${new Date().toISOString().split('T')[0]}`
+    }
+
+    switch (format) {
+      case 'pdf':
+        await ExportUtils.exportToPDF({
+          ...exportOptions,
+          filename: exportOptions.filename + '.pdf'
+        })
+        break
+      case 'excel':
+        await ExportUtils.exportToExcel({
+          ...exportOptions,
+          filename: exportOptions.filename + '.xlsx'
+        })
+        break
+      case 'csv':
+        await ExportUtils.exportToCSV({
+          ...exportOptions,
+          filename: exportOptions.filename + '.csv'
+        })
+        break
+    }
   } catch (error) {
     console.error('Selected export error:', error)
   }

@@ -631,6 +631,7 @@ const deleteSchedulePeriod = async () => {
       selectedSchedulePeriod.value = null
       selectedGridSchedulePeriod.value = null
       viewedSchedulePeriod.value = null
+      refreshData()
     }
   }
 }
@@ -649,9 +650,6 @@ const deleteSelectedSchedulePeriods = async () => {
 
   if (selectedIds.length === 0) return
 
-  const confirmMessage = t('scheduleperiods.confirmDeleteMultiple', { count: selectedIds.length })
-  if (!confirm(confirmMessage)) return
-
   let allSuccess = true
   for (const id of selectedIds) {
     const success = await schedulePeriodsStore.deleteSchedulePeriod(id!)
@@ -660,10 +658,11 @@ const deleteSelectedSchedulePeriods = async () => {
 
   if (allSuccess) {
     clearSelection()
+    refreshData()
   }
 }
 
-const exportSelectedSchedulePeriods = async () => {
+const exportSelectedSchedulePeriods = async (format: 'pdf' | 'excel' | 'csv') => {
   try {
     const columns: ExportColumn[] = [
       { key: 'id', title: t('scheduleperiods.id'), type: 'number' },
@@ -677,12 +676,33 @@ const exportSelectedSchedulePeriods = async () => {
       { key: 'number_phases', title: t('scheduleperiods.numberPhases'), type: 'number' }
     ]
 
-    await ExportUtils.exportToPDF({
+    const exportOptions = {
       data: selectedSchedulePeriods.value,
       columns,
       title: t('scheduleperiods.selectedSchedulePeriods'),
-      filename: `selected_scheduleperiods_${new Date().toISOString().split('T')[0]}.pdf`
-    })
+      filename: `selected_scheduleperiods_${new Date().toISOString().split('T')[0]}`
+    }
+
+    switch (format) {
+      case 'pdf':
+        await ExportUtils.exportToPDF({
+          ...exportOptions,
+          filename: exportOptions.filename + '.pdf'
+        })
+        break
+      case 'excel':
+        await ExportUtils.exportToExcel({
+          ...exportOptions,
+          filename: exportOptions.filename + '.xlsx'
+        })
+        break
+      case 'csv':
+        await ExportUtils.exportToCSV({
+          ...exportOptions,
+          filename: exportOptions.filename + '.csv'
+        })
+        break
+    }
   } catch (error) {
     console.error('Selected export error:', error)
   }

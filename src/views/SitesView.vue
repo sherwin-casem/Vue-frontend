@@ -509,6 +509,7 @@ const refreshData = async () => {
       site.selected = false
     }
   })
+
 }
 
 const openCreateDialog = () => {
@@ -592,6 +593,7 @@ const deleteSite = async () => {
       selectedSite.value = null
       selectedGridSite.value = null
       viewedSite.value = null
+      refreshData()
     }
   }
 }
@@ -610,9 +612,6 @@ const deleteSelectedSites = async () => {
 
   if (selectedIds.length === 0) return
 
-  const confirmMessage = t('sites.confirmDeleteMultiple', { count: selectedIds.length })
-  if (!confirm(confirmMessage)) return
-
   let allSuccess = true
   for (const id of selectedIds) {
     const success = await sitesStore.deleteSite(id!)
@@ -621,10 +620,11 @@ const deleteSelectedSites = async () => {
 
   if (allSuccess) {
     clearSelection()
+    refreshData()
   }
 }
 
-const exportSelectedSites = async () => {
+const exportSelectedSites = async (format: 'pdf' | 'excel' | 'csv') => {
   try {
     const columns: ExportColumn[] = [
       { key: 'site_id', title: t('sites.siteId'), type: 'number' },
@@ -636,12 +636,33 @@ const exportSelectedSites = async () => {
       { key: 'created_at', title: t('common.created'), type: 'date' }
     ]
 
-    await ExportUtils.exportToPDF({
+    const exportOptions = {
       data: selectedSites.value,
       columns,
       title: t('sites.selectedSites'),
-      filename: `selected_sites_${new Date().toISOString().split('T')[0]}.pdf`
-    })
+      filename: `selected_sites_${new Date().toISOString().split('T')[0]}`
+    }
+
+    switch (format) {
+      case 'pdf':
+        await ExportUtils.exportToPDF({
+          ...exportOptions,
+          filename: exportOptions.filename + '.pdf'
+        })
+        break
+      case 'excel':
+        await ExportUtils.exportToExcel({
+          ...exportOptions,
+          filename: exportOptions.filename + '.xlsx'
+        })
+        break
+      case 'csv':
+        await ExportUtils.exportToCSV({
+          ...exportOptions,
+          filename: exportOptions.filename + '.csv'
+        })
+        break
+    }
   } catch (error) {
     console.error('Selected export error:', error)
   }
