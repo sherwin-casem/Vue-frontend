@@ -28,6 +28,20 @@
 
             <v-spacer />
 
+            
+          <div class="search-container">
+            <v-text-field
+              v-model="globalSearch"
+              prepend-icon="mdi-magnify"
+              :label="$t('common.search')"
+              variant="outlined"
+              density="compact"
+              hide-details
+              clearable
+              class="search-field"
+            />
+          </div>
+
             <v-menu>
               <template #activator="{ props }">
                 <v-btn
@@ -136,7 +150,7 @@
               ref="kendoGrid"
               :key="gridKey"
               :data-items="result.data || []"
-              :total="sites.length"
+              :total="filteredSites.length"
               :columns="columnsWithSelection"
               :style="{ height: '500px' }"
               :sortable="true"
@@ -514,6 +528,7 @@ const isEditing = ref(false)
 const selectedSite = ref<Site | null>(null)
 const selectedGridSite = ref<Site | null>(null)
 const siteForm = ref()
+const globalSearch = ref('')
 const kendoGrid = ref()
 const group = ref([])
 const result = ref([])
@@ -542,6 +557,23 @@ const sites = computed(() => sitesStore.sites)
 const selectedSites = computed(() => sites.value.filter((site) => site.selected === true))
 
 const selectedCount = computed(() => selectedSites.value.length)
+
+const filteredSites = computed(() => {
+  if (!globalSearch.value) {
+    return sites.value
+  }
+
+  const searchTerm = globalSearch.value.toLowerCase()
+  return sites.value.filter(
+    (cp) =>
+      cp.name?.toLowerCase().includes(searchTerm) ||
+      cp.address?.toLowerCase().includes(searchTerm) ||
+      cp.postal_code?.toLowerCase().includes(searchTerm) ||
+      cp.city?.toLowerCase().includes(searchTerm) ||
+      cp.country?.toString().includes(searchTerm)
+  )
+})
+
 
 const pageableConfig = {
   buttonCount: 5,
@@ -679,7 +711,7 @@ const staticColumns = computed(() => {
 })
 
 const areAllSelected = computed(
-  () => sites.value.findIndex((item) => item.selected === false) === -1
+  () => filteredSites.value.findIndex((item) => item.selected === false) === -1
 )
 
 const columns = computed(() => staticColumns.value)
@@ -759,8 +791,8 @@ async function expandChange(event) {
 }
 
 const createDataState = (state) => {
-  if (sites.value && sites.value.length > 0) {
-    result.value = process(sites.value.slice(0), state)
+  if (filteredSites.value && filteredSites.value.length > 0) {
+    result.value = process(filteredSites.value.slice(0), state)
   } else {
     result.value = []
   }
@@ -1028,7 +1060,7 @@ const exportToPdf = async () => {
     ]
 
     await ExportUtils.exportToPDF({
-      data: sites.value,
+      data: filteredSites.value,
       columns,
       title: t('sites.title'),
       filename: `sites_${new Date().toISOString().split('T')[0]}.pdf`
@@ -1051,7 +1083,7 @@ const exportToExcel = async () => {
     ]
 
     await ExportUtils.exportToExcel({
-      data: sites.value,
+      data: filteredSites.value,
       columns,
       title: t('sites.title'),
       filename: `sites_${new Date().toISOString().split('T')[0]}.xlsx`
@@ -1074,7 +1106,7 @@ const exportToCsv = async () => {
     ]
 
     await ExportUtils.exportToCSV({
-      data: sites.value,
+      data: filteredSites.value,
       columns,
       title: t('sites.title'),
       filename: `sites_${new Date().toISOString().split('T')[0]}.csv`
@@ -1106,7 +1138,7 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  sites,
+  filteredSites,
   (newValue) => {
     if (newValue.length > 0) {
       createDataState(dataState.value)
@@ -1114,6 +1146,14 @@ watch(
   },
   { immediate: true }
 )
+
+watch(globalSearch, () => {
+  createDataState(dataState.value)
+})
+
+watch(globalSearch, () => {
+  createDataState(dataState.value)
+})
 </script>
 
 <style scoped>
@@ -1178,6 +1218,11 @@ watch(
   border: 1px solid var(--v-border-color);
   border-radius: 4px;
 }
+
+.search-container {
+  min-width:300px !important;
+}
+
 
 .selected-indicator {
   margin-right: 16px;

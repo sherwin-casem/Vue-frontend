@@ -1169,14 +1169,6 @@ watch(globalSearch, () => {
   margin-bottom: 16px;
 }
 
-.search-container {
-  min-width: 250px;
-}
-
-.search-field {
-  max-width: 300px;
-}
-
 .export-actions {
   display: flex;
   gap: 8px;
@@ -1245,6 +1237,7 @@ watch(globalSearch, () => {
   transition: all 0.2s ease;
 }
 
+
 .action-btn:hover {
   transform: scale(1.1);
 }
@@ -1266,10 +1259,6 @@ watch(globalSearch, () => {
   .export-btn {
     flex: 1;
     min-width: 0;
-  }
-
-  .search-container {
-    min-width: auto;
   }
 }
 
