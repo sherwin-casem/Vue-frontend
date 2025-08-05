@@ -611,7 +611,7 @@
       "csvError": "Failed to export CSV file. Please try again."
     }
   },
-  "chargepoints": {
+  "chargePoints": {
     "title": "Charge Points Management",
     "manageAllChargePoints": "Manage all your charge points",
     "chargePoint": "charge point",

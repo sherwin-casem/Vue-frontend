@@ -319,10 +319,10 @@ const totalChargingProfiles = computed(() => chargingProfilesStore.chargingProfi
 // Dashboard table headers
 const dashboardHeaders = computed(() => [
   { title: t('dashboard.chargePoint'), key: 'chargePoint', sortable: true },
-  { title: t('chargePoints.site'), key: 'site', sortable: true },
-  { title: t('chargePoints.manufacturer'), key: 'manufacturer', sortable: true },
-  { title: t('chargePoints.model'), key: 'model', sortable: true },
-  { title: t('chargePoints.connectors'), key: 'connectors', sortable: true },
+  { title: t('chargepoints.site'), key: 'site', sortable: true },
+  { title: t('chargepoints.manufacturer'), key: 'manufacturer', sortable: true },
+  { title: t('chargepoints.model'), key: 'model', sortable: true },
+  { title: t('chargepoints.connectors'), key: 'connectors', sortable: true },
   { title: t('common.status'), key: 'status', sortable: true },
   { title: t('common.updated'), key: 'lastUpdate', sortable: true }
 ])
