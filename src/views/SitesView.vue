@@ -209,6 +209,9 @@
                   :tabs="tabs"
                   @select="onSelect"
                 >
+                <template #details>
+                    {{ props.dataItem }}
+                </template>
                   <template #chargepoints>
                     <Grid
                       :columns="chargePointsColumns"
@@ -430,7 +433,6 @@
               <h2 class="header-title">
                 {{ viewedSite.name }}
               </h2>
-             
             </div>
           </div>
           <v-btn
@@ -580,6 +582,7 @@ const pageableConfig = {
 }
 
 const tabs = ref([
+  {title:"Details", content:'details'},
   { title: 'Charge points', content: 'chargepoints' },
   { title: 'Connectors', content: 'connectors' }
 ])
@@ -1020,28 +1023,28 @@ function onSelectionChange(event) {
   event.dataItem[selectedField] = !event.dataItem[selectedField]
 }
 function onRowClick(event) {
-  const nativeEvent = event.event;
-  let target = nativeEvent?.target;
+  // const nativeEvent = event.event;
+  // let target = nativeEvent?.target;
 
-  if (!target) return;
+  // if (!target) return;
 
-  while (target && target.nodeType !== 1) {
-    target = target.parentNode;
-  }
+  // while (target && target.nodeType !== 1) {
+  //   target = target.parentNode;
+  // }
 
-  const isHierarchyClick =
-    target.closest('.k-hierarchy-cell') || target.closest('.k-i-expand') || target.closest('.k-icon');
+  // const isHierarchyClick =
+  //   target.closest('.k-hierarchy-cell') || target.closest('.k-i-expand') || target.closest('.k-icon');
 
-  const isActionClick = target.closest('.action-column') || target.closest('button') || target.closest('input[type="checkbox"]');
+  // const isActionClick = target.closest('.action-column') || target.closest('button') || target.closest('input[type="checkbox"]');
 
-  if (isHierarchyClick || isActionClick) {
-    return;
-  }
+  // if (isHierarchyClick || isActionClick) {
+  //   return;
+  // }
 
 
-  if (event.dataItem && !event.dataItem.aggregates) {
-    viewSite(event.dataItem)
-  }
+  // if (event.dataItem && !event.dataItem.aggregates) {
+  //   viewSite(event.dataItem)
+  // }
 }
 
 

@@ -196,10 +196,6 @@
             </template>
 
             <template #myTemplate="{ props }">
-              <v-card-text class="text-bold">
-                Charging profiles for {{ props.dataItem.manufacturer }} (
-                {{ props.dataItem.model }})
-              </v-card-text>
               <div
                 v-if="props.dataItem._loadingProfiles"
                 class="loading-container"
@@ -211,14 +207,41 @@
                 />
                 <span class="loading-text">Loading charging profiles...</span>
               </div>
-              <Grid
-                v-else
+               <TabStrip
+                  v-else
+                  :selected="selected"
+                  :tabs="tabs"
+                  @select="onSelect"
+                >
+
+                  <template #details>
+                      {{ props.dataItem }}
+                  </template>
+                  <template #site>
+                    {{props.dataItem.site}}
+                  </template>
+                
+                  <template #chargingprofiles>
+                     <Grid
                 :columns="chargingProfilesColumns"
                 :data-items="props.dataItem._chargingProfiles || []"
                 :sortable="false"
                 :groupable="false"
                 :filterable="false"
               />
+                  </template>
+                  <template #connectors>
+                    <Grid
+                      :columns="connectorsColumns"
+                      :data-items="props.dataItem._connectors || []"
+                      :sortable="false"
+                      :groupable="false"
+                      :filterable="false"
+                    />
+
+                  </template>
+                </TabStrip>
+             
             </template>
           </Grid>
 
@@ -515,11 +538,14 @@ import ChargePointDetailView from '@/components/ChargePointDetailView.vue'
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
+import { TabStrip } from '@progress/kendo-vue-layout'
+
 
 const { t } = useI18n()
 const { formatDate } = useLocaleFormatting()
 const chargePointsStore = useChargePointsStore()
 const sitesStore = useSitesStore()
+const selected = ref(0)
 const chargingProfilesStore = useChargingProfilesStore()
 const selectedField = 'selected'
 const cellTemplate = ref('myTemplate')
@@ -586,6 +612,13 @@ const pageableConfig = {
   pageSize: 20
 }
 
+const tabs = ref([
+  {title:"Chargepoint Details", content:'details'},
+  { title: 'Location details', content: 'site' },
+  { title: 'Connectors', content: 'connectors' },
+  {title:"Charging Profiles", content: 'chargingprofiles'},
+])
+
 const statusOptions = [
   { value: 'active', title: t('chargepoints.statusActive') },
   { value: 'inactive', title: t('chargepoints.statusInactive') },
@@ -598,6 +631,60 @@ const availableSites = computed(() =>
     title: `${site.name} (${site.city})`
   }))
 )
+const connectorsColumns = [
+  {
+    field: 'connector_number',
+    title: t('connectors.connectorNumber'),
+    filterable: false
+  },
+  {
+    field: 'type',
+    title: t('connectors.type'),
+    filterable: false
+  },
+  {
+    field: 'max_power_kw',
+    title: t('connectors.maxPowerKw'),
+    filterable: false
+  },
+  {
+    field: 'status',
+    title: t('connectors.status'),
+    filterable: false
+  }
+]
+const chargePointsColumns = [
+  {
+    field: 'ocpp_charge_box_id',
+    title: t('chargepoints.ocppChargeBoxId'),
+    filter: 'text',
+    filterable: false
+  },
+  {
+    field: 'manufacturer',
+    title: t('chargepoints.manufacturer'),
+    filter: 'text',
+    filterable: false
+  },
+  {
+    field: 'model',
+    title: t('chargepoints.model'),
+    filter: 'text',
+    filterable: false
+  },
+  {
+    field: 'connector_count',
+    title: t('chargepoints.connectorCount'),
+    filter: 'numeric',
+    filterable: false
+  },
+  {
+    field: 'status',
+    title: t('chargepoints.status'),
+    filter: 'text',
+    filterable: false
+  }
+]
 
 const chargingProfilesColumns = [
   {
@@ -646,7 +733,8 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    required: true
+    required: true,
+    width:'150px'
   },
   {
     field: 'site_id',
@@ -655,6 +743,15 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true
+  },
+   {
+    field: 'site.name',
+    title: t('sites.siteName'),
+    filter: 'text',
+    columnMenu: 'columnMenuTemplate',
+    headerClassName: 'customMenu',
+    visible: true,
+    width:'150px'
   },
   {
     field: 'manufacturer',
@@ -830,6 +927,9 @@ const refreshData = async () => {
       cp.selected = false
     }
   })
+}
+const onSelect = (e) => {
+  selected.value = e.selected
 }
 
 const openCreateDialog = () => {
@@ -1024,28 +1124,28 @@ function onSelectionChange(event) {
 }
 
 function onRowClick(event) {
-  const nativeEvent = event.event;
-  let target = nativeEvent?.target;
+  // const nativeEvent = event.event;
+  // let target = nativeEvent?.target;
 
-  if (!target) return;
+  // if (!target) return;
 
-  while (target && target.nodeType !== 1) {
-    target = target.parentNode;
-  }
+  // while (target && target.nodeType !== 1) {
+  //   target = target.parentNode;
+  // }
 
-  const isHierarchyClick =
-    target.closest('.k-hierarchy-cell') || target.closest('.k-i-expand') || target.closest('.k-icon');
+  // const isHierarchyClick =
+  //   target.closest('.k-hierarchy-cell') || target.closest('.k-i-expand') || target.closest('.k-icon');
 
-  const isActionClick = target.closest('.action-column') || target.closest('button') || target.closest('input[type="checkbox"]');
+  // const isActionClick = target.closest('.action-column') || target.closest('button') || target.closest('input[type="checkbox"]');
 
-  if (isHierarchyClick || isActionClick) {
-    return;
-  }
+  // if (isHierarchyClick || isActionClick) {
+  //   return;
+  // }
 
 
-  if (event.dataItem && !event.dataItem.aggregates) {
-    viewChargePoint(event.dataItem)
-  }
+  // if (event.dataItem && !event.dataItem.aggregates) {
+  //   viewChargePoint(event.dataItem)
+  // }
 }
 
 const exportToPdf = async () => {

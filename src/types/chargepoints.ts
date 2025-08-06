@@ -1,3 +1,5 @@
+import { Site } from "./sites"
+
 export interface ChargePoint {
   id?: number
   ocpp_charge_box_id: string
@@ -9,6 +11,7 @@ export interface ChargePoint {
   note?: string
   created_at?: string
   updated_at?: string
+  site?: Site | null;
 
 }
 

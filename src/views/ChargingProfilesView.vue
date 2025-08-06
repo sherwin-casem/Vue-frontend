@@ -189,9 +189,6 @@
             </template>
 
             <template #detailTemplate="{ props }">
-              <v-card-text class="text-bold">
-                Schedule periods for Charging Profile {{ props.dataItem.id }}
-              </v-card-text>
               <div
                 v-if="props.dataItem._loadingPeriods"
                 class="loading-container"
@@ -201,16 +198,44 @@
                   color="primary"
                   size="24"
                 />
-                <span class="loading-text">Loading schedule periods...</span>
+                <span class="loading-text">Loading ...</span>
               </div>
-              <Grid
-                v-else
+            
+
+                  <TabStrip
+                  v-else
+                  :selected="selected"
+                  :tabs="tabs"
+                  @select="onSelect"
+                >
+
+                  <template #details>
+                      {{ props.dataItem }}
+                  </template>
+                  <template #chargepoint>
+                    {{props.dataItem.charge_point}}
+                  </template>
+                
+                  <template #scheduleperiods>
+                    <Grid
                 :columns="schedulePeriodsColumns"
                 :data-items="props.dataItem._schedulePeriods || []"
                 :sortable="false"
                 :groupable="false"
                 :filterable="false"
               />
+                  </template>
+                  <template #connectors>
+                    <Grid
+                      :columns="connectorsColumns"
+                      :data-items="props.dataItem._connectors || []"
+                      :sortable="false"
+                      :groupable="false"
+                      :filterable="false"
+                    />
+
+                  </template>
+                </TabStrip>
             </template>
           </Grid>
 
@@ -559,6 +584,8 @@ import ChargingProfileDetailView from '@/components/ChargingProfileDetailView.vu
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
+import { TabStrip } from '@progress/kendo-vue-layout'
+
 
 const { t } = useI18n()
 const { formatDate } = useLocaleFormatting()
@@ -570,6 +597,8 @@ const cellTemplate = ref('detailTemplate')
 const viewedChargingProfile = ref<ChargingProfile | null>(null)
 const detailDialogOpen = ref(false)
 const dialogOpen = ref(false)
+const selected = ref(0)
+
 const deleteDialogOpen = ref(false)
 const formValid = ref(false)
 const isEditing = ref(false)
@@ -636,6 +665,13 @@ const pageableConfig = {
   pageSizes: [10, 20, 50, 100],
   pageSize: 20
 }
+
+const tabs = ref([
+  { title: 'Details', content: 'details' },
+  {title:"Charge Point", content:'chargepoint'},
+  {title:"Schedule periods", content: 'scheduleperiods'},
+])
+
 
 const purposeOptions = [
   { value: 'TxDefault', title: 'Tx Default' },
@@ -771,7 +807,14 @@ const toggleColumn = (field: string) => {
   if (column && !column.required) {
     column.visible = !column.visible
   }
+
+
 }
+
+const onSelect = (e) => {
+  selected.value = e.selected
+}
+
 
 const rules = {
   required: (value: string | number) =>
@@ -1087,27 +1130,27 @@ function onSelectionChange(event) {
   event.dataItem[selectedField] = !event.dataItem[selectedField]
 }
 function onRowClick(event) {
-  const nativeEvent = event.event;
-  let target = nativeEvent?.target;
+  // const nativeEvent = event.event;
+  // let target = nativeEvent?.target;
 
-  if (!target) return;
+  // if (!target) return;
 
-  while (target && target.nodeType !== 1) {
-    target = target.parentNode;
-  }
+  // while (target && target.nodeType !== 1) {
+  //   target = target.parentNode;
+  // }
 
-  const isHierarchyClick =
-    target.closest('.k-hierarchy-cell') || target.closest('.k-i-expand') || target.closest('.k-icon');
+  // const isHierarchyClick =
+  //   target.closest('.k-hierarchy-cell') || target.closest('.k-i-expand') || target.closest('.k-icon');
 
-  const isActionClick = target.closest('.action-column') || target.closest('button') || target.closest('input[type="checkbox"]');
+  // const isActionClick = target.closest('.action-column') || target.closest('button') || target.closest('input[type="checkbox"]');
 
-  if (isHierarchyClick || isActionClick) {
-    return;
-  }
+  // if (isHierarchyClick || isActionClick) {
+  //   return;
+  // }
 
-  if (event.dataItem && !event.dataItem.aggregates) {
-    viewChargingProfile(event.dataItem);
-  }
+  // if (event.dataItem && !event.dataItem.aggregates) {
+  //   viewChargingProfile(event.dataItem);
+  // }
 }
 
 const exportToPdf = async () => {
