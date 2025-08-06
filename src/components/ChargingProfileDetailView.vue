@@ -199,12 +199,13 @@ const getKindColor = (kind: string) => {
   }
 }
 </script>
-
 <style scoped>
 .chargingprofile-detail {
   padding: 16px;
   max-height: 400px;
   overflow-y: auto;
+  background-color: var(--dialog-content-bg);
+  color: var(--text-primary);
 }
 
 .detail-row {
@@ -215,12 +216,13 @@ const getKindColor = (kind: string) => {
 
 .detail-label {
   font-weight: 500;
-  min-width: 160px;
-  color: rgba(0, 0, 0, 0.6);
+  min-width: 140px;
+  color: var(--detail-label-color);
 }
 
 .detail-value {
   flex: 1;
+  color: var(--text-primary);
 }
 
 .detail-actions {
@@ -228,7 +230,7 @@ const getKindColor = (kind: string) => {
   gap: 8px;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid var(--divider-color);
 }
 
 .detail-btn {

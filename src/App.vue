@@ -25,9 +25,9 @@
       <LanguageSelector />
 
       <!-- Theme toggle -->
-      <!-- <v-btn icon @click="toggleTheme">
+      <v-btn icon @click="toggleTheme">
         <v-icon>{{ theme === 'light' ? 'mdi-weather-night' : 'mdi-weather-sunny' }}</v-icon>
-      </v-btn> -->
+      </v-btn>
 
       <!-- User menu -->
       <v-menu offset-y>
@@ -108,12 +108,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import LanguageSelector from '@/components/LanguageSelector.vue'
 import { useLoadingStore } from '@/stores/loading'
+
 const loadingStore = useLoadingStore()
 interface NavigationItem {
   title: string
@@ -159,6 +160,14 @@ onMounted(async (): Promise<void> => {
   // Set initial theme class
   document.body.className = theme.value === 'light' ? 'light-mode' : 'dark-mode'
 })
+
+watch(
+      () => theme.value,
+      (newTheme) => {
+        document.body.classList.toggle('dark', newTheme === 'dark');
+      },
+      { immediate: true }
+    );
 </script>
 
 <style>

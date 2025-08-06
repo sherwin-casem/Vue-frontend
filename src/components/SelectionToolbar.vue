@@ -186,10 +186,10 @@ const confirmDelete = () => {
 
 .toolbar-card {
   border-radius: 24px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
-  background: rgba(255, 255, 255, 0.98) !important;
+  background: var(--toolbar-bg) !important;
+  box-shadow: var(--toolbar-shadow) !important;
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--toolbar-border);
 }
 
 .toolbar-content {
@@ -199,6 +199,7 @@ const confirmDelete = () => {
   gap: 16px;
   padding: 8px 16px !important;
   min-height: 48px;
+  color: var(--text-primary);
 }
 
 .toolbar-info {
@@ -210,12 +211,13 @@ const confirmDelete = () => {
 
 .toolbar-icon {
   flex-shrink: 0;
+  color: var(--text-primary);
 }
 
 .selection-count {
   font-weight: 600;
   font-size: 0.875rem;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
@@ -234,11 +236,13 @@ const confirmDelete = () => {
   min-width: auto !important;
   padding: 0 12px !important;
   transition: all 0.2s ease;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
 }
 
 .action-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--btn-hover-shadow);
 }
 
 .btn-text {
@@ -252,21 +256,25 @@ const confirmDelete = () => {
   height: 32px !important;
   min-width: 32px !important;
   flex-shrink: 0;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
 }
 
 .export-menu {
   border-radius: 12px !important;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: var(--menu-shadow) !important;
+  background-color: var(--menu-bg);
 }
 
 .export-item {
   min-height: 40px !important;
   padding: 8px 16px !important;
+  color: var(--text-primary);
 }
 
 .export-item:hover {
-  background-color: rgba(var(--v-theme-primary), 0.04);
+  background-color: var(--hover-bg);
 }
 
 @keyframes slideUp {

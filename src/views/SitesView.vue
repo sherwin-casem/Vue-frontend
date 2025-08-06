@@ -430,9 +430,7 @@
               <h2 class="header-title">
                 {{ viewedSite.name }}
               </h2>
-              <p class="header-subtitle">
-                {{ $t('sites.siteDetails') }}
-              </p>
+             
             </div>
           </div>
           <v-btn
@@ -1291,6 +1289,9 @@ th.k-header.active > div > a {
   color: white;
   padding: 24px 32px 20px;
   position: relative;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
 }
 
 .header-content {
@@ -1339,13 +1340,13 @@ th.k-header.active > div > a {
 
 .detail-content {
   padding: 32px !important;
-  background: #fafafa;
+   background-color: var(--dialog-content-bg);
   min-height: 200px;
 }
 
 .detail-actions {
   padding: 20px 32px 24px !important;
-  background: white;
+   background-color: var(--dialog-content-bg);
   gap: 12px;
 }
 

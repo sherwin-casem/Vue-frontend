@@ -435,9 +435,6 @@
               <h2 class="header-title">
                 {{ viewedChargePoint.ocpp_charge_box_id }}
               </h2>
-              <p class="header-subtitle">
-                {{ $t('chargepoints.chargePointDetails') }}
-              </p>
             </div>
           </div>
           <v-btn
@@ -1237,6 +1234,10 @@ watch(globalSearch, () => {
   transition: all 0.2s ease;
 }
 
+.search-container {
+  min-width:300px !important;
+}
+
 
 .action-btn:hover {
   transform: scale(1.1);
@@ -1304,6 +1305,7 @@ th.k-header.active > div > a {
     0 11px 15px -7px rgba(0, 0, 0, 0.2) !important;
 }
 
+
 .detail-card-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -1357,15 +1359,16 @@ th.k-header.active > div > a {
 
 .detail-content {
   padding: 32px !important;
-  background: #fafafa;
+   background-color: var(--dialog-content-bg);
   min-height: 200px;
 }
 
 .detail-actions {
   padding: 20px 32px 24px !important;
-  background: white;
+   background-color: var(--dialog-content-bg);
   gap: 12px;
 }
+
 
 .action-btn {
   border-radius: 8px !important;

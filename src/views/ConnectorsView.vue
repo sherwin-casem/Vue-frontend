@@ -390,9 +390,6 @@
               <h2 class="header-title">
                 {{ $t('connectors.connector') }} {{ viewedConnector.connector_number }}
               </h2>
-              <p class="header-subtitle">
-                {{ $t('connectors.connectorDetails') }}
-              </p>
             </div>
           </div>
           <v-btn
@@ -1214,15 +1211,16 @@ th.k-header.active > div > a {
 
 .detail-content {
   padding: 32px !important;
-  background: #fafafa;
+   background-color: var(--dialog-content-bg);
   min-height: 200px;
 }
 
 .detail-actions {
   padding: 20px 32px 24px !important;
-  background: white;
+   background-color: var(--dialog-content-bg);
   gap: 12px;
 }
+
 
 .action-btn {
   border-radius: 8px !important;

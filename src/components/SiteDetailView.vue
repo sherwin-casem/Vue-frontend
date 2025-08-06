@@ -114,6 +114,8 @@ defineEmits(['edit', 'delete'])
   padding: 12px;
   max-height: 400px;
   overflow-y: auto;
+   background-color: var(--dialog-content-bg); /* reuse dialog background */
+  border-radius: 8px;
 }
 
 .site-detail-row {
@@ -125,11 +127,12 @@ defineEmits(['edit', 'delete'])
 .site-detail-label {
   font-weight: 500;
   min-width: 120px;
-  color: rgba(0, 0, 0, 0.7);
+  color: var(--site-detail-label-color);
 }
 
 .site-detail-value {
   flex: 1;
+  color: var(--site-detail-value-color);
 }
 
 @media (max-width: 600px) {

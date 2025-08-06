@@ -142,6 +142,8 @@ const getStatusLabel = (status: string) => {
   padding: 16px;
   max-height: 400px;
   overflow-y: auto;
+  background-color: var(--dialog-content-bg);
+  color: var(--text-primary);
 }
 
 .detail-row {
@@ -153,11 +155,12 @@ const getStatusLabel = (status: string) => {
 .detail-label {
   font-weight: 500;
   min-width: 140px;
-  color: rgba(0, 0, 0, 0.6);
+  color: var(--detail-label-color);
 }
 
 .detail-value {
   flex: 1;
+  color: var(--text-primary);
 }
 
 .detail-actions {
@@ -165,7 +168,7 @@ const getStatusLabel = (status: string) => {
   gap: 8px;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid var(--divider-color);
 }
 
 .detail-btn {
