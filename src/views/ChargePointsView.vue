@@ -1,4 +1,4 @@
-  <!-- @ts-nocheck -->
+<!-- @ts-nocheck -->
 <template>
   <div class="chargepoints-management">
     <v-card elevation="2">
@@ -54,25 +54,19 @@
             <v-list>
               <v-list-item @click="exportToPdf">
                 <v-list-item-title>
-                  <v-icon start>
-                    mdi-file-pdf-box
-                  </v-icon>
+                  <v-icon start> mdi-file-pdf-box </v-icon>
                   {{ $t('export.exportToPdf') }}
                 </v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportToExcel">
                 <v-list-item-title>
-                  <v-icon start>
-                    mdi-file-excel
-                  </v-icon>
+                  <v-icon start> mdi-file-excel </v-icon>
                   {{ $t('export.exportToExcel') }}
                 </v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportToCsv">
                 <v-list-item-title>
-                  <v-icon start>
-                    mdi-file-delimited
-                  </v-icon>
+                  <v-icon start> mdi-file-delimited </v-icon>
                   {{ $t('export.exportToCsv') }}
                 </v-list-item-title>
               </v-list-item>
@@ -161,6 +155,7 @@
             :filterable="false"
             class="chargepoints-grid"
             :filter="dataState.filter"
+            :messages="messages"
             :sort="dataState.sort"
             :detail="cellTemplate"
             :expand-field="'expanded'"
@@ -196,64 +191,157 @@
             </template>
 
             <template #myTemplate="{ props }">
-              <div
-                v-if="props.dataItem._loadingProfiles"
-                class="loading-container"
-              >
-                <v-progress-circular
-                  indeterminate
-                  color="primary"
-                  size="24"
-                />
+              <div v-if="props.dataItem._loadingProfiles" class="loading-container">
+                <v-progress-circular indeterminate color="primary" size="24" />
                 <span class="loading-text">Loading charging profiles...</span>
               </div>
-               <TabStrip
-                  v-else
-                  :selected="selected"
-                  :tabs="tabs"
-                  @select="onSelect"
-                >
+              <TabStrip
+                v-else
+                :selected="getRowTabState(props.dataItem.id)"
+                :tabs="tabs"
+                @select="(e) => onSelect(e, props.dataItem.id)"
+              >
+                <template #details>
+                  <ChargePointDetailView
+                    :charge-point="props.dataItem"
+                    :full-view="true"
+                    @edit="openEditDialog"
+                    @delete="confirmDelete"
+                  />
+                </template>
+                <template #site>
+                  <div v-if="props.dataItem.site" class="site-details">
+                    <div class="detail-row">
+                      <span class="detail-label">{{ $t('sites.siteName') }}:</span>
+                      <span class="detail-value">{{ props.dataItem.site.name }}</span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="detail-label">{{ $t('sites.address') }}:</span>
+                      <span class="detail-value">{{ props.dataItem.site.address }}</span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="detail-label">{{ $t('sites.city') }}:</span>
+                      <span class="detail-value">{{ props.dataItem.site.city }}</span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="detail-label">{{ $t('sites.country') }}:</span>
+                      <span class="detail-value">{{ props.dataItem.site.country }}</span>
+                    </div>
+                  </div>
+                  <div v-else class="no-data-message">
+                    {{ $t('chargepoints.noSiteData') }}
+                  </div>
+                </template>
 
-                  <template #details>
-                      {{ props.dataItem }}
-                  </template>
-                  <template #site>
-                    {{props.dataItem.site}}
-                  </template>
-                
-                  <template #chargingprofiles>
-                     <Grid
-                :columns="chargingProfilesColumns"
-                :data-items="props.dataItem._chargingProfiles || []"
-                :sortable="false"
-                :groupable="false"
-                :filterable="false"
-              />
-                  </template>
-                  <template #connectors>
+                <template #chargingprofiles>
+                  <div class="charging-profiles-header">
+                    <v-btn
+                      size="small"
+                      color="primary"
+                      variant="elevated"
+                      prepend-icon="mdi-plus"
+                      @click="addChargingProfile(props.dataItem)"
+                    >
+                      {{ $t('chargingprofiles.addChargingProfile') }}
+                    </v-btn>
+                  </div>
+                  <div
+                    v-if="
+                      props.dataItem._chargingProfiles &&
+                      props.dataItem._chargingProfiles.length > 0
+                    "
+                  >
+                    <Grid
+                      :columns="chargingProfilesColumns"
+                      :data-items="props.dataItem._chargingProfiles"
+                      :sortable="true"
+                      :filterable="false"
+                      :messages="messages"
+                    >
+                      <template #chargingProfileActionTemplate="{ props: profileProps }">
+                        <div class="action-buttons">
+                          <v-btn
+                            size="small"
+                            variant="outlined"
+                            prepend-icon="mdi-pencil"
+                            @click="editChargingProfile(profileProps.dataItem)"
+                          >
+                            {{ $t('common.edit') }}
+                          </v-btn>
+                          <v-btn
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            prepend-icon="mdi-delete"
+                            @click="deleteChargingProfile(profileProps.dataItem)"
+                          >
+                            {{ $t('common.delete') }}
+                          </v-btn>
+                        </div>
+                      </template>
+                    </Grid>
+                  </div>
+                  <div v-else class="no-data-message">
+                    {{ $t('chargepoints.noChargingProfileData') }}
+                  </div>
+                </template>
+                <template #connectors>
+                  <div class="connectors-header">
+                    <v-btn
+                      size="small"
+                      color="primary"
+                      variant="elevated"
+                      prepend-icon="mdi-plus"
+                      @click="addConnector(props.dataItem)"
+                    >
+                      {{ $t('connectors.addConnector') }}
+                    </v-btn>
+                  </div>
+                  <div v-if="props.dataItem._connectors && props.dataItem._connectors.length > 0">
                     <Grid
                       :columns="connectorsColumns"
-                      :data-items="props.dataItem._connectors || []"
-                      :sortable="false"
-                      :groupable="false"
+                      :data-items="props.dataItem._connectors"
+                      :sortable="true"
                       :filterable="false"
-                    />
+                      :messages="messages"
+                    >
+                      <template #connectorActionTemplate="{ props: connectorProps }">
+                        <div class="action-buttons">
+                          <v-btn
+                            size="small"
+                            variant="outlined"
+                            prepend-icon="mdi-pencil"
+                            @click="editConnector(connectorProps.dataItem)"
+                          >
+                            {{ $t('common.edit') }}
+                          </v-btn>
+                          <v-btn
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            prepend-icon="mdi-delete"
+                            @click="deleteConnector(connectorProps.dataItem)"
+                          >
+                            {{ $t('common.delete') }}
+                          </v-btn>
+                        </div>
+                      </template>
+                    </Grid>
+                  </div>
+                  <div v-else class="no-data-message">
+                    {{ $t('chargepoints.noConnectorData') }}
+                  </div>
+                </template>
+              </TabStrip>
+            </template>
 
-                  </template>
-                </TabStrip>
-             
+            <template #actionTemplate="{ props }">
+              <ActionCell :data-item="props.dataItem" @actionselect="handleRowAction" />
             </template>
           </Grid>
 
-          <div
-            v-if="selectedGridChargePoint"
-            class="grid-row-actions"
-          >
-            <v-chip
-              class="selected-indicator"
-              color="primary"
-              variant="outlined"
-            >
+          <div v-if="selectedGridChargePoint" class="grid-row-actions">
+            <v-chip class="selected-indicator" color="primary" variant="outlined">
               {{ $t('chargepoints.chargePoint') }}: {{ selectedGridChargePoint.ocpp_charge_box_id }}
             </v-chip>
 
@@ -282,11 +370,7 @@
       </v-card-text>
     </v-card>
 
-    <v-dialog
-      v-model="dialogOpen"
-      max-width="600px"
-      persistent
-    >
+    <v-dialog v-model="dialogOpen" max-width="600px" persistent>
       <v-card>
         <v-card-title>
           <span class="text-h6">{{
@@ -295,11 +379,7 @@
         </v-card-title>
 
         <v-card-text>
-          <v-form
-            ref="chargePointForm"
-            v-model="formValid"
-            @submit.prevent="saveChargePoint"
-          >
+          <v-form ref="chargePointForm" v-model="formValid" @submit.prevent="saveChargePoint">
             <v-row>
               <v-col cols="12">
                 <v-text-field
@@ -384,10 +464,7 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            variant="text"
-            @click="closeDialog"
-          >
+          <v-btn variant="text" @click="closeDialog">
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn
@@ -403,10 +480,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog
-      v-model="deleteDialogOpen"
-      max-width="500px"
-    >
+    <v-dialog v-model="deleteDialogOpen" max-width="500px">
       <v-card>
         <v-card-title class="text-h6">
           {{ $t('chargepoints.deleteChargePoint') }}
@@ -418,10 +492,7 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            variant="text"
-            @click="deleteDialogOpen = false"
-          >
+          <v-btn variant="text" @click="deleteDialogOpen = false">
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn
@@ -436,24 +507,11 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog
-      v-model="detailDialogOpen"
-      max-width="900px"
-      persistent
-    >
-      <v-card
-        v-if="viewedChargePoint"
-        class="modern-detail-card"
-      >
+    <v-dialog v-model="detailDialogOpen" max-width="900px" persistent>
+      <v-card v-if="viewedChargePoint" class="modern-detail-card">
         <v-card-title class="detail-card-header">
           <div class="header-content">
-            <v-icon
-              class="header-icon"
-              size="28"
-              color="primary"
-            >
-              mdi-ev-station
-            </v-icon>
+            <v-icon class="header-icon" size="28" color="primary"> mdi-ev-station </v-icon>
             <div class="header-text">
               <h2 class="header-title">
                 {{ viewedChargePoint.ocpp_charge_box_id }}
@@ -474,10 +532,7 @@
         <v-divider class="header-divider" />
 
         <v-card-text class="detail-content">
-          <ChargePointDetailView
-            :charge-point="viewedChargePoint"
-            :full-view="true"
-          />
+          <ChargePointDetailView :charge-point="viewedChargePoint" :full-view="true" />
         </v-card-text>
 
         <v-divider />
@@ -506,6 +561,269 @@
       </v-card>
     </v-dialog>
 
+    <!-- Charging Profile Form Dialog -->
+    <v-dialog v-model="chargingProfileDialogOpen" max-width="800px" persistent>
+      <v-card>
+        <v-card-title>
+          <span class="text-h6">{{
+            isEditingChargingProfile
+              ? $t('chargingprofiles.editChargingProfile')
+              : $t('chargingprofiles.createNewChargingProfile')
+          }}</span>
+        </v-card-title>
+
+        <v-card-text>
+          <v-form
+            ref="chargingProfileFormRef"
+            v-model="chargingProfileFormValid"
+            @submit.prevent="saveChargingProfileInChargePoints"
+          >
+            <v-row>
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentChargingProfileInChargePoints.stack_level"
+                  :label="$t('chargingprofiles.stackLevel')"
+                  :placeholder="$t('forms.stackLevelPlaceholder')"
+                  :rules="[chargingProfileRules.required, chargingProfileRules.stackLevelRange]"
+                  variant="outlined"
+                  type="number"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-select
+                  v-model="currentChargingProfileInChargePoints.charging_profile_purpose"
+                  :label="$t('chargingprofiles.purpose')"
+                  :items="purposeOptions"
+                  :rules="[chargingProfileRules.required]"
+                  variant="outlined"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-select
+                  v-model="currentChargingProfileInChargePoints.charging_profile_kind"
+                  :label="$t('chargingprofiles.kind')"
+                  :items="kindOptions"
+                  :rules="[chargingProfileRules.required]"
+                  variant="outlined"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-select
+                  v-model="currentChargingProfileInChargePoints.recurrency_kind"
+                  :label="$t('chargingprofiles.recurrencyKind')"
+                  :items="recurrencyOptions"
+                  variant="outlined"
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentChargingProfileInChargePoints.min_charging_rate"
+                  :label="$t('chargingprofiles.minChargingRate')"
+                  :placeholder="$t('forms.minChargingRatePlaceholder')"
+                  :rules="[chargingProfileRules.minChargingRateRange]"
+                  variant="outlined"
+                  type="number"
+                  step="0.1"
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentChargingProfileInChargePoints.valid_from"
+                  :label="$t('chargingprofiles.validFrom')"
+                  :rules="[chargingProfileRules.required]"
+                  variant="outlined"
+                  type="datetime-local"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentChargingProfileInChargePoints.valid_to"
+                  :label="$t('chargingprofiles.validTo')"
+                  :rules="[chargingProfileRules.required]"
+                  variant="outlined"
+                  type="datetime-local"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentChargingProfileInChargePoints.duration_in_seconds"
+                  :label="$t('chargingprofiles.durationInSeconds')"
+                  :placeholder="$t('forms.durationPlaceholder')"
+                  :rules="[chargingProfileRules.durationRange]"
+                  variant="outlined"
+                  type="number"
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentChargingProfileInChargePoints.start_schedule"
+                  :label="$t('chargingprofiles.startSchedule')"
+                  variant="outlined"
+                  type="datetime-local"
+                />
+              </v-col>
+
+              <v-col cols="12">
+                <v-text-field
+                  v-model="currentChargingProfileInChargePoints.description"
+                  :label="$t('chargingprofiles.description')"
+                  :placeholder="$t('forms.descriptionPlaceholder')"
+                  variant="outlined"
+                />
+              </v-col>
+
+              <v-col cols="12">
+                <v-textarea
+                  v-model="currentChargingProfileInChargePoints.note"
+                  :label="$t('common.note')"
+                  :placeholder="$t('forms.notePlaceholder')"
+                  variant="outlined"
+                  rows="3"
+                />
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="closeChargingProfileDialog">
+            {{ $t('common.cancel') }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            :loading="chargingProfilesStore.loading"
+            :disabled="!chargingProfileFormValid"
+            @click="saveChargingProfileInChargePoints"
+          >
+            {{ isEditingChargingProfile ? $t('common.update') : $t('common.create') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Charging Profile Delete Confirmation Dialog -->
+    <ConfirmationDialog
+      v-model="chargingProfileDeleteDialogOpen"
+      :title="$t('chargingprofiles.deleteChargingProfile')"
+      :message="
+        $t('chargingprofiles.confirmDelete', { id: selectedChargingProfileForDelete?.id || '' })
+      "
+      :loading="chargingProfilesStore.loading"
+      @confirm="deleteChargingProfileConfirmed"
+      @cancel="chargingProfileDeleteDialogOpen = false"
+    />
+
+    <!-- Connector Form Dialog -->
+    <v-dialog v-model="connectorDialogOpen" max-width="600px" persistent>
+      <v-card>
+        <v-card-title>
+          <span class="text-h6">{{
+            isEditingConnector
+              ? $t('connectors.editConnector')
+              : $t('connectors.createNewConnector')
+          }}</span>
+        </v-card-title>
+
+        <v-card-text>
+          <v-form
+            ref="connectorFormRef"
+            v-model="connectorFormValid"
+            @submit.prevent="saveConnectorInChargePoints"
+          >
+            <v-row>
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentConnectorInChargePoints.connector_number"
+                  :label="$t('connectors.connectorNumber')"
+                  :placeholder="$t('forms.connectorNumberPlaceholder')"
+                  :rules="[connectorRules.required, connectorRules.connectorNumberRange]"
+                  variant="outlined"
+                  type="number"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentConnectorInChargePoints.type"
+                  :label="$t('connectors.type')"
+                  :placeholder="$t('forms.connectorTypePlaceholder')"
+                  :rules="[connectorRules.required, connectorRules.typeMinLength]"
+                  variant="outlined"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentConnectorInChargePoints.max_power_kw"
+                  :label="$t('connectors.maxPowerKw')"
+                  :placeholder="$t('forms.maxPowerPlaceholder')"
+                  :rules="[connectorRules.required, connectorRules.maxPowerRange]"
+                  variant="outlined"
+                  type="number"
+                  step="0.1"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-select
+                  v-model="currentConnectorInChargePoints.status"
+                  :label="$t('connectors.status')"
+                  :items="connectorStatusOptions"
+                  :rules="[connectorRules.required]"
+                  variant="outlined"
+                  required
+                />
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="closeConnectorDialogInChargePoints">
+            {{ $t('common.cancel') }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            :loading="connectorsStore.loading"
+            :disabled="!connectorFormValid"
+            @click="saveConnectorInChargePoints"
+          >
+            {{ isEditingConnector ? $t('common.update') : $t('common.create') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Connector Delete Confirmation Dialog -->
+    <ConfirmationDialog
+      v-model="connectorDeleteDialogOpen"
+      :title="$t('connectors.deleteConnector')"
+      :message="$t('connectors.confirmDelete', { id: selectedConnectorForDelete?.id || '' })"
+      :loading="connectorsStore.loading"
+      @confirm="deleteConnectorConfirmed"
+      @cancel="connectorDeleteDialogOpen = false"
+    />
+
     <SelectionToolbar
       :selected-count="selectedCount"
       :loading="chargePointsStore.loading"
@@ -525,28 +843,35 @@ import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
 import { useChargePointsStore } from '@/stores/chargepoints'
 import { useSitesStore } from '@/stores/sites'
 import { useChargingProfilesStore } from '@/stores/chargingprofiles'
+import { useConnectorsStore } from '@/stores/connectors'
 import type {
   ChargePoint,
   CreateChargePointRequest,
   UpdateChargePointRequest
 } from '@/types/chargepoints'
 import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
+import { useKendoGridTranslations } from '@/composables/useKendoGridTranslations'
 import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import ChargePointDetailView from '@/components/ChargePointDetailView.vue'
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
+import ActionCell from '@/components/ActionCell.vue'
+import ConfirmationDialog from '@/components/ConfirmationDialog.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 import { TabStrip } from '@progress/kendo-vue-layout'
+import { formatDateTime } from '@/utils/dateUtils'
 
-
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { formatDate } = useLocaleFormatting()
+const { messages } = useKendoGridTranslations()
 const chargePointsStore = useChargePointsStore()
 const sitesStore = useSitesStore()
 const selected = ref(0)
+const rowTabStates = ref(new Map())
 const chargingProfilesStore = useChargingProfilesStore()
+const connectorsStore = useConnectorsStore()
 const selectedField = 'selected'
 const cellTemplate = ref('myTemplate')
 const viewedChargePoint = ref<ChargePoint | null>(null)
@@ -558,6 +883,27 @@ const isEditing = ref(false)
 const selectedChargePoint = ref<ChargePoint | null>(null)
 const selectedGridChargePoint = ref<ChargePoint | null>(null)
 const chargePointForm = ref()
+
+// Charging Profile dialog state
+const chargingProfileDialogOpen = ref(false)
+const chargingProfileDeleteDialogOpen = ref(false)
+const chargingProfileFormValid = ref(false)
+const isEditingChargingProfile = ref(false)
+const selectedChargingProfileForDelete = ref<any>(null)
+const selectedChargingProfileForEdit = ref<any>(null)
+const selectedChargePointForProfile = ref<any>(null)
+const chargingProfileFormRef = ref()
+
+// Connector dialog state
+const connectorDialogOpen = ref(false)
+const connectorDeleteDialogOpen = ref(false)
+const connectorFormValid = ref(false)
+const isEditingConnector = ref(false)
+const selectedConnectorForDelete = ref<any>(null)
+const selectedConnectorForEdit = ref<any>(null)
+const selectedChargePointForConnector = ref<any>(null)
+const connectorFormRef = ref()
+
 const kendoGrid = ref()
 const group = ref([])
 const result = ref([])
@@ -582,6 +928,29 @@ const currentChargePoint = reactive<Partial<ChargePoint>>({
   connector_count: undefined,
   status: 'active',
   note: ''
+})
+
+const currentChargingProfileInChargePoints = reactive<any>({
+  charge_point_id: undefined,
+  stack_level: 0,
+  charging_profile_purpose: 'TxDefault',
+  charging_profile_kind: 'Absolute',
+  recurrency_kind: undefined,
+  valid_from: '',
+  valid_to: '',
+  duration_in_seconds: undefined,
+  start_schedule: undefined,
+  min_charging_rate: undefined,
+  description: '',
+  note: ''
+})
+
+const currentConnectorInChargePoints = reactive<any>({
+  charge_point_id: undefined,
+  connector_number: undefined,
+  type: '',
+  max_power_kw: undefined,
+  status: 'available'
 })
 
 const chargePoints = computed(() => chargePointsStore.chargePoints)
@@ -613,16 +982,40 @@ const pageableConfig = {
 }
 
 const tabs = ref([
-  {title:"Chargepoint Details", content:'details'},
+  { title: 'Chargepoint Details', content: 'details' },
   { title: 'Location details', content: 'site' },
   { title: 'Connectors', content: 'connectors' },
-  {title:"Charging Profiles", content: 'chargingprofiles'},
+  { title: 'Charging Profiles', content: 'chargingprofiles' }
 ])
 
 const statusOptions = [
   { value: 'active', title: t('chargepoints.statusActive') },
   { value: 'inactive', title: t('chargepoints.statusInactive') },
   { value: 'faulty', title: t('chargepoints.statusFaulty') }
+]
+
+const purposeOptions = [
+  { value: 'TxDefault', title: 'Tx Default' },
+  { value: 'TxProfile', title: 'Tx Profile' },
+  { value: 'TxMaxProfile', title: 'Tx Max Profile' }
+]
+
+const kindOptions = [
+  { value: 'Absolute', title: 'Absolute' },
+  { value: 'Recurring', title: 'Recurring' },
+  { value: 'Relative', title: 'Relative' }
+]
+
+const recurrencyOptions = [
+  { value: 'Daily', title: 'Daily' },
+  { value: 'Weekly', title: 'Weekly' }
+]
+
+const connectorStatusOptions = [
+  { value: 'available', title: t('connectors.statusAvailable') },
+  { value: 'occupied', title: t('connectors.statusOccupied') },
+  { value: 'faulted', title: t('connectors.statusFaulted') },
+  { value: 'unavailable', title: t('connectors.statusUnavailable') }
 ]
 
 const availableSites = computed(() =>
@@ -634,23 +1027,25 @@ const availableSites = computed(() =>
 const connectorsColumns = [
   {
     field: 'connector_number',
-    title: t('connectors.connectorNumber'),
-    filterable: false
+    title: t('connectors.connectorNumber')
   },
   {
     field: 'type',
-    title: t('connectors.type'),
-    filterable: false
+    title: t('connectors.type')
   },
   {
     field: 'max_power_kw',
     title: t('connectors.maxPowerKw'),
-    filterable: false
+    headerClassName: 'customMenu'
   },
   {
     field: 'status',
-    title: t('connectors.status'),
-    filterable: false
+    title: t('connectors.status')
+  },
+  {
+    title: t('common.actions'),
+    cell: 'connectorActionTemplate',
+    width: '180px'
   }
 ]
 const chargePointsColumns = [
@@ -689,30 +1084,36 @@ const chargePointsColumns = [
 const chargingProfilesColumns = [
   {
     field: 'stack_level',
-    title: t('chargingprofiles.stackLevel'),
-    filter: 'numeric',
-    columnMenu: 'columnMenuTemplate',
-    headerClassName: 'customMenu'
+    title: t('chargingprofiles.stackLevel')
   },
   {
     field: 'charging_profile_purpose',
-    title: t('chargingprofiles.purpose'),
-    filterable: false
+    title: t('chargingprofiles.purpose')
   },
   {
     field: 'charging_profile_kind',
-    title: t('chargingprofiles.kind'),
-    filterable: false
+    title: t('chargingprofiles.kind')
   },
   {
     field: 'valid_from',
     title: t('chargingprofiles.validFrom'),
-    filterable: false
+    cell: (h, td, props) => {
+      const userLocale = navigator.language || 'en-US'
+      return h('td', {}, formatDateTime(props.dataItem.valid_from, userLocale))
+    }
   },
   {
     field: 'valid_to',
     title: t('chargingprofiles.validTo'),
-    filterable: false
+    cell: (h, td, props) => {
+      const userLocale = navigator.language || 'en-US'
+      return h('td', {}, formatDateTime(props.dataItem.valid_to, userLocale))
+    }
+  },
+  {
+    title: t('common.actions'),
+    cell: 'chargingProfileActionTemplate',
+    width: '180px'
   }
 ]
 
@@ -724,7 +1125,8 @@ const allColumns = ref([
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true
+    visible: true,
+    width: '50px'
   },
   {
     field: 'ocpp_charge_box_id',
@@ -734,7 +1136,7 @@ const allColumns = ref([
     headerClassName: 'customMenu',
     visible: true,
     required: true,
-    width:'150px'
+    width: '200px'
   },
   {
     field: 'site_id',
@@ -744,14 +1146,14 @@ const allColumns = ref([
     headerClassName: 'customMenu',
     visible: true
   },
-   {
+  {
     field: 'site.name',
     title: t('sites.siteName'),
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    width:'150px'
+    width: '150px'
   },
   {
     field: 'manufacturer',
@@ -759,7 +1161,8 @@ const allColumns = ref([
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true
+    visible: true,
+    width: '150px'
   },
   {
     field: 'model',
@@ -791,8 +1194,13 @@ const allColumns = ref([
     filter: 'date',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: false
-  }
+    visible: false,
+    cell: (h, td, props) => {
+      const userLocale = navigator.language || 'en-US'
+      return h('td', {}, formatDateTime(props.dataItem.created_at, userLocale))
+    }
+  },
+  { title: 'Actions', cell: 'actionTemplate', width: '120px', visible: true }
 ])
 
 // Default visible columns
@@ -853,6 +1261,41 @@ const rules = {
     (value >= 1 && value <= 10) || t('chargepoints.validation.connectorCountRange')
 }
 
+const chargingProfileRules = {
+  required: (value: string | number) =>
+    (value !== null && value !== undefined && value !== '') || t('validation.fieldRequired'),
+  stackLevelRange: (value: number) =>
+    (value >= 0 && value <= 99) || t('chargingprofiles.validation.stackLevelRange'),
+  minChargingRateRange: (value: number) =>
+    !value || (value > 0 && value <= 1000) || t('chargingprofiles.validation.minChargingRateRange'),
+  durationRange: (value: number) =>
+    !value || (value > 0 && value <= 86400) || t('chargingprofiles.validation.durationRange')
+}
+
+const connectorRules = {
+  required: (value: string | number) =>
+    (value !== null && value !== undefined && value !== '') || t('validation.fieldRequired'),
+  connectorNumberRange: (value: number) =>
+    (value >= 1 && value <= 10) || t('connectors.validation.connectorNumberRange'),
+  typeMinLength: (value: string) => value.length >= 2 || t('connectors.validation.typeMinLength'),
+  maxPowerRange: (value: number) =>
+    (value > 0 && value <= 1000) || t('connectors.validation.maxPowerRange')
+}
+
+function handleRowAction({ dataItem, action }) {
+  switch (action) {
+    case 'view':
+      viewChargePoint(dataItem)
+      break
+    case 'update':
+      openEditDialog(dataItem)
+      break
+    case 'delete':
+      confirmDelete(dataItem)
+      break
+  }
+}
+
 function createAppState(dataState) {
   group.value = dataState.group
   take.value = dataState.take
@@ -875,26 +1318,34 @@ const columnReorder = (options: any) => {
 async function expandChange(event) {
   event.dataItem[event.target.$props.expandField] = event.value
 
-  // Fetch charging profiles when expanding a charge point
+  // Fetch charging profiles and connectors when expanding a charge point
   if (event.value && event.dataItem.id) {
     // Set loading state
     event.dataItem._loadingProfiles = true
     try {
-      const profiles = await chargingProfilesStore.fetchChargingProfilesByChargePointId(
-        event.dataItem.id
-      )
+      // Fetch charging profiles and connectors in parallel
+      const [profiles, connectors] = await Promise.all([
+        chargingProfilesStore.fetchChargingProfilesByChargePointId(event.dataItem.id),
+        connectorsStore.getConnectorsByChargePointId(event.dataItem.id)
+      ])
+
       // Store data in the specific row's data item
       event.dataItem._chargingProfiles = profiles
+      event.dataItem._connectors = connectors
     } catch (error) {
-      console.error('Error fetching charging profiles:', error)
+      console.error('Error fetching related data:', error)
       event.dataItem._chargingProfiles = []
+      event.dataItem._connectors = []
     } finally {
       event.dataItem._loadingProfiles = false
     }
   } else if (!event.value) {
     // Clear data when collapsing
     event.dataItem._chargingProfiles = []
+    event.dataItem._connectors = []
     event.dataItem._loadingProfiles = false
+    // Clear tab state for this row
+    rowTabStates.value.delete(event.dataItem.id)
   }
 }
 
@@ -921,15 +1372,27 @@ const dataStateChange = (e) => {
 }
 
 const refreshData = async () => {
-  await Promise.all([chargePointsStore.fetchChargePoints(), sitesStore.fetchSites()])
+  await Promise.all([
+    chargePointsStore.fetchChargePoints(),
+    sitesStore.fetchSites(),
+    connectorsStore.fetchConnectors()
+  ])
   chargePointsStore.chargePoints.forEach((cp) => {
     if (!cp.hasOwnProperty('selected')) {
       cp.selected = false
     }
   })
 }
-const onSelect = (e) => {
-  selected.value = e.selected
+const onSelect = (e, rowId) => {
+  if (rowId) {
+    rowTabStates.value.set(rowId, e.selected)
+  } else {
+    selected.value = e.selected
+  }
+}
+
+const getRowTabState = (rowId) => {
+  return rowTabStates.value.get(rowId) || 0
 }
 
 const openCreateDialog = () => {
@@ -1126,23 +1589,16 @@ function onSelectionChange(event) {
 function onRowClick(event) {
   // const nativeEvent = event.event;
   // let target = nativeEvent?.target;
-
   // if (!target) return;
-
   // while (target && target.nodeType !== 1) {
   //   target = target.parentNode;
   // }
-
   // const isHierarchyClick =
   //   target.closest('.k-hierarchy-cell') || target.closest('.k-i-expand') || target.closest('.k-icon');
-
   // const isActionClick = target.closest('.action-column') || target.closest('button') || target.closest('input[type="checkbox"]');
-
   // if (isHierarchyClick || isActionClick) {
   //   return;
   // }
-
-
   // if (event.dataItem && !event.dataItem.aggregates) {
   //   viewChargePoint(event.dataItem)
   // }
@@ -1248,6 +1704,289 @@ watch(
 watch(globalSearch, () => {
   createDataState(dataState.value)
 })
+
+// Charging Profile Management Functions
+const addChargingProfile = (chargePoint: ChargePoint) => {
+  resetChargingProfileForm()
+  selectedChargePointForProfile.value = chargePoint
+  currentChargingProfileInChargePoints.charge_point_id = chargePoint.id
+  isEditingChargingProfile.value = false
+  chargingProfileDialogOpen.value = true
+}
+
+const editChargingProfile = (chargingProfile: any) => {
+  selectedChargingProfileForEdit.value = chargingProfile
+  isEditingChargingProfile.value = true
+  Object.assign(currentChargingProfileInChargePoints, {
+    ...chargingProfile,
+    // Convert dates to datetime-local format for inputs
+    valid_from: chargingProfile.valid_from
+      ? new Date(chargingProfile.valid_from).toISOString().slice(0, 16)
+      : '',
+    valid_to: chargingProfile.valid_to
+      ? new Date(chargingProfile.valid_to).toISOString().slice(0, 16)
+      : '',
+    start_schedule: chargingProfile.start_schedule
+      ? new Date(chargingProfile.start_schedule).toISOString().slice(0, 16)
+      : ''
+  })
+  chargingProfileDialogOpen.value = true
+}
+
+const closeChargingProfileDialog = () => {
+  chargingProfileDialogOpen.value = false
+  resetChargingProfileForm()
+}
+
+const resetChargingProfileForm = () => {
+  Object.assign(currentChargingProfileInChargePoints, {
+    charge_point_id: undefined,
+    stack_level: 0,
+    charging_profile_purpose: 'TxDefault',
+    charging_profile_kind: 'Absolute',
+    recurrency_kind: undefined,
+    valid_from: '',
+    valid_to: '',
+    duration_in_seconds: undefined,
+    start_schedule: undefined,
+    min_charging_rate: undefined,
+    description: '',
+    note: ''
+  })
+  if (chargingProfileFormRef.value) {
+    chargingProfileFormRef.value.resetValidation()
+  }
+}
+
+const saveChargingProfileInChargePoints = async () => {
+  if (!chargingProfileFormRef.value?.validate()) return
+
+  const profileData = {
+    charge_point_id: Number(currentChargingProfileInChargePoints.charge_point_id!),
+    stack_level: Number(currentChargingProfileInChargePoints.stack_level!),
+    charging_profile_purpose: currentChargingProfileInChargePoints.charging_profile_purpose! as
+      | 'TxDefault'
+      | 'TxProfile'
+      | 'TxMaxProfile',
+    charging_profile_kind: currentChargingProfileInChargePoints.charging_profile_kind! as
+      | 'Absolute'
+      | 'Recurring'
+      | 'Relative',
+    recurrency_kind: currentChargingProfileInChargePoints.recurrency_kind as
+      | 'Daily'
+      | 'Weekly'
+      | undefined,
+    valid_from: new Date(currentChargingProfileInChargePoints.valid_from!),
+    valid_to: new Date(currentChargingProfileInChargePoints.valid_to!),
+    duration_in_seconds: currentChargingProfileInChargePoints.duration_in_seconds
+      ? Number(currentChargingProfileInChargePoints.duration_in_seconds)
+      : undefined,
+    start_schedule: currentChargingProfileInChargePoints.start_schedule
+      ? new Date(currentChargingProfileInChargePoints.start_schedule)
+      : undefined,
+    min_charging_rate: currentChargingProfileInChargePoints.min_charging_rate
+      ? Number(currentChargingProfileInChargePoints.min_charging_rate)
+      : undefined,
+    description: currentChargingProfileInChargePoints.description || '',
+    note: currentChargingProfileInChargePoints.note || ''
+  }
+
+  let success = false
+
+  if (isEditingChargingProfile.value && selectedChargingProfileForEdit.value?.id) {
+    const updateData = {
+      ...profileData,
+      id: selectedChargingProfileForEdit.value.id
+    }
+    success = await chargingProfilesStore.updateChargingProfile(updateData)
+    if (success) {
+      successMessage.value = t('chargingprofiles.updated', {
+        id: selectedChargingProfileForEdit.value.id
+      })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
+  } else {
+    success = await chargingProfilesStore.createChargingProfile(profileData)
+    if (success) {
+      successMessage.value = t('chargingprofiles.created')
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
+  }
+
+  if (success) {
+    closeChargingProfileDialog()
+    // Refresh the expanded row data
+    if (selectedChargePointForProfile.value) {
+      try {
+        const profiles = await chargingProfilesStore.fetchChargingProfilesByChargePointId(
+          selectedChargePointForProfile.value.id
+        )
+        selectedChargePointForProfile.value._chargingProfiles = profiles
+      } catch (error) {
+        console.error('Error refreshing charging profiles:', error)
+      }
+    }
+    refreshData()
+  }
+}
+
+const deleteChargingProfile = (chargingProfile: any) => {
+  selectedChargingProfileForDelete.value = chargingProfile
+  chargingProfileDeleteDialogOpen.value = true
+}
+
+const deleteChargingProfileConfirmed = async () => {
+  if (selectedChargingProfileForDelete.value?.id) {
+    try {
+      const success = await chargingProfilesStore.deleteChargingProfile(
+        selectedChargingProfileForDelete.value.id
+      )
+      if (success) {
+        successMessage.value = t('chargingprofiles.deleted', {
+          id: selectedChargingProfileForDelete.value.id
+        })
+        showSuccessAlert.value = true
+        setTimeout(() => {
+          showSuccessAlert.value = false
+        }, 5000)
+        chargingProfileDeleteDialogOpen.value = false
+        selectedChargingProfileForDelete.value = null
+        refreshData()
+      } else {
+        chargingProfileDeleteDialogOpen.value = false
+      }
+    } catch (error) {
+      console.error('Error deleting charging profile:', error)
+      chargingProfileDeleteDialogOpen.value = false
+    }
+  }
+}
+
+// Connector Management Functions
+const addConnector = (chargePoint: ChargePoint) => {
+  resetConnectorFormInChargePoints()
+  selectedChargePointForConnector.value = chargePoint
+  currentConnectorInChargePoints.charge_point_id = chargePoint.id
+  isEditingConnector.value = false
+  connectorDialogOpen.value = true
+}
+
+const editConnector = (connector: any) => {
+  selectedConnectorForEdit.value = connector
+  isEditingConnector.value = true
+  Object.assign(currentConnectorInChargePoints, connector)
+  connectorDialogOpen.value = true
+}
+
+const closeConnectorDialogInChargePoints = () => {
+  connectorDialogOpen.value = false
+  resetConnectorFormInChargePoints()
+}
+
+const resetConnectorFormInChargePoints = () => {
+  Object.assign(currentConnectorInChargePoints, {
+    charge_point_id: undefined,
+    connector_number: undefined,
+    type: '',
+    max_power_kw: undefined,
+    status: 'available'
+  })
+  if (connectorFormRef.value) {
+    connectorFormRef.value.resetValidation()
+  }
+}
+
+const saveConnectorInChargePoints = async () => {
+  if (!connectorFormRef.value?.validate()) return
+
+  const connectorData = {
+    charge_point_id: Number(currentConnectorInChargePoints.charge_point_id!),
+    connector_number: Number(currentConnectorInChargePoints.connector_number!),
+    type: currentConnectorInChargePoints.type!,
+    max_power_kw: Number(currentConnectorInChargePoints.max_power_kw!),
+    status: currentConnectorInChargePoints.status! as
+      | 'available'
+      | 'occupied'
+      | 'faulted'
+      | 'unavailable'
+  }
+
+  let success = false
+
+  if (isEditingConnector.value && selectedConnectorForEdit.value?.id) {
+    const updateData = {
+      ...connectorData,
+      id: selectedConnectorForEdit.value.id
+    }
+    success = await connectorsStore.updateConnector(updateData)
+    if (success) {
+      successMessage.value = t('connectors.updated', { id: selectedConnectorForEdit.value.id })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
+  } else {
+    success = await connectorsStore.createConnector(connectorData)
+    if (success) {
+      successMessage.value = t('connectors.created')
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
+  }
+
+  if (success) {
+    closeConnectorDialogInChargePoints()
+    // Refresh the expanded row data
+    if (selectedChargePointForConnector.value) {
+      try {
+        const connectors = await connectorsStore.getConnectorsByChargePointId(
+          selectedChargePointForConnector.value.id
+        )
+        selectedChargePointForConnector.value._connectors = connectors
+      } catch (error) {
+        console.error('Error refreshing connectors:', error)
+      }
+    }
+    refreshData()
+  }
+}
+
+const deleteConnector = (connector: any) => {
+  selectedConnectorForDelete.value = connector
+  connectorDeleteDialogOpen.value = true
+}
+
+const deleteConnectorConfirmed = async () => {
+  if (selectedConnectorForDelete.value?.id) {
+    try {
+      const success = await connectorsStore.deleteConnector(selectedConnectorForDelete.value.id)
+      if (success) {
+        successMessage.value = t('connectors.deleted', { id: selectedConnectorForDelete.value.id })
+        showSuccessAlert.value = true
+        setTimeout(() => {
+          showSuccessAlert.value = false
+        }, 5000)
+        connectorDeleteDialogOpen.value = false
+        selectedConnectorForDelete.value = null
+        refreshData()
+      } else {
+        connectorDeleteDialogOpen.value = false
+      }
+    } catch (error) {
+      console.error('Error deleting connector:', error)
+      connectorDeleteDialogOpen.value = false
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -1335,9 +2074,8 @@ watch(globalSearch, () => {
 }
 
 .search-container {
-  min-width:300px !important;
+  min-width: 300px !important;
 }
-
 
 .action-btn:hover {
   transform: scale(1.1);
@@ -1392,11 +2130,6 @@ th.k-header.customMenu.active > div > div > span.k-i-more-vertical::before {
   display: none;
 }
 
-th.k-header.active > div > a {
-  color: #fff;
-  background-color: #ff6358;
-}
-
 /* Modern Detail Dialog Styles */
 .modern-detail-card {
   border-radius: 16px !important;
@@ -1404,7 +2137,6 @@ th.k-header.active > div > a {
   box-shadow: 0 24px 38px 3px rgba(0, 0, 0, 0.14), 0 9px 46px 8px rgba(0, 0, 0, 0.12),
     0 11px 15px -7px rgba(0, 0, 0, 0.2) !important;
 }
-
 
 .detail-card-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1459,16 +2191,15 @@ th.k-header.active > div > a {
 
 .detail-content {
   padding: 32px !important;
-   background-color: var(--dialog-content-bg);
+  background-color: var(--dialog-content-bg);
   min-height: 200px;
 }
 
 .detail-actions {
   padding: 20px 32px 24px !important;
-   background-color: var(--dialog-content-bg);
+  background-color: var(--dialog-content-bg);
   gap: 12px;
 }
-
 
 .action-btn {
   border-radius: 8px !important;
@@ -1498,5 +2229,40 @@ th.k-header.active > div > a {
 .loading-text {
   color: rgba(0, 0, 0, 0.6);
   font-size: 0.875rem;
+}
+
+.site-details {
+  padding: 16px;
+}
+
+.site-details .detail-row {
+  display: flex;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.site-details .detail-label {
+  font-weight: 500;
+  min-width: 140px;
+  color: var(--detail-label-color);
+}
+
+.site-details .detail-value {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.no-data-message {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.charging-profiles-header,
+.connectors-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--v-border-color);
+  background-color: var(--v-theme-surface-variant);
 }
 </style>

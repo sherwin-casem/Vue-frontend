@@ -26,7 +26,7 @@
     "updated": "Updated",
     "total": "Total",
     "selected": "selected",
-        "of": "of",
+    "of": "of",
     "others": "others",
     "groupBy": "Group By",
     "all": "All",
@@ -60,6 +60,7 @@
     "columnOrder": "Column Order",
     "tableSettings": "Table Settings",
     "reset": "Reset",
+    "retry": "Retry",
     "apply": "Apply",
     "clear": "Clear",
     "filterBy": "Filter by",
@@ -96,6 +97,78 @@
     "groupingByFields": "Grouping by {count} field(s)",
     "noItems": "No Items",
     "noItemsDescription": "0 Items found here"
+  },
+  "kendo": {
+    "grid": {
+      "noRecords": "No records available",
+      "loading": "Loading...",
+      "page": "Page",
+      "of": "of",
+      "items": "items",
+      "itemsPerPage": "items per page",
+      "first": "Go to the first page",
+      "previous": "Go to the previous page",
+      "next": "Go to the next page",
+      "last": "Go to the last page",
+      "refresh": "Refresh",
+      "morePages": "More pages",
+      "sortAscending": "Sort Ascending",
+      "sortDescending": "Sort Descending",
+      "columns": "Columns",
+      "filter": "Filter",
+      "filterEqOperator": "Is equal to",
+      "filterNotEqOperator": "Is not equal to",
+      "filterIsNullOperator": "Is null",
+      "filterIsNotNullOperator": "Is not null",
+      "filterIsEmptyOperator": "Is empty",
+      "filterIsNotEmptyOperator": "Is not empty",
+      "filterStartsWithOperator": "Starts with",
+      "filterContainsOperator": "Contains",
+      "filterNotContainsOperator": "Does not contain",
+      "filterEndsWithOperator": "Ends with",
+      "filterGteOperator": "Is greater than or equal to",
+      "filterGtOperator": "Is greater than",
+      "filterLteOperator": "Is less than or equal to",
+      "filterLtOperator": "Is less than",
+      "filterIsTrue": "Is true",
+      "filterIsFalse": "Is false",
+      "filterBooleanAll": "(All)",
+      "filterAndLogic": "And",
+      "filterOrLogic": "Or",
+      "filterClear": "Clear",
+      "filterApply": "Apply",
+      "groupBy": "Group by this column",
+      "groupByMessage": "Drag a column header and drop it here to group by that column",
+      "unGroup": "Ungroup",
+      "unGroupMessage": "Click here to ungroup"
+    },
+    "columnMenu": {
+      "columns": "Columns",
+      "filter": "Filter",
+      "sortAscending": "Sort Ascending",
+      "sortDescending": "Sort Descending",
+      "settings": "Column Settings",
+      "done": "Done",
+      "lock": "Lock",
+      "unlock": "Unlock"
+    },
+    "pager": {
+      "allPages": "All",
+      "display": "{0} - {1} of {2} items",
+      "empty": "No items to display",
+      "first": "Go to the first page",
+      "itemsPerPage": "items per page",
+      "last": "Go to the last page",
+      "next": "Go to the next page",
+      "of": "of {0}",
+      "page": "Page",
+      "previous": "Go to the previous page",
+      "refresh": "Refresh",
+      "morePages": "More pages"
+    },
+    "grouping": {
+      "empty": "Drag a column header and drop it here to group by that column"
+    }
   },
   "validation": {
     "fieldRequired": "This field is required",
@@ -171,7 +244,9 @@
       "pdfError": "Failed to export PDF. Please try again.",
       "excelError": "Failed to export Excel file. Please try again.",
       "csvError": "Failed to export CSV file. Please try again."
-    }
+    },
+    "noChargePointData": "No charge points found for this site",
+    "noConnectorData": "No connectors found for this site"
   },
   "chargepoints": {
     "title": "Charge Points Management",
@@ -183,7 +258,7 @@
     "createNewChargePoint": "Create New Charge Point",
     "chargePointDetails": "Charge Point Details",
     "deleteChargePoint": "Delete Charge Point",
-    "chargePointId": "Charge Point ID",
+    "chargePointId": "OCPP Charge Point ID",
     "ocppChargeBoxId": "OCPP Charge Box ID",
     "siteId": "Site ID",
     "site": "Site",
@@ -207,6 +282,9 @@
     "updateError": "Failed to update charge point. Please try again.",
     "deleteError": "Failed to delete charge point. Please try again.",
     "noChargePoints": "No charge points found",
+    "noChargingProfileData": "No charging profiles found for this charge point",
+    "noConnectorData": "No connectors found for this charge point",
+    "noSiteData": "No site data available for this charge point",
     "validation": {
       "ocppIdMinLength": "OCPP Charge Box ID must be at least 3 characters",
       "siteIdNumeric": "Site ID must be a valid number",
@@ -386,6 +464,7 @@
     "chargingProfileIdPlaceholder": "e.g., 1, 2, 3",
     "manufacturerPlaceholder": "e.g., Tesla, ABB",
     "modelPlaceholder": "e.g., Wall Connector Gen3",
+    "connectorCountPlaceholder": "e.g., 1, 2, 4",
     "connectorNumberPlaceholder": "e.g., 1, 2",
     "connectorTypePlaceholder": "e.g., Type2, CCS",
     "maxPowerPlaceholder": "e.g., 22, 50, 150",
@@ -471,12 +550,14 @@
       "maxPowerRange": "Max power must be between 0 and 1000 kW"
     },
     "noConnectors": "No connectors found",
-    "noChargePointsAvailable": "No charge points available"
+    "noChargePointsAvailable": "No charge points available",
+    "noChargePointData": "No charge point data available for this connector"
   },
   "chargingprofiles": {
     "title": "Charging Profiles Management",
     "manageAllChargingProfiles": "Manage all your charging profiles",
     "chargingProfile": "charging profile",
+    "noSchedulePeriodData": "No schedule Periods Found on this Charging profile",
     "id": "ID",
     "addChargingProfile": "Add Charging Profile",
     "editChargingProfile": "Edit Charging Profile",
@@ -515,7 +596,8 @@
       "durationRange": "Duration must be between 0 and 86400 seconds"
     },
     "noChargingProfiles": "No charging profiles found",
-    "noChargePointsAvailable": "No charge points available"
+    "noChargePointsAvailable": "No charge points available",
+    "noChargePointData": "No charge point data available for this charging profile"
   },
   "scheduleperiods": {
     "title": "Schedule Periods Management",
@@ -553,6 +635,7 @@
     },
     "noSchedulePeriods": "No schedule periods found",
     "noChargingProfilesAvailable": "No charging profiles available",
+    "noChargingProfileData": "No charging profile data available for this schedule period",
     "onePhase": "1 Phase",
     "twoPhases": "2 Phases",
     "threePhases": "3 Phases"
@@ -655,5 +738,69 @@
       "connectorCountRange": "Connector count must be between 1 and 10"
     },
     "noSitesAvailable": "No sites available"
+  },
+  "grid": {
+    "noRecords": "No records to display",
+
+    "sort": {
+      "sortAscending": "Sort Ascending",
+      "sortDescending": "Sort Descending",
+      "unsort": "Remove Sorting"
+    },
+
+    "filter": {
+      "and": "And",
+      "or": "Or",
+      "filter": "Filter",
+      "clear": "Clear",
+      "info": "Show items with value that:",
+      "isTrue": "is true",
+      "isFalse": "is false",
+      "operator": {
+        "eq": "Equals",
+        "neq": "Does not equal",
+        "lt": "Less than",
+        "lte": "Less than or equal",
+        "gt": "Greater than",
+        "gte": "Greater than or equal",
+        "contains": "Contains",
+        "doesnotcontain": "Does not contain",
+        "startswith": "Starts with",
+        "endswith": "Ends with",
+        "isempty": "Is empty",
+        "isnotempty": "Is not empty",
+        "isnull": "Is null",
+        "isnotnull": "Is not null"
+      }
+    },
+
+    "columnMenu": {
+      "sortAscending": "Sort Ascending",
+      "sortDescending": "Sort Descending",
+      "filter": "Filter",
+      "columns": "Choose columns",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "group": "Group by this field",
+      "ungroup": "Ungroup"
+    },
+
+    "group": {
+      "groupHeader": "{field}: {value} ({count} items)",
+      "groupFooter": "Total: {count} items"
+    },
+
+    "pager": {
+      "display": "{from} - {to} of {total} items",
+      "empty": "No items to display",
+      "page": "Page",
+      "of": "of {totalPages}",
+      "itemsPerPage": "items per page",
+      "first": "Go to the first page",
+      "previous": "Go to the previous page",
+      "next": "Go to the next page",
+      "last": "Go to the last page",
+      "refresh": "Refresh"
+    }
   }
 }

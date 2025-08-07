@@ -5,57 +5,21 @@
 /**
  * Formats a date string to dd/mm/yyyy format
  */
-export const formatDate = (dateString?: string | null): string => {
-  if (!dateString) return ''
-  try {
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return ''
-    return date.toLocaleDateString('en-GB') // dd/mm/yyyy format
-  } catch {
-    return ''
-  }
+export function formatDateTime(value: string | Date | null, locale = 'en-US') {
+  if (!value) return '';
+  const date = typeof value === 'string' ? new Date(value) : value;
+
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: locale === 'en-US',
+  }).format(date);
 }
 
-/**
- * Formats a date string to dd/mm/yyyy HH:mm format
- */
-export const formatDateTime = (dateString?: string | null): string => {
-  if (!dateString) return ''
-  try {
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return ''
-    return (
-      date.toLocaleDateString('en-GB') +
-      ' ' +
-      date.toLocaleTimeString('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      })
-    )
-  } catch {
-    return ''
-  }
-}
-
-/**
- * Formats duration in seconds to a human readable format
- */
-export const formatDuration = (seconds?: number): string => {
-  if (!seconds || seconds === 0) return '0s'
-
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const remainingSeconds = seconds % 60
-
-  const parts: string[] = []
-
-  if (hours > 0) parts.push(`${hours}h`)
-  if (minutes > 0) parts.push(`${minutes}m`)
-  if (remainingSeconds > 0 || parts.length === 0) parts.push(`${remainingSeconds}s`)
-
-  return parts.join(' ')
-}
 
 /**
  * Converts date string to ISO date string for date inputs

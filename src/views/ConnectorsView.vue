@@ -1,4 +1,4 @@
-  <!-- @ts-nocheck -->
+<!-- @ts-nocheck -->
 
 <template>
   <div class="connectors-management">
@@ -55,25 +55,19 @@
             <v-list>
               <v-list-item @click="exportToPdf">
                 <v-list-item-title>
-                  <v-icon start>
-                    mdi-file-pdf-box
-                  </v-icon>
+                  <v-icon start> mdi-file-pdf-box </v-icon>
                   {{ $t('export.exportToPdf') }}
                 </v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportToExcel">
                 <v-list-item-title>
-                  <v-icon start>
-                    mdi-file-excel
-                  </v-icon>
+                  <v-icon start> mdi-file-excel </v-icon>
                   {{ $t('export.exportToExcel') }}
                 </v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportToCsv">
                 <v-list-item-title>
-                  <v-icon start>
-                    mdi-file-delimited
-                  </v-icon>
+                  <v-icon start> mdi-file-delimited </v-icon>
                   {{ $t('export.exportToCsv') }}
                 </v-list-item-title>
               </v-list-item>
@@ -162,7 +156,9 @@
             :filterable="false"
             class="connectors-grid"
             :filter="dataState.filter"
+            :messages="messages"
             :sort="dataState.sort"
+            :detail="cellTemplate"
             :expand-field="'expanded'"
             @datastatechange="dataStateChange"
             @selectionchange="onSelectionChange"
@@ -194,17 +190,42 @@
                 @delete="confirmDelete"
               />
             </template>
+
+            <template #myTemplate="{ props }">
+              <TabStrip
+                :selected="getRowTabState(props.dataItem.id)"
+                :tabs="tabs"
+                @select="(e) => onSelect(e, props.dataItem.id)"
+              >
+                <template #details>
+                  <ConnectorDetailView
+                    :connector="props.dataItem"
+                    :full-view="true"
+                    @edit="openEditDialog"
+                    @delete="confirmDelete"
+                  />
+                </template>
+                <template #chargepoint>
+                  <div v-if="props.dataItem.charge_point" class="chargepoint-details">
+                    <ChargePointDetailView
+                      :charge-point="props.dataItem.charge_point"
+                      :full-view="true"
+                    />
+                  </div>
+                  <div v-else class="no-data-message">
+                    {{ $t('connectors.noChargePointData') }}
+                  </div>
+                </template>
+              </TabStrip>
+            </template>
+
+            <template #actionTemplate="{ props }">
+              <ActionCell :data-item="props.dataItem" @actionselect="handleRowAction" />
+            </template>
           </Grid>
 
-          <div
-            v-if="selectedGridConnector"
-            class="grid-row-actions"
-          >
-            <v-chip
-              class="selected-indicator"
-              color="primary"
-              variant="outlined"
-            >
+          <div v-if="selectedGridConnector" class="grid-row-actions">
+            <v-chip class="selected-indicator" color="primary" variant="outlined">
               {{ $t('connectors.connector') }}: {{ selectedGridConnector.connector_number }}
             </v-chip>
 
@@ -233,11 +254,7 @@
       </v-card-text>
     </v-card>
 
-    <v-dialog
-      v-model="dialogOpen"
-      max-width="600px"
-      persistent
-    >
+    <v-dialog v-model="dialogOpen" max-width="600px" persistent>
       <v-card>
         <v-card-title>
           <span class="text-h6">{{
@@ -246,11 +263,7 @@
         </v-card-title>
 
         <v-card-text>
-          <v-form
-            ref="connectorForm"
-            v-model="formValid"
-            @submit.prevent="saveConnector"
-          >
+          <v-form ref="connectorForm" v-model="formValid" @submit.prevent="saveConnector">
             <v-row>
               <v-col cols="12">
                 <v-select
@@ -316,10 +329,7 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            variant="text"
-            @click="closeDialog"
-          >
+          <v-btn variant="text" @click="closeDialog">
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn
@@ -335,10 +345,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog
-      v-model="deleteDialogOpen"
-      max-width="500px"
-    >
+    <v-dialog v-model="deleteDialogOpen" max-width="500px">
       <v-card>
         <v-card-title class="text-h6">
           {{ $t('connectors.deleteConnector') }}
@@ -350,10 +357,7 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            variant="text"
-            @click="deleteDialogOpen = false"
-          >
+          <v-btn variant="text" @click="deleteDialogOpen = false">
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn
@@ -368,24 +372,11 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog
-      v-model="detailDialogOpen"
-      max-width="900px"
-      persistent
-    >
-      <v-card
-        v-if="viewedConnector"
-        class="modern-detail-card"
-      >
+    <v-dialog v-model="detailDialogOpen" max-width="900px" persistent>
+      <v-card v-if="viewedConnector" class="modern-detail-card">
         <v-card-title class="detail-card-header">
           <div class="header-content">
-            <v-icon
-              class="header-icon"
-              size="28"
-              color="primary"
-            >
-              mdi-power-plug
-            </v-icon>
+            <v-icon class="header-icon" size="28" color="primary"> mdi-power-plug </v-icon>
             <div class="header-text">
               <h2 class="header-title">
                 {{ $t('connectors.connector') }} {{ viewedConnector.connector_number }}
@@ -406,10 +397,7 @@
         <v-divider class="header-divider" />
 
         <v-card-text class="detail-content">
-          <ConnectorDetailView
-            :connector="viewedConnector"
-            :full-view="true"
-          />
+          <ConnectorDetailView :connector="viewedConnector" :full-view="true" />
         </v-card-text>
 
         <v-divider />
@@ -457,20 +445,27 @@ import { useConnectorsStore } from '@/stores/connectors'
 import { useChargePointsStore } from '@/stores/chargepoints'
 import type { Connector, CreateConnectorRequest, UpdateConnectorRequest } from '@/types/connectors'
 import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
+import { useKendoGridTranslations } from '@/composables/useKendoGridTranslations'
 import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import ConnectorDetailView from '@/components/ConnectorDetailView.vue'
+import ChargePointDetailView from '@/components/ChargePointDetailView.vue'
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
+import ActionCell from '@/components/ActionCell.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
+import { TabStrip } from '@progress/kendo-vue-layout'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { formatDate } = useLocaleFormatting()
+const { messages } = useKendoGridTranslations()
 const connectorsStore = useConnectorsStore()
 const chargePointsStore = useChargePointsStore()
 const selectedField = 'selected'
 const cellTemplate = ref('myTemplate')
+const selected = ref(0)
+const rowTabStates = ref(new Map())
 const viewedConnector = ref<Connector | null>(null)
 const detailDialogOpen = ref(false)
 const dialogOpen = ref(false)
@@ -539,6 +534,11 @@ const statusOptions = [
   { value: 'faulted', title: t('connectors.statusFaulted') }
 ]
 
+const tabs = ref([
+  { title: 'Connector Details', content: 'details' },
+  { title: 'Charge Point', content: 'chargepoint' }
+])
+
 const availableChargePoints = computed(() =>
   chargePointsStore.chargePoints.map((cp) => ({
     value: cp.id,
@@ -604,7 +604,8 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: false
-  }
+  },
+  { title: 'Actions', cell: 'actionTemplate', width: '120px', visible: true }
 ])
 
 // Default visible columns
@@ -638,6 +639,20 @@ const rules = {
     (value > 0 && value <= 1000) || t('connectors.validation.maxPowerRange')
 }
 
+function handleRowAction({ dataItem, action }) {
+  switch (action) {
+    case 'view':
+      viewConnector(dataItem)
+      break
+    case 'update':
+      openEditDialog(dataItem)
+      break
+    case 'delete':
+      confirmDelete(dataItem)
+      break
+  }
+}
+
 function createAppState(dataState) {
   group.value = dataState.group
   take.value = dataState.take
@@ -645,9 +660,25 @@ function createAppState(dataState) {
   refreshData()
 }
 
-
 function expandChange(event) {
   event.dataItem[event.target.$props.expandField] = event.value
+
+  // Clear tab state for this row when collapsing
+  if (!event.value && event.dataItem.id) {
+    rowTabStates.value.delete(event.dataItem.id)
+  }
+}
+
+const onSelect = (e, rowId) => {
+  if (rowId) {
+    rowTabStates.value.set(rowId, e.selected)
+  } else {
+    selected.value = e.selected
+  }
+}
+
+const getRowTabState = (rowId) => {
+  return rowTabStates.value.get(rowId) || 0
 }
 
 const createDataState = (state) => {
@@ -892,9 +923,9 @@ function onSelectionChange(event) {
   event.dataItem[selectedField] = !event.dataItem[selectedField]
 }
 function onRowClick(event) {
-  if (event.dataItem && !event.dataItem.aggregates) {
-    viewConnector(event.dataItem)
-  }
+  // if (event.dataItem && !event.dataItem.aggregates) {
+  //   viewConnector(event.dataItem)
+  // }
 }
 
 const exportToPdf = async () => {
@@ -1145,11 +1176,6 @@ th.k-header.customMenu.active > div > div > span.k-i-more-vertical::before {
   display: none;
 }
 
-th.k-header.active > div > a {
-  color: #fff;
-  background-color: #ff6358;
-}
-
 /* Modern Detail Dialog Styles */
 .modern-detail-card {
   border-radius: 16px !important;
@@ -1211,16 +1237,15 @@ th.k-header.active > div > a {
 
 .detail-content {
   padding: 32px !important;
-   background-color: var(--dialog-content-bg);
+  background-color: var(--dialog-content-bg);
   min-height: 200px;
 }
 
 .detail-actions {
   padding: 20px 32px 24px !important;
-   background-color: var(--dialog-content-bg);
+  background-color: var(--dialog-content-bg);
   gap: 12px;
 }
-
 
 .action-btn {
   border-radius: 8px !important;
@@ -1236,5 +1261,16 @@ th.k-header.active > div > a {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
   transition: all 0.2s ease;
+}
+
+.chargepoint-details {
+  padding: 16px;
+}
+
+.no-data-message {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 </style>

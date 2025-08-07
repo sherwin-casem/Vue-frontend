@@ -1,9 +1,6 @@
 <template>
   <div class="chargingprofile-detail">
-    <div
-      v-if="!fullView"
-      class="detail-row"
-    >
+    <div v-if="!fullView" class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.id') }}:</span>
       <span class="detail-value">{{ chargingProfile.id }}</span>
     </div>
@@ -40,84 +37,67 @@
       </v-chip>
     </div>
 
-    <div
-      v-if="chargingProfile.recurrency_kind"
-      class="detail-row"
-    >
+    <div v-if="chargingProfile.recurrency_kind" class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.recurrencyKind') }}:</span>
       <span class="detail-value">{{ chargingProfile.recurrency_kind }}</span>
     </div>
 
     <div class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.validFrom') }}:</span>
-      <span class="detail-value">{{ formatDate(chargingProfile.valid_from) }}</span>
+      <span class="detail-value">{{
+        formatDateTime(chargingProfile.valid_from, userLocale.value)
+      }}</span>
     </div>
 
     <div class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.validTo') }}:</span>
-      <span class="detail-value">{{ formatDate(chargingProfile.valid_to) }}</span>
+      <span class="detail-value">{{
+        formatDateTime(chargingProfile.valid_to, userLocale.value)
+      }}</span>
     </div>
 
-    <div
-      v-if="chargingProfile.duration_in_seconds"
-      class="detail-row"
-    >
+    <div v-if="chargingProfile.duration_in_seconds" class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.durationInSeconds') }}:</span>
       <span class="detail-value">{{ chargingProfile.duration_in_seconds }}s</span>
     </div>
 
-    <div
-      v-if="chargingProfile.start_schedule"
-      class="detail-row"
-    >
+    <div v-if="chargingProfile.start_schedule" class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.startSchedule') }}:</span>
-      <span class="detail-value">{{ formatDate(chargingProfile.start_schedule) }}</span>
+      <span class="detail-value">{{
+        formatDateTime(chargingProfile.start_schedule, userLocale.value)
+      }}</span>
     </div>
 
-    <div
-      v-if="chargingProfile.min_charging_rate"
-      class="detail-row"
-    >
+    <div v-if="chargingProfile.min_charging_rate" class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.minChargingRate') }}:</span>
       <span class="detail-value">{{ chargingProfile.min_charging_rate }} kW</span>
     </div>
 
-    <div
-      v-if="chargingProfile.description"
-      class="detail-row"
-    >
+    <div v-if="chargingProfile.description" class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.description') }}:</span>
       <span class="detail-value">{{ chargingProfile.description }}</span>
     </div>
 
-    <div
-      v-if="chargingProfile.note"
-      class="detail-row"
-    >
+    <div v-if="chargingProfile.note" class="detail-row">
       <span class="detail-label">{{ $t('common.note') }}:</span>
       <span class="detail-value">{{ chargingProfile.note }}</span>
     </div>
 
-    <div
-      v-if="chargingProfile.created_at"
-      class="detail-row"
-    >
+    <div v-if="chargingProfile.created_at" class="detail-row">
       <span class="detail-label">{{ $t('common.created') }}:</span>
-      <span class="detail-value">{{ formatDate(chargingProfile.created_at) }}</span>
+      <span class="detail-value">{{
+        formatDateTime(chargingProfile.created_at, userLocale.value)
+      }}</span>
     </div>
 
-    <div
-      v-if="chargingProfile.updated_at"
-      class="detail-row"
-    >
+    <div v-if="chargingProfile.updated_at" class="detail-row">
       <span class="detail-label">{{ $t('common.updated') }}:</span>
-      <span class="detail-value">{{ formatDate(chargingProfile.updated_at) }}</span>
+      <span class="detail-value">{{
+        formatDateTime(chargingProfile.updated_at, userLocale.value)
+      }}</span>
     </div>
 
-    <div
-      v-if="!fullView"
-      class="detail-actions"
-    >
+    <div v-if="!fullView" class="detail-actions">
       <v-btn
         size="small"
         variant="outlined"
@@ -156,6 +136,8 @@
 import { useI18n } from 'vue-i18n'
 import type { ChargingProfile } from '@/types/chargingprofiles'
 import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
+import { formatDateTime } from '@/utils/dateUtils'
+import { computed } from 'vue'
 
 interface Props {
   chargingProfile: ChargingProfile
@@ -172,6 +154,26 @@ defineEmits<{
 
 const { t } = useI18n()
 const { formatDate } = useLocaleFormatting()
+
+const userLocale = computed(() => {
+  const browserLocale = navigator.language || 'en-US'
+  // Map common locales to proper BCP 47 format
+  const localeMap: Record<string, string> = {
+    en: 'en-US',
+    de: 'de-DE',
+    fr: 'fr-FR',
+    es: 'es-ES',
+    ru: 'ru-RU'
+  }
+
+  // Check if it's already in proper format
+  if (browserLocale.includes('-')) {
+    return browserLocale
+  }
+
+  // Map short locale to full format
+  return localeMap[browserLocale] || browserLocale
+})
 
 const getPurposeColor = (purpose: string) => {
   switch (purpose) {

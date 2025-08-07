@@ -7,9 +7,13 @@
   --color-mid-gray: #666a70;         /* Secondary text */
   --color-accent-blue: #377ef2;      /* Active highlights, buttons */
   --color-sidebar-icon-gray: #6B7280;/* Sidebar icons and text */
-
-    --popup-bg: #ffffff;
-  --popup-text: #1a1a1a;
+  --popup-bg: #ffffff;
+  --popup-text: #222222;
+  --popup-hover-bg: #f0f0f0;
+  --popup-border-radius: 8px;
+  --popup-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  --action-button-bg: #e0e0e0;
+  --action-button-text: #000000;
     --dropdown-bg: #ffffff;
   --dropdown-border: #d1d5db;
   --dropdown-text: #1f2937;
@@ -151,6 +155,12 @@
   --popup-bg: #1e1e1e;
   --popup-text: #f5f5f5;
   --popup-border: #444;
+  --popup-hover-bg: #333333;
+  --popup-border-radius: 8px;
+  --popup-shadow: 0 2px 6px rgba(255, 255, 255, 0.1);
+  --action-button-bg: #444444;
+  --action-button-text: #ffffff;
+  
 
     --toolbar-bg: rgba(30, 30, 30, 0.98);
   --toolbar-border: rgba(255, 255, 255, 0.1);
@@ -221,14 +231,6 @@ body {
     0 11px 15px -7px rgba(0, 0, 0, 0.2) !important;
 }
 
-.detail-card-header {
-  background: var(--dialog-header-bg);
-  color: white;
-  padding: 24px 32px 20px;
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-}
 
 .header-content {
   display: flex;
@@ -379,19 +381,6 @@ body {
   color: var(--kendo-selected-text) !important;
 }
 
-/* Checkbox styles */
-.k-checkbox {
-  border-width:2px !important;
-  border-color: var(--kendo-checkbox-border) !important;
-  background-color: transparent !important;
-  transition: border-color 0.3s, background-color 0.3s !important;
-}
-
-.k-checkbox:checked {
-  background-color: var(--kendo-checkbox-checked-bg) !important;
-  border-color: var(--kendo-checkbox-checked-border) !important;
-  border-width: 2px !important;
-}
 
 .k-pager {
   background-color: var(--kendo-header-bg) !important;
@@ -548,7 +537,6 @@ body {
 
 
 
-
 .k-table-row.k-master-row {
   /* background-color: var(--row-bg, #fff) !important; */
   color: var(--row-color, #222) !important;
@@ -563,7 +551,7 @@ body {
 }
 
 /* Hierarchy cell with expand/collapse icon */
-.k-table-td.k-hierarchy-cell a {
+.k-table-td.k-hierarchy-cell > * {
   color: var(--icon-color, #0078d4) !important;
   display: inline-flex;
   align-items: center;
@@ -580,6 +568,21 @@ body {
   transition: fill 0.3s ease;
 }
 
+
+/* Checkbox styles */
+.k-checkbox {
+  border-width:2px !important;
+  border-color: var(--kendo-checkbox-border) !important;
+  background-color: transparent !important;
+  transition: border-color 0.3s, background-color 0.3s !important;
+}
+
+.k-checkbox:checked {
+  background-color: var(--kendo-checkbox-checked-bg) !important;
+  border-color: var(--kendo-checkbox-checked-border) !important;
+  border-width: 2px !important;
+}
+
 /* Checkbox styles */
 .k-checkbox-wrap input.k-checkbox {
   accent-color: var(--checkbox-accent, #0078d4) !important;
@@ -590,8 +593,7 @@ body {
 
 /* Checkbox label to ensure proper spacing */
 .k-checkbox-label {
-  cursor: pointer;
-  margin-left: 0.3rem;
+  display: none !important;
 }
 
 /* Cells padding and vertical alignment */

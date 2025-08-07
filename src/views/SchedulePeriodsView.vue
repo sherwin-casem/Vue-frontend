@@ -1,4 +1,4 @@
-  <!-- @ts-nocheck -->
+<!-- @ts-nocheck -->
 
 <template>
   <div class="scheduleperiods-management">
@@ -55,25 +55,19 @@
             <v-list>
               <v-list-item @click="exportToPdf">
                 <v-list-item-title>
-                  <v-icon start>
-                    mdi-file-pdf-box
-                  </v-icon>
+                  <v-icon start> mdi-file-pdf-box </v-icon>
                   {{ $t('export.exportToPdf') }}
                 </v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportToExcel">
                 <v-list-item-title>
-                  <v-icon start>
-                    mdi-file-excel
-                  </v-icon>
+                  <v-icon start> mdi-file-excel </v-icon>
                   {{ $t('export.exportToExcel') }}
                 </v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportToCsv">
                 <v-list-item-title>
-                  <v-icon start>
-                    mdi-file-delimited
-                  </v-icon>
+                  <v-icon start> mdi-file-delimited </v-icon>
                   {{ $t('export.exportToCsv') }}
                 </v-list-item-title>
               </v-list-item>
@@ -162,7 +156,9 @@
             :filterable="false"
             class="scheduleperiods-grid"
             :filter="dataState.filter"
+            :messages="messages"
             :sort="dataState.sort"
+            :detail="cellTemplate"
             :expand-field="'expanded'"
             @datastatechange="dataStateChange"
             @selectionchange="onSelectionChange"
@@ -194,17 +190,46 @@
                 @delete="confirmDelete"
               />
             </template>
+
+            <template #myTemplate="{ props }">
+              <div v-if="props.dataItem._loadingChargingProfile" class="loading-container">
+                <v-progress-circular indeterminate color="primary" size="24" />
+                <span class="loading-text">Loading charging profile...</span>
+              </div>
+              <TabStrip
+                v-else
+                :selected="getRowTabState(props.dataItem.id)"
+                :tabs="tabs"
+                @select="(e) => onSelect(e, props.dataItem.id)"
+              >
+                <template #details>
+                  <SchedulePeriodDetailView
+                    :schedule-period="props.dataItem"
+                    :full-view="true"
+                    @edit="openEditDialog"
+                    @delete="confirmDelete"
+                  />
+                </template>
+                <template #chargingprofile>
+                  <ChargingProfileDetailView
+                    v-if="props.dataItem._chargingProfile"
+                    :charging-profile="props.dataItem._chargingProfile"
+                    :full-view="true"
+                  />
+                  <div v-else class="no-data-message">
+                    {{ $t('scheduleperiods.noChargingProfileData') }}
+                  </div>
+                </template>
+              </TabStrip>
+            </template>
+
+            <template #actionTemplate="{ props }">
+              <ActionCell :data-item="props.dataItem" @actionselect="handleRowAction" />
+            </template>
           </Grid>
 
-          <div
-            v-if="selectedGridSchedulePeriod"
-            class="grid-row-actions"
-          >
-            <v-chip
-              class="selected-indicator"
-              color="primary"
-              variant="outlined"
-            >
+          <div v-if="selectedGridSchedulePeriod" class="grid-row-actions">
+            <v-chip class="selected-indicator" color="primary" variant="outlined">
               {{ $t('scheduleperiods.schedulePeriod') }}: {{ selectedGridSchedulePeriod.id }}
             </v-chip>
 
@@ -233,11 +258,7 @@
       </v-card-text>
     </v-card>
 
-    <v-dialog
-      v-model="dialogOpen"
-      max-width="600px"
-      persistent
-    >
+    <v-dialog v-model="dialogOpen" max-width="600px" persistent>
       <v-card>
         <v-card-title>
           <span class="text-h6">{{
@@ -248,11 +269,7 @@
         </v-card-title>
 
         <v-card-text>
-          <v-form
-            ref="schedulePeriodForm"
-            v-model="formValid"
-            @submit.prevent="saveSchedulePeriod"
-          >
+          <v-form ref="schedulePeriodForm" v-model="formValid" @submit.prevent="saveSchedulePeriod">
             <v-row>
               <v-col cols="12">
                 <v-select
@@ -307,10 +324,7 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            variant="text"
-            @click="closeDialog"
-          >
+          <v-btn variant="text" @click="closeDialog">
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn
@@ -326,25 +340,17 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog
-      v-model="deleteDialogOpen"
-      max-width="500px"
-    >
+    <v-dialog v-model="deleteDialogOpen" max-width="500px">
       <v-card>
         <v-card-title class="text-h6">
-          {{
-            $t('scheduleperiods.deleteSchedulePeriod')
-          }}
+          {{ $t('scheduleperiods.deleteSchedulePeriod') }}
         </v-card-title>
         <v-card-text>
           {{ $t('scheduleperiods.confirmDelete', { id: selectedSchedulePeriod?.id || '' }) }}
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            variant="text"
-            @click="deleteDialogOpen = false"
-          >
+          <v-btn variant="text" @click="deleteDialogOpen = false">
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn
@@ -359,24 +365,11 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog
-      v-model="detailDialogOpen"
-      max-width="900px"
-      persistent
-    >
-      <v-card
-        v-if="viewedSchedulePeriod"
-        class="modern-detail-card"
-      >
+    <v-dialog v-model="detailDialogOpen" max-width="900px" persistent>
+      <v-card v-if="viewedSchedulePeriod" class="modern-detail-card">
         <v-card-title class="detail-card-header">
           <div class="header-content">
-            <v-icon
-              class="header-icon"
-              size="28"
-              color="primary"
-            >
-              mdi-calendar-clock
-            </v-icon>
+            <v-icon class="header-icon" size="28" color="primary"> mdi-calendar-clock </v-icon>
             <div class="header-text">
               <h2 class="header-title">
                 {{ $t('scheduleperiods.schedulePeriod') }} {{ viewedSchedulePeriod.id }}
@@ -397,10 +390,7 @@
         <v-divider class="header-divider" />
 
         <v-card-text class="detail-content">
-          <SchedulePeriodDetailView
-            :schedule-period="viewedSchedulePeriod"
-            :full-view="true"
-          />
+          <SchedulePeriodDetailView :schedule-period="viewedSchedulePeriod" :full-view="true" />
         </v-card-text>
 
         <v-divider />
@@ -453,20 +443,27 @@ import type {
   UpdateSchedulePeriodRequest
 } from '@/types/scheduleperiods'
 import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
+import { useKendoGridTranslations } from '@/composables/useKendoGridTranslations'
 import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import SchedulePeriodDetailView from '@/components/SchedulePeriodDetailView.vue'
+import ChargingProfileDetailView from '@/components/ChargingProfileDetailView.vue'
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
+import ActionCell from '@/components/ActionCell.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
+import { TabStrip } from '@progress/kendo-vue-layout'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { formatDate } = useLocaleFormatting()
 const schedulePeriodsStore = useSchedulePeriodsStore()
+const { messages } = useKendoGridTranslations()
 const chargingProfilesStore = useChargingProfilesStore()
 const selectedField = 'selected'
 const cellTemplate = ref('myTemplate')
+const rowTabStates = ref(new Map())
+const selected = ref(0)
 const viewedSchedulePeriod = ref<SchedulePeriod | null>(null)
 const detailDialogOpen = ref(false)
 const dialogOpen = ref(false)
@@ -528,6 +525,11 @@ const pageableConfig = {
   pageSize: 20
 }
 
+const tabs = ref([
+  { title: 'Schedule Period Details', content: 'details' },
+  { title: 'Charging Profile', content: 'chargingprofile' }
+])
+
 const phaseOptions = [
   { value: 1, title: t('scheduleperiods.onePhase') },
   { value: 2, title: t('scheduleperiods.twoPhases') },
@@ -583,7 +585,8 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true
-  }
+  },
+  { title: 'Actions', cell: 'actionTemplate', width: '120px', visible: true }
 ])
 
 // Default visible columns
@@ -616,6 +619,20 @@ const rules = {
     (value > 0 && value <= 1000) || t('scheduleperiods.validation.limitRange')
 }
 
+function handleRowAction({ dataItem, action }) {
+  switch (action) {
+    case 'view':
+      viewSchedulePeriod(dataItem)
+      break
+    case 'update':
+      openEditDialog(dataItem)
+      break
+    case 'delete':
+      confirmDelete(dataItem)
+      break
+  }
+}
+
 function createAppState(dataState) {
   group.value = dataState.group
   take.value = dataState.take
@@ -632,8 +649,44 @@ const columnReorder = (options: any) => {
 
   allColumns.value = reorderedColumns
 }
-function expandChange(event) {
+async function expandChange(event) {
   event.dataItem[event.target.$props.expandField] = event.value
+
+  // Fetch charging profile when expanding a schedule period
+  if (event.value && event.dataItem.charging_profile_id) {
+    // Set loading state
+    event.dataItem._loadingChargingProfile = true
+    try {
+      const profile = await chargingProfilesStore.fetchChargingProfileById(
+        event.dataItem.charging_profile_id
+      )
+      // Store data in the specific row's data item
+      event.dataItem._chargingProfile = profile
+    } catch (error) {
+      console.error('Error fetching charging profile:', error)
+      event.dataItem._chargingProfile = null
+    } finally {
+      event.dataItem._loadingChargingProfile = false
+    }
+  } else if (!event.value) {
+    // Clear data when collapsing
+    event.dataItem._chargingProfile = null
+    event.dataItem._loadingChargingProfile = false
+    // Clear tab state for this row
+    rowTabStates.value.delete(event.dataItem.id)
+  }
+}
+
+const onSelect = (e, rowId) => {
+  if (rowId) {
+    rowTabStates.value.set(rowId, e.selected)
+  } else {
+    selected.value = e.selected
+  }
+}
+
+const getRowTabState = (rowId) => {
+  return rowTabStates.value.get(rowId) || 0
 }
 
 const createDataState = (state) => {
@@ -874,9 +927,9 @@ function onSelectionChange(event) {
 }
 
 function onRowClick(event) {
-  if (event.dataItem && !event.dataItem.aggregates) {
-    viewSchedulePeriod(event.dataItem)
-  }
+  // if (event.dataItem && !event.dataItem.aggregates) {
+  //   viewSchedulePeriod(event.dataItem)
+  // }
 }
 
 const exportToPdf = async () => {
@@ -1133,11 +1186,6 @@ th.k-header.customMenu.active > div > div > span.k-i-more-vertical::before {
   display: none;
 }
 
-th.k-header.active > div > a {
-  color: #fff;
-  background-color: #ff6358;
-}
-
 /* Modern Detail Dialog Styles */
 .modern-detail-card {
   border-radius: 16px !important;
@@ -1198,16 +1246,15 @@ th.k-header.active > div > a {
 }
 .detail-content {
   padding: 32px !important;
-   background-color: var(--dialog-content-bg);
+  background-color: var(--dialog-content-bg);
   min-height: 200px;
 }
 
 .detail-actions {
   padding: 20px 32px 24px !important;
-   background-color: var(--dialog-content-bg);
+  background-color: var(--dialog-content-bg);
   gap: 12px;
 }
-
 
 .action-btn {
   border-radius: 8px !important;
@@ -1223,5 +1270,26 @@ th.k-header.active > div > a {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
   transition: all 0.2s ease;
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  background: #fafafa;
+}
+
+.loading-text {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.875rem;
+}
+
+.no-data-message {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 </style>

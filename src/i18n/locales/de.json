@@ -46,7 +46,7 @@
     "clearFilter": "Filter löschen",
     "deleteSelected": "Auswahl löschen",
     "confirmBatchDelete": "Massenlöschung bestätigen",
-    "confirmBatchDeleteMessage": "Sind Sie sicher, dass Sie {count} ausgewählte Elemente löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "confirmBatchDeleteMessage": "Sind Sie sicher, dass Sie {count} ausgew��hlte Elemente löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
     "actionCannotBeUndone": "Diese Aktion kann nicht rückgängig gemacht werden.",
     "processing": "Verarbeitung",
     "deleting": "Löschen",
@@ -60,6 +60,7 @@
     "columnOrder": "Spaltenreihenfolge",
     "tableSettings": "Tabelleneinstellungen",
     "reset": "Zurücksetzen",
+    "retry": "Wiederholen",
     "apply": "Anwenden",
     "clear": "Löschen",
     "filterBy": "Filtern nach",
@@ -96,6 +97,78 @@
     "groupingByFields": "Gruppierung nach {count} Feld(ern)",
     "noItems": "Keine Elemente",
     "noItemsDescription": "0 Elemente gefunden"
+  },
+  "kendo": {
+    "grid": {
+      "noRecords": "Keine Einträge verfügbar",
+      "loading": "Laden...",
+      "page": "Seite",
+      "of": "von",
+      "items": "Elemente",
+      "itemsPerPage": "Elemente pro Seite",
+      "first": "Zur ersten Seite gehen",
+      "previous": "Zur vorherigen Seite gehen",
+      "next": "Zur nächsten Seite gehen",
+      "last": "Zur letzten Seite gehen",
+      "refresh": "Aktualisieren",
+      "morePages": "Weitere Seiten",
+      "sortAscending": "Aufsteigend sortieren",
+      "sortDescending": "Absteigend sortieren",
+      "columns": "Spalten",
+      "filter": "Filter",
+      "filterEqOperator": "Ist gleich",
+      "filterNotEqOperator": "Ist nicht gleich",
+      "filterIsNullOperator": "Ist null",
+      "filterIsNotNullOperator": "Ist nicht null",
+      "filterIsEmptyOperator": "Ist leer",
+      "filterIsNotEmptyOperator": "Ist nicht leer",
+      "filterStartsWithOperator": "Beginnt mit",
+      "filterContainsOperator": "Enthält",
+      "filterNotContainsOperator": "Enthält nicht",
+      "filterEndsWithOperator": "Endet mit",
+      "filterGteOperator": "Ist größer als oder gleich",
+      "filterGtOperator": "Ist größer als",
+      "filterLteOperator": "Ist kleiner als oder gleich",
+      "filterLtOperator": "Ist kleiner als",
+      "filterIsTrue": "Ist wahr",
+      "filterIsFalse": "Ist falsch",
+      "filterBooleanAll": "(Alle)",
+      "filterAndLogic": "Und",
+      "filterOrLogic": "Oder",
+      "filterClear": "Löschen",
+      "filterApply": "Anwenden",
+      "groupBy": "Nach dieser Spalte gruppieren",
+      "groupByMessage": "Ziehen Sie eine Spaltenüberschrift hier her, um nach dieser Spalte zu gruppieren",
+      "unGroup": "Gruppierung aufheben",
+      "unGroupMessage": "Hier klicken, um die Gruppierung aufzuheben"
+    },
+    "columnMenu": {
+      "columns": "Spalten",
+      "filter": "Filter",
+      "sortAscending": "Aufsteigend sortieren",
+      "sortDescending": "Absteigend sortieren",
+      "settings": "Spalteneinstellungen",
+      "done": "Fertig",
+      "lock": "Sperren",
+      "unlock": "Entsperren"
+    },
+    "pager": {
+      "allPages": "Alle",
+      "display": "{0} - {1} von {2} Elementen",
+      "empty": "Keine Elemente anzuzeigen",
+      "first": "Zur ersten Seite gehen",
+      "itemsPerPage": "Elemente pro Seite",
+      "last": "Zur letzten Seite gehen",
+      "next": "Zur nächsten Seite gehen",
+      "of": "von {0}",
+      "page": "Seite",
+      "previous": "Zur vorherigen Seite gehen",
+      "refresh": "Aktualisieren",
+      "morePages": "Weitere Seiten"
+    },
+    "grouping": {
+      "empty": "Ziehen Sie eine Spaltenüberschrift hier her, um nach dieser Spalte zu gruppieren"
+    }
   },
   "validation": {
     "fieldRequired": "Dieses Feld ist erforderlich",
@@ -173,7 +246,9 @@
       "pdfError": "Fehler beim PDF-Export. Bitte versuchen Sie es erneut.",
       "excelError": "Fehler beim Excel-Export. Bitte versuchen Sie es erneut.",
       "csvError": "Fehler beim CSV-Export. Bitte versuchen Sie es erneut."
-    }
+    },
+    "noChargePointData": "Keine Ladepunkte für diesen Standort gefunden",
+    "noConnectorData": "Keine Steckverbinder für diesen Standort gefunden"
   },
   "chargepoints": {
     "title": "Ladepunktverwaltung",
@@ -211,6 +286,9 @@
     "updateError": "Fehler beim Aktualisieren des Ladepunkts. Bitte versuchen Sie es erneut.",
     "deleteError": "Fehler beim Löschen des Ladepunkts. Bitte versuchen Sie es erneut.",
     "noChargePoints": "Keine Ladepunkte gefunden",
+    "noChargingProfileData": "Keine Ladeprofile für diesen Ladepunkt gefunden",
+    "noConnectorData": "Keine Steckverbinder für diesen Ladepunkt gefunden",
+    "noSiteData": "Keine Standortdaten für diesen Ladepunkt verfügbar",
     "noSitesAvailable": "Keine Standorte verfügbar",
     "validation": {
       "ocppIdMinLength": "OCPP Charge Box ID muss mindestens 3 Zeichen lang sein",
@@ -261,7 +339,8 @@
       "maxPowerRange": "Max. Leistung muss zwischen 0 und 1000 kW liegen"
     },
     "noConnectors": "Keine Steckverbinder gefunden",
-    "noChargePointsAvailable": "Keine Ladepunkte verfügbar"
+    "noChargePointsAvailable": "Keine Ladepunkte verfügbar",
+    "noChargePointData": "Keine Ladepunktdaten für diesen Steckverbinder verfügbar"
   },
   "chargingprofiles": {
     "title": "Ladeprofilverwaltung",
@@ -305,7 +384,8 @@
       "durationRange": "Dauer muss zwischen 0 und 86400 Sekunden liegen"
     },
     "noChargingProfiles": "Keine Ladeprofile gefunden",
-    "noChargePointsAvailable": "Keine Ladepunkte verfügbar"
+    "noChargePointsAvailable": "Keine Ladepunkte verfügbar",
+    "noChargePointData": "Keine Ladepunktdaten für dieses Ladeprofil verfügbar"
   },
   "scheduleperiods": {
     "title": "Zeitraumverwaltung",
@@ -343,6 +423,7 @@
     },
     "noSchedulePeriods": "Keine Zeiträume gefunden",
     "noChargingProfilesAvailable": "Keine Ladeprofile verfügbar",
+    "noChargingProfileData": "Keine Ladeprofilendaten für diesen Zeitraum verfügbar",
     "onePhase": "1 Phase",
     "twoPhases": "2 Phasen",
     "threePhases": "3 Phasen"
@@ -525,6 +606,7 @@
     "chargingProfileIdPlaceholder": "z.B. 1, 2, 3",
     "manufacturerPlaceholder": "z.B. Tesla, ABB",
     "modelPlaceholder": "z.B. Wall Connector Gen3",
+    "connectorCountPlaceholder": "z.B. 1, 2, 4",
     "connectorNumberPlaceholder": "z.B. 1, 2",
     "connectorTypePlaceholder": "z.B. Type2, CCS",
     "maxPowerPlaceholder": "z.B. 22, 50, 150",
@@ -575,5 +657,69 @@
     "deleteSelected": "Auswahl löschen",
     "confirmBatchDelete": "Massenlöschung bestätigen",
     "confirmBatchDeleteMessage": "Sind Sie sicher, dass Sie {count} ausgewählte Elemente löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden."
+  },
+  "grid": {
+    "noRecords": "Keine Daten verfügbar",
+
+    "sort": {
+      "sortAscending": "Aufsteigend sortieren",
+      "sortDescending": "Absteigend sortieren",
+      "unsort": "Sortierung entfernen"
+    },
+
+    "filter": {
+      "and": "Und",
+      "or": "Oder",
+      "filter": "Filtern",
+      "clear": "Löschen",
+      "info": "Elemente anzeigen, deren Wert:",
+      "isTrue": "ist wahr",
+      "isFalse": "ist falsch",
+      "operator": {
+        "eq": "Gleich",
+        "neq": "Ungleich",
+        "lt": "Kleiner als",
+        "lte": "Kleiner oder gleich",
+        "gt": "Größer als",
+        "gte": "Größer oder gleich",
+        "contains": "Enthält",
+        "doesnotcontain": "Enthält nicht",
+        "startswith": "Beginnt mit",
+        "endswith": "Endet mit",
+        "isempty": "Ist leer",
+        "isnotempty": "Ist nicht leer",
+        "isnull": "Ist null",
+        "isnotnull": "Ist nicht null"
+      }
+    },
+
+    "columnMenu": {
+      "sortAscending": "Aufsteigend sortieren",
+      "sortDescending": "Absteigend sortieren",
+      "filter": "Filtern",
+      "columns": "Spalten auswählen",
+      "lock": "Sperren",
+      "unlock": "Entsperren",
+      "group": "Nach diesem Feld gruppieren",
+      "ungroup": "Gruppierung aufheben"
+    },
+
+    "group": {
+      "groupHeader": "{field}: {value} ({count} Einträge)",
+      "groupFooter": "Gesamt: {count} Einträge"
+    },
+
+    "pager": {
+      "display": "{from} - {to} von {total} Einträgen",
+      "empty": "Keine Einträge vorhanden",
+      "page": "Seite",
+      "of": "von {totalPages}",
+      "itemsPerPage": "Einträge pro Seite",
+      "first": "Zur ersten Seite",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "last": "Zur letzten Seite",
+      "refresh": "Aktualisieren"
+    }
   }
 }

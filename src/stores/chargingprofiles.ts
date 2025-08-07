@@ -159,6 +159,29 @@ export const useChargingProfilesStore = defineStore('chargingProfiles', {
       }
     },
 
+    async fetchChargingProfileById(profileId: number): Promise<ChargingProfile | null> {
+      try {
+        // First check if we already have the profile in our state
+        const existingProfile = this.getChargingProfileById(profileId)
+        if (existingProfile) {
+          return existingProfile
+        }
+
+        // If not found, fetch from API
+        const response: AxiosResponse<{ charging_profile?: ChargingProfile; error?: string }> =
+          await apiClient.get(`/charging-profiles/${profileId}`)
+
+        if (response.data && response.data.charging_profile) {
+          return response.data.charging_profile
+        } else {
+          throw new Error(response.data?.error || 'Failed to fetch charging profile')
+        }
+      } catch (error) {
+        console.error('Fetch charging profile by ID error:', error)
+        return null
+      }
+    },
+
     async createChargingProfile(profileData: CreateChargingProfileRequest): Promise<boolean> {
       this.loading = true
       this.error = null

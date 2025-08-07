@@ -1,5 +1,4 @@
-  <!-- @ts-nocheck -->
-
+<!-- @ts-nocheck -->
 
 <template>
   <div>
@@ -28,19 +27,18 @@
 
             <v-spacer />
 
-            
-          <div class="search-container">
-            <v-text-field
-              v-model="globalSearch"
-              prepend-icon="mdi-magnify"
-              :label="$t('common.search')"
-              variant="outlined"
-              density="compact"
-              hide-details
-              clearable
-              class="search-field"
-            />
-          </div>
+            <div class="search-container">
+              <v-text-field
+                v-model="globalSearch"
+                prepend-icon="mdi-magnify"
+                :label="$t('common.search')"
+                variant="outlined"
+                density="compact"
+                hide-details
+                clearable
+                class="search-field"
+              />
+            </div>
 
             <v-menu>
               <template #activator="{ props }">
@@ -58,25 +56,19 @@
               <v-list>
                 <v-list-item @click="exportToPdf">
                   <v-list-item-title>
-                    <v-icon start>
-                      mdi-file-pdf-box
-                    </v-icon>
+                    <v-icon start> mdi-file-pdf-box </v-icon>
                     {{ $t('export.exportToPdf') }}
                   </v-list-item-title>
                 </v-list-item>
                 <v-list-item @click="exportToExcel">
                   <v-list-item-title>
-                    <v-icon start>
-                      mdi-file-excel
-                    </v-icon>
+                    <v-icon start> mdi-file-excel </v-icon>
                     {{ $t('export.exportToExcel') }}
                   </v-list-item-title>
                 </v-list-item>
                 <v-list-item @click="exportToCsv">
                   <v-list-item-title>
-                    <v-icon start>
-                      mdi-file-delimited
-                    </v-icon>
+                    <v-icon start> mdi-file-delimited </v-icon>
                     {{ $t('export.exportToCsv') }}
                   </v-list-item-title>
                 </v-list-item>
@@ -160,11 +152,13 @@
               :take="take"
               :skip="skip"
               :reorderable="true"
+              :row-render="rowRender"
               :loading="sitesStore.loading"
               :selected-field="selectedField"
               :filterable="false"
               class="sites-grid"
               :filter="dataState.filter"
+              :messages="messages"
               :sort="dataState.sort"
               :detail="cellTemplate"
               :expand-field="'expanded'"
@@ -174,6 +168,7 @@
               @rowclick="onRowClick"
               @expandchange="expandChange"
               @columnreorder="columnReorder"
+              @custom="customHandler"
             >
               <template #columnMenuTemplate="{ props }">
                 <ColumnMenu
@@ -192,58 +187,128 @@
               </template>
 
               <template #myTemplate="{ props }">
-                <div
-                  v-if="props.dataItem._loadingSiteData"
-                  class="loading-container"
-                >
-                  <v-progress-circular
-                    indeterminate
-                    color="primary"
-                    size="24"
-                  />
+                <div v-if="props.dataItem._loadingSiteData" class="loading-container">
+                  <v-progress-circular indeterminate color="primary" size="24" />
                   <span class="loading-text">Loading site data...</span>
                 </div>
-                <TabStrip
-                  v-else
-                  :selected="selected"
-                  :tabs="tabs"
-                  @select="onSelect"
-                >
-                <template #details>
-                    {{ props.dataItem }}
-                </template>
-                  <template #chargepoints>
-                    <Grid
-                      :columns="chargePointsColumns"
-                      :data-items="props.dataItem._chargePoints || []"
-                      :sortable="false"
-                      :groupable="false"
-                      :filterable="false"
+                <TabStrip v-else :selected="selected" :tabs="tabs" @select="onSelect">
+                  <template #details>
+                    <SiteDetailView
+                      :site="props.dataItem"
+                      :full-view="true"
+                      @edit="openEditDialog"
+                      @delete="confirmDelete"
                     />
+                  </template>
+                  <template #chargepoints>
+                    <div class="charge-points-header">
+                      <v-btn
+                        size="small"
+                        color="primary"
+                        variant="elevated"
+                        prepend-icon="mdi-plus"
+                        @click="addChargePoint(props.dataItem.site_id)"
+                      >
+                        {{ $t('chargepoints.addChargePoint') }}
+                      </v-btn>
+                    </div>
+                    <div
+                      v-if="props.dataItem._chargePoints && props.dataItem._chargePoints.length > 0"
+                    >
+                      <Grid
+                        :columns="chargePointsColumns"
+                        :data-items="props.dataItem._chargePoints || []"
+                        :sortable="true"
+                        :sort="chargepointsort"
+                        :filterable="false"
+                        :messages="messages"
+                        @sortChange="chargepointSortChangeHandler"
+                      >
+                        <template #chargePointActionTemplate="{ props: chargePointProps }">
+                          <div class="action-buttons">
+                            <v-btn
+                              size="small"
+                              variant="outlined"
+                              prepend-icon="mdi-pencil"
+                              @click="editChargePoint(chargePointProps.dataItem)"
+                            >
+                              {{ $t('common.edit') }}
+                            </v-btn>
+                            <v-btn
+                              size="small"
+                              variant="outlined"
+                              color="error"
+                              prepend-icon="mdi-delete"
+                              @click="deleteChargePoint(chargePointProps.dataItem)"
+                            >
+                              {{ $t('common.delete') }}
+                            </v-btn>
+                          </div>
+                        </template>
+                      </Grid>
+                    </div>
+                    <div v-else class="no-data-message">
+                      {{ $t('sites.noChargePointData') }}
+                    </div>
                   </template>
 
                   <template #connectors>
-                    <Grid
-                      :columns="connectorsColumns"
-                      :data-items="props.dataItem._connectors || []"
-                      :sortable="false"
-                      :groupable="false"
-                      :filterable="false"
-                    />
+                    <div class="connectors-header">
+                      <v-btn
+                        size="small"
+                        color="primary"
+                        variant="elevated"
+                        prepend-icon="mdi-plus"
+                        @click="addConnector(props.dataItem)"
+                      >
+                        {{ $t('connectors.addConnector') }}
+                      </v-btn>
+                    </div>
+                    <div v-if="props.dataItem._connectors && props.dataItem._connectors.length > 0">
+                      <Grid
+                        :columns="connectorsColumns"
+                        :data-items="props.dataItem._connectors || []"
+                        :sortable="true"
+                        :filterable="false"
+                        :messages="messages"
+                      >
+                        <template #connectorActionTemplate="{ props: connectorProps }">
+                          <div class="action-buttons">
+                            <v-btn
+                              size="small"
+                              variant="outlined"
+                              prepend-icon="mdi-pencil"
+                              @click="editConnector(connectorProps.dataItem)"
+                            >
+                              {{ $t('common.edit') }}
+                            </v-btn>
+                            <v-btn
+                              size="small"
+                              variant="outlined"
+                              color="error"
+                              prepend-icon="mdi-delete"
+                              @click="deleteConnector(connectorProps.dataItem)"
+                            >
+                              {{ $t('common.delete') }}
+                            </v-btn>
+                          </div>
+                        </template>
+                      </Grid>
+                    </div>
+                    <div v-else class="no-data-message">
+                      {{ $t('sites.noConnectorData') }}
+                    </div>
                   </template>
                 </TabStrip>
               </template>
+
+              <template #actionTemplate="{ props }">
+                <ActionCell :data-item="props.dataItem" @actionselect="handleRowAction" />
+              </template>
             </Grid>
 
-            <div
-              v-if="selectedGridSite"
-              class="grid-row-actions"
-            >
-              <v-chip
-                class="selected-indicator"
-                color="primary"
-                variant="outlined"
-              >
+            <div v-if="selectedGridSite" class="grid-row-actions">
+              <v-chip class="selected-indicator" color="primary" variant="outlined">
                 {{ $t('sites.site') }}: {{ selectedGridSite.name }}
               </v-chip>
 
@@ -272,11 +337,7 @@
         </v-card-text>
       </v-card>
 
-      <v-dialog
-        v-model="dialogOpen"
-        max-width="600px"
-        persistent
-      >
+      <v-dialog v-model="dialogOpen" max-width="600px" persistent>
         <v-card>
           <v-card-title>
             <span class="text-h6">{{
@@ -285,11 +346,7 @@
           </v-card-title>
 
           <v-card-text>
-            <v-form
-              ref="siteForm"
-              v-model="formValid"
-              @submit.prevent="saveSite"
-            >
+            <v-form ref="siteForm" v-model="formValid" @submit.prevent="saveSite">
               <v-row>
                 <v-col cols="12">
                   <v-text-field
@@ -361,10 +418,7 @@
 
           <v-card-actions>
             <v-spacer />
-            <v-btn
-              variant="text"
-              @click="closeDialog"
-            >
+            <v-btn variant="text" @click="closeDialog">
               {{ $t('common.cancel') }}
             </v-btn>
             <v-btn
@@ -380,10 +434,7 @@
         </v-card>
       </v-dialog>
 
-      <v-dialog
-        v-model="deleteDialogOpen"
-        max-width="500px"
-      >
+      <v-dialog v-model="deleteDialogOpen" max-width="500px">
         <v-card>
           <v-card-title class="text-h6">
             {{ $t('sites.deleteSite') }}
@@ -393,10 +444,7 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn
-              variant="text"
-              @click="deleteDialogOpen = false"
-            >
+            <v-btn variant="text" @click="deleteDialogOpen = false">
               {{ $t('common.cancel') }}
             </v-btn>
             <v-btn
@@ -411,24 +459,11 @@
         </v-card>
       </v-dialog>
     </div>
-    <v-dialog
-      v-model="detailDialogOpen"
-      max-width="900px"
-      persistent
-    >
-      <v-card
-        v-if="viewedSite"
-        class="modern-detail-card"
-      >
+    <v-dialog v-model="detailDialogOpen" max-width="900px" persistent>
+      <v-card v-if="viewedSite" class="modern-detail-card">
         <v-card-title class="detail-card-header">
           <div class="header-content">
-            <v-icon
-              class="header-icon"
-              size="28"
-              color="primary"
-            >
-              mdi-map-marker
-            </v-icon>
+            <v-icon class="header-icon" size="28" color="primary"> mdi-map-marker </v-icon>
             <div class="header-text">
               <h2 class="header-title">
                 {{ viewedSite.name }}
@@ -449,10 +484,7 @@
         <v-divider class="header-divider" />
 
         <v-card-text class="detail-content">
-          <SiteDetailView
-            :site="viewedSite"
-            :full-view="true"
-          />
+          <SiteDetailView :site="viewedSite" :full-view="true" />
         </v-card-text>
 
         <v-divider />
@@ -481,6 +513,233 @@
       </v-card>
     </v-dialog>
 
+    <!-- Charge Point Form Dialog -->
+    <v-dialog v-model="chargePointDialogOpen" max-width="600px" persistent>
+      <v-card>
+        <v-card-title>
+          <span class="text-h6">{{
+            isEditingChargePoint
+              ? $t('chargepoints.editChargePoint')
+              : $t('chargepoints.createNewChargePoint')
+          }}</span>
+        </v-card-title>
+
+        <v-card-text>
+          <v-form
+            ref="chargePointForm"
+            v-model="chargePointFormValid"
+            @submit.prevent="saveChargePoint"
+          >
+            <v-row>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="currentChargePoint.ocpp_charge_box_id"
+                  :label="$t('chargepoints.ocppChargeBoxId')"
+                  :placeholder="$t('forms.ocppChargeBoxIdPlaceholder')"
+                  :rules="[chargePointRules.required, chargePointRules.ocppIdMinLength]"
+                  variant="outlined"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentChargePoint.manufacturer"
+                  :label="$t('chargepoints.manufacturer')"
+                  :placeholder="$t('forms.manufacturerPlaceholder')"
+                  :rules="[chargePointRules.required, chargePointRules.manufacturerMinLength]"
+                  variant="outlined"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentChargePoint.model"
+                  :label="$t('chargepoints.model')"
+                  :placeholder="$t('forms.modelPlaceholder')"
+                  :rules="[chargePointRules.required, chargePointRules.modelMinLength]"
+                  variant="outlined"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentChargePoint.connector_count"
+                  :label="$t('chargepoints.connectorCount')"
+                  :placeholder="$t('forms.connectorCountPlaceholder')"
+                  :rules="[chargePointRules.required, chargePointRules.connectorCountRange]"
+                  variant="outlined"
+                  type="number"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-select
+                  v-model="currentChargePoint.status"
+                  :label="$t('chargepoints.status')"
+                  :items="chargePointStatusOptions"
+                  :rules="[chargePointRules.required]"
+                  variant="outlined"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="12">
+                <v-textarea
+                  v-model="currentChargePoint.note"
+                  :label="$t('common.note')"
+                  :placeholder="$t('forms.notePlaceholder')"
+                  variant="outlined"
+                  rows="3"
+                />
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="closeChargePointDialog">
+            {{ $t('common.cancel') }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            :loading="chargePointsStore.loading"
+            :disabled="!chargePointFormValid"
+            @click="saveChargePoint"
+          >
+            {{ isEditingChargePoint ? $t('common.update') : $t('common.create') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Charge Point Delete Confirmation Dialog -->
+    <ConfirmationDialog
+      v-model="chargePointDeleteDialogOpen"
+      :title="$t('chargepoints.deleteChargePoint')"
+      :message="
+        $t('chargepoints.confirmDelete', {
+          id: selectedChargePointForDelete?.ocpp_charge_box_id || ''
+        })
+      "
+      :loading="chargePointsStore.loading"
+      @confirm="deleteChargePointConfirmed"
+      @cancel="chargePointDeleteDialogOpen = false"
+    />
+
+    <!-- Connector Form Dialog -->
+    <v-dialog v-model="connectorDialogOpen" max-width="600px" persistent>
+      <v-card>
+        <v-card-title>
+          <span class="text-h6">{{
+            isEditingConnector
+              ? $t('connectors.editConnector')
+              : $t('connectors.createNewConnector')
+          }}</span>
+        </v-card-title>
+
+        <v-card-text>
+          <v-form
+            ref="connectorFormRef"
+            v-model="connectorFormValid"
+            @submit.prevent="saveConnector"
+          >
+            <v-row>
+              <v-col cols="12">
+                <v-select
+                  v-model="currentConnector.charge_point_id"
+                  :label="$t('connectors.chargePoint')"
+                  :items="availableChargePointsForConnector"
+                  :rules="[connectorRules.required]"
+                  variant="outlined"
+                  required
+                  :no-data-text="$t('connectors.noChargePointsAvailable')"
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentConnector.connector_number"
+                  :label="$t('connectors.connectorNumber')"
+                  :placeholder="$t('forms.connectorNumberPlaceholder')"
+                  :rules="[connectorRules.required, connectorRules.connectorNumberRange]"
+                  variant="outlined"
+                  type="number"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentConnector.type"
+                  :label="$t('connectors.type')"
+                  :placeholder="$t('forms.connectorTypePlaceholder')"
+                  :rules="[connectorRules.required, connectorRules.typeMinLength]"
+                  variant="outlined"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="currentConnector.max_power_kw"
+                  :label="$t('connectors.maxPowerKw')"
+                  :placeholder="$t('forms.maxPowerPlaceholder')"
+                  :rules="[connectorRules.required, connectorRules.maxPowerRange]"
+                  variant="outlined"
+                  type="number"
+                  step="0.1"
+                  required
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-select
+                  v-model="currentConnector.status"
+                  :label="$t('connectors.status')"
+                  :items="connectorStatusOptions"
+                  :rules="[connectorRules.required]"
+                  variant="outlined"
+                  required
+                />
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="closeConnectorDialog">
+            {{ $t('common.cancel') }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            :loading="connectorsStore.loading"
+            :disabled="!connectorFormValid"
+            @click="saveConnector"
+          >
+            {{ isEditingConnector ? $t('common.update') : $t('common.create') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Connector Delete Confirmation Dialog -->
+    <ConfirmationDialog
+      v-model="connectorDeleteDialogOpen"
+      :title="$t('connectors.deleteConnector')"
+      :message="$t('connectors.confirmDelete', { id: selectedConnectorForDelete?.id || '' })"
+      :loading="connectorsStore.loading"
+      @confirm="deleteConnectorConfirmed"
+      @cancel="connectorDeleteDialogOpen = false"
+    />
+
     <SelectionToolbar
       :selected-count="selectedCount"
       :loading="sitesStore.loading"
@@ -502,18 +761,22 @@ import { useChargePointsStore } from '@/stores/chargepoints'
 import { useConnectorsStore } from '@/stores/connectors'
 import type { Site, CreateSiteRequest, UpdateSiteRequest } from '@/types/sites'
 import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
+import { useKendoGridTranslations } from '@/composables/useKendoGridTranslations'
 import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import SiteDetailView from '@/components/SiteDetailView.vue'
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
+import ConfirmationDialog from '@/components/ConfirmationDialog.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 import { TabStrip } from '@progress/kendo-vue-layout'
+import ActionCell from '@/components/ActionCell.vue'
+import { formatDateTime } from '@/utils/dateUtils'
 
-const { t, d } = useI18n()
+const { t, d, locale } = useI18n()
+const { messages } = useKendoGridTranslations()
 const selected = ref(0)
-const { formatDate } = useLocaleFormatting()
 const sitesStore = useSitesStore()
 const chargePointsStore = useChargePointsStore()
 const connectorsStore = useConnectorsStore()
@@ -528,6 +791,25 @@ const isEditing = ref(false)
 const selectedSite = ref<Site | null>(null)
 const selectedGridSite = ref<Site | null>(null)
 const siteForm = ref()
+
+// Charge Point dialog state
+const chargePointDialogOpen = ref(false)
+const chargePointDeleteDialogOpen = ref(false)
+const chargePointFormValid = ref(false)
+const isEditingChargePoint = ref(false)
+const selectedChargePointForDelete = ref<any>(null)
+const selectedChargePointForEdit = ref<any>(null)
+const chargePointForm = ref()
+
+// Connector dialog state
+const connectorDialogOpen = ref(false)
+const connectorDeleteDialogOpen = ref(false)
+const connectorFormValid = ref(false)
+const isEditingConnector = ref(false)
+const selectedConnectorForDelete = ref<any>(null)
+const selectedConnectorForEdit = ref<any>(null)
+const connectorFormRef = ref()
+
 const globalSearch = ref('')
 const kendoGrid = ref()
 const group = ref([])
@@ -542,6 +824,11 @@ const dataState = ref({
 })
 const skip = ref(0)
 const take = ref(10)
+const chargepointsort = ref([])
+
+const chargepointSortChangeHandler = (e) => {
+  chargepointsort.value = e.sort
+}
 
 const currentSite = reactive<Partial<Site>>({
   name: '',
@@ -550,6 +837,24 @@ const currentSite = reactive<Partial<Site>>({
   city: '',
   country: '',
   note: ''
+})
+
+const currentChargePoint = reactive<any>({
+  ocpp_charge_box_id: '',
+  site_id: undefined,
+  manufacturer: '',
+  model: '',
+  connector_count: undefined,
+  status: 'active',
+  note: ''
+})
+
+const currentConnector = reactive<any>({
+  charge_point_id: undefined,
+  connector_number: undefined,
+  type: '',
+  max_power_kw: undefined,
+  status: 'available'
 })
 
 const sites = computed(() => sitesStore.sites)
@@ -574,7 +879,6 @@ const filteredSites = computed(() => {
   )
 })
 
-
 const pageableConfig = {
   buttonCount: 5,
   pageSizes: [10, 20, 50, 100],
@@ -582,65 +886,101 @@ const pageableConfig = {
 }
 
 const tabs = ref([
-  {title:"Details", content:'details'},
+  { title: 'Details', content: 'details' },
   { title: 'Charge points', content: 'chargepoints' },
   { title: 'Connectors', content: 'connectors' }
 ])
 
+const chargePointStatusOptions = [
+  { value: 'active', title: t('chargepoints.statusActive') },
+  { value: 'inactive', title: t('chargepoints.statusInactive') },
+  { value: 'faulty', title: t('chargepoints.statusFaulty') }
+]
+
+const connectorStatusOptions = [
+  { value: 'available', title: t('connectors.statusAvailable') },
+  { value: 'occupied', title: t('connectors.statusOccupied') },
+  { value: 'faulted', title: t('connectors.statusFaulted') },
+  { value: 'unavailable', title: t('connectors.statusUnavailable') }
+]
+
+const availableChargePointsForConnector = computed(() =>
+  chargePointsStore.chargePoints.map((cp) => ({
+    value: cp.id,
+    title: `${cp.ocpp_charge_box_id} (${cp.manufacturer} ${cp.model})`
+  }))
+)
+
 const connectorsColumns = [
   {
     field: 'connector_number',
-    title: t('connectors.connectorNumber'),
-    filterable: false
+    title: t('connectors.connectorNumber')
   },
   {
     field: 'type',
-    title: t('connectors.type'),
-    filterable: false
+    title: t('connectors.type')
   },
   {
     field: 'max_power_kw',
-    title: t('connectors.maxPowerKw'),
-    filterable: false
+    title: t('connectors.maxPowerKw')
   },
   {
     field: 'status',
-    title: t('connectors.status'),
-    filterable: false
+    title: t('connectors.status')
+  },
+  {
+    title: t('common.actions'),
+    cell: 'connectorActionTemplate',
+    width: '180px'
   }
 ]
 const chargePointsColumns = [
   {
     field: 'ocpp_charge_box_id',
-    title: t('chargepoints.ocppChargeBoxId'),
-    filter: 'text',
-    filterable: false
+    title: t('chargepoints.ocppChargeBoxId')
   },
   {
     field: 'manufacturer',
-    title: t('chargepoints.manufacturer'),
-    filter: 'text',
-    filterable: false
+    title: t('chargepoints.manufacturer')
   },
   {
     field: 'model',
-    title: t('chargepoints.model'),
-    filter: 'text',
-    filterable: false
+    title: t('chargepoints.model')
   },
   {
     field: 'connector_count',
-    title: t('chargepoints.connectorCount'),
-    filter: 'numeric',
-    filterable: false
+    title: t('chargepoints.connectorCount')
   },
   {
     field: 'status',
-    title: t('chargepoints.status'),
-    filter: 'text',
-    filterable: false
+    title: t('chargepoints.status')
+  },
+  {
+    title: t('common.actions'),
+    cell: 'chargePointActionTemplate',
+    width: '180px'
   }
 ]
+
+const userLocale = computed(() => {
+  const browserLocale = navigator.language || 'en-US'
+  // Map common locales to proper BCP 47 format
+  const localeMap: Record<string, string> = {
+    en: 'en-US',
+    de: 'de-DE',
+    fr: 'fr-FR',
+    es: 'es-ES',
+    ru: 'ru-RU'
+  }
+
+  // Check if it's already in proper format
+  if (browserLocale.includes('-')) {
+    return browserLocale
+  }
+
+  // Map short locale to full format
+  return localeMap[browserLocale] || browserLocale
+})
 
 // All available columns with visibility control
 const allColumns = ref([
@@ -699,12 +1039,25 @@ const allColumns = ref([
     filter: 'date',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: false
-  }
+    visible: false,
+    cell: (h, td, props) => h('td', {}, formatDateTime(props.dataItem.created_at, userLocale.value))
+  },
+  { title: 'Actions', cell: 'actionTemplate', width: '120px', visible: true }
 ])
 
+function rowRender(h, trElement, defaultSlots, props) {
+  const hasNote = props.dataItem.note && props.dataItem.note.length > 0
+
+  const trProps = {
+    style: {
+      backgroundColor: hasNote ? 'rgba(255, 204, 0, 0.2)' : 'transparent'
+    }
+  }
+
+  return h('tr', trProps, defaultSlots)
+}
 // Default visible columns
-const defaultVisibleColumns = ['name', 'address', 'city', 'country']
+const defaultVisibleColumns = ['name', 'address', 'city', 'country', 'actions']
 
 // Computed visible columns
 const staticColumns = computed(() => {
@@ -729,6 +1082,9 @@ const toggleColumn = (field: string) => {
     column.visible = !column.visible
   }
 }
+const customHandler = (e) => {
+  console.log('customHandler', e)
+}
 
 const rules = {
   required: (value: string) => !!value || t('validation.fieldRequired'),
@@ -740,6 +1096,29 @@ const rules = {
   countryMinLength: (value: string) => value.length >= 2 || t('sites.validation.countryMinLength')
 }
 
+const chargePointRules = {
+  required: (value: string | number) =>
+    (value !== null && value !== undefined && value !== '') || t('validation.fieldRequired'),
+  ocppIdMinLength: (value: string) =>
+    value.length >= 3 || t('chargepoints.validation.ocppIdMinLength'),
+  manufacturerMinLength: (value: string) =>
+    value.length >= 2 || t('chargepoints.validation.manufacturerMinLength'),
+  modelMinLength: (value: string) =>
+    value.length >= 2 || t('chargepoints.validation.modelMinLength'),
+  connectorCountRange: (value: number) =>
+    (value >= 1 && value <= 10) || t('chargepoints.validation.connectorCountRange')
+}
+
+const connectorRules = {
+  required: (value: string | number) =>
+    (value !== null && value !== undefined && value !== '') || t('validation.fieldRequired'),
+  connectorNumberRange: (value: number) =>
+    (value >= 1 && value <= 10) || t('connectors.validation.connectorNumberRange'),
+  typeMinLength: (value: string) => value.length >= 2 || t('connectors.validation.typeMinLength'),
+  maxPowerRange: (value: number) =>
+    (value > 0 && value <= 1000) || t('connectors.validation.maxPowerRange')
+}
+
 function createAppState(dataState) {
   group.value = dataState.group
   take.value = dataState.take
@@ -748,6 +1127,20 @@ function createAppState(dataState) {
 }
 const onSelect = (e) => {
   selected.value = e.selected
+}
+
+function handleRowAction({ dataItem, action }) {
+  switch (action) {
+    case 'view':
+      viewSite(dataItem)
+      break
+    case 'update':
+      openEditDialog(dataItem)
+      break
+    case 'delete':
+      confirmDelete(dataItem)
+      break
+  }
 }
 
 const columnReorder = (options: any) => {
@@ -1025,28 +1418,20 @@ function onSelectionChange(event) {
 function onRowClick(event) {
   // const nativeEvent = event.event;
   // let target = nativeEvent?.target;
-
   // if (!target) return;
-
   // while (target && target.nodeType !== 1) {
   //   target = target.parentNode;
   // }
-
   // const isHierarchyClick =
   //   target.closest('.k-hierarchy-cell') || target.closest('.k-i-expand') || target.closest('.k-icon');
-
   // const isActionClick = target.closest('.action-column') || target.closest('button') || target.closest('input[type="checkbox"]');
-
   // if (isHierarchyClick || isActionClick) {
   //   return;
   // }
-
-
   // if (event.dataItem && !event.dataItem.aggregates) {
   //   viewSite(event.dataItem)
   // }
 }
-
 
 const exportToPdf = async () => {
   try {
@@ -1117,6 +1502,39 @@ const exportToCsv = async () => {
   }
 }
 
+const deleteChargePoint = async (chargePoint: any) => {
+  selectedChargePointForDelete.value = chargePoint
+  chargePointDeleteDialogOpen.value = true
+}
+
+const deleteChargePointConfirmed = async () => {
+  if (selectedChargePointForDelete.value?.id) {
+    try {
+      const success = await chargePointsStore.deleteChargePoint(
+        selectedChargePointForDelete.value.id
+      )
+      if (success) {
+        successMessage.value = t('chargepoints.deleted', {
+          id: selectedChargePointForDelete.value.ocpp_charge_box_id
+        })
+        showSuccessAlert.value = true
+        setTimeout(() => {
+          showSuccessAlert.value = false
+        }, 5000)
+        chargePointDeleteDialogOpen.value = false
+        selectedChargePointForDelete.value = null
+        // Refresh the data to reflect changes
+        refreshData()
+      } else {
+        chargePointDeleteDialogOpen.value = false
+      }
+    } catch (error) {
+      console.error('Error deleting charge point:', error)
+      chargePointDeleteDialogOpen.value = false
+    }
+  }
+}
+
 onMounted(() => {
   createDataState({
     take: 8,
@@ -1135,7 +1553,7 @@ onBeforeUnmount(() => {
   result.value = []
   selectedGridSite.value = null
   // expandedItems.value = []
-  gridKey.value = Date.now() 
+  gridKey.value = Date.now()
 })
 
 watch(
@@ -1152,9 +1570,192 @@ watch(globalSearch, () => {
   createDataState(dataState.value)
 })
 
-watch(globalSearch, () => {
-  createDataState(dataState.value)
-})
+// Charge Point Management Functions
+const addChargePoint = (site: number) => {
+  resetChargePointForm()
+  currentChargePoint.site_id = parseInt(site)
+  console.log(currentChargePoint, site)
+  isEditingChargePoint.value = false
+  chargePointDialogOpen.value = true
+}
+
+const editChargePoint = (chargePoint: any) => {
+  selectedChargePointForEdit.value = chargePoint
+  isEditingChargePoint.value = true
+  Object.assign(currentChargePoint, chargePoint)
+  chargePointDialogOpen.value = true
+}
+
+const closeChargePointDialog = () => {
+  chargePointDialogOpen.value = false
+  resetChargePointForm()
+}
+
+const resetChargePointForm = () => {
+  Object.assign(currentChargePoint, {
+    ocpp_charge_box_id: '',
+    site_id: undefined,
+    manufacturer: '',
+    model: '',
+    connector_count: undefined,
+    status: 'active',
+    note: ''
+  })
+  if (chargePointForm.value) {
+    chargePointForm.value.resetValidation()
+  }
+}
+
+const saveChargePoint = async () => {
+  if (!chargePointForm.value?.validate()) return
+
+  const chargePointData = {
+    ocpp_charge_box_id: currentChargePoint.ocpp_charge_box_id!,
+    site_id: Number(currentChargePoint.site_id!),
+    manufacturer: currentChargePoint.manufacturer!,
+    model: currentChargePoint.model!,
+    connector_count: Number(currentChargePoint.connector_count!),
+    status: currentChargePoint.status! as 'active' | 'inactive' | 'faulty',
+    note: currentChargePoint.note || ''
+  }
+
+  let success = false
+
+  if (isEditingChargePoint.value && selectedChargePointForEdit.value?.id) {
+    const updateData = {
+      ...chargePointData,
+      id: selectedChargePointForEdit.value.id
+    }
+    success = await chargePointsStore.updateChargePoint(updateData)
+    if (success) {
+      successMessage.value = t('chargepoints.updated', {
+        id: currentChargePoint.ocpp_charge_box_id
+      })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
+  } else {
+    success = await chargePointsStore.createChargePoint(chargePointData)
+    if (success) {
+      successMessage.value = t('chargepoints.created', { id: chargePointData.ocpp_charge_box_id })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
+  }
+
+  if (success) {
+    closeChargePointDialog()
+    refreshData()
+  }
+}
+
+// Connector Management Functions
+const addConnector = (site: Site) => {
+  // Pre-select charge points from this site
+  isEditingConnector.value = false
+  resetConnectorForm()
+  connectorDialogOpen.value = true
+}
+
+const editConnector = (connector: any) => {
+  selectedConnectorForEdit.value = connector
+  isEditingConnector.value = true
+  Object.assign(currentConnector, connector)
+  connectorDialogOpen.value = true
+}
+
+const closeConnectorDialog = () => {
+  connectorDialogOpen.value = false
+  resetConnectorForm()
+}
+
+const resetConnectorForm = () => {
+  Object.assign(currentConnector, {
+    charge_point_id: undefined,
+    connector_number: undefined,
+    type: '',
+    max_power_kw: undefined,
+    status: 'available'
+  })
+  if (connectorFormRef.value) {
+    connectorFormRef.value.resetValidation()
+  }
+}
+
+const saveConnector = async () => {
+  if (!connectorFormRef.value?.validate()) return
+
+  const connectorData = {
+    charge_point_id: Number(currentConnector.charge_point_id!),
+    connector_number: Number(currentConnector.connector_number!),
+    type: currentConnector.type!,
+    max_power_kw: Number(currentConnector.max_power_kw!),
+    status: currentConnector.status! as 'available' | 'occupied' | 'faulted' | 'unavailable'
+  }
+
+  let success = false
+
+  if (isEditingConnector.value && selectedConnectorForEdit.value?.id) {
+    const updateData = {
+      ...connectorData,
+      id: selectedConnectorForEdit.value.id
+    }
+    success = await connectorsStore.updateConnector(updateData)
+    if (success) {
+      successMessage.value = t('connectors.updated', { id: selectedConnectorForEdit.value.id })
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
+  } else {
+    success = await connectorsStore.createConnector(connectorData)
+    if (success) {
+      successMessage.value = t('connectors.created')
+      showSuccessAlert.value = true
+      setTimeout(() => {
+        showSuccessAlert.value = false
+      }, 5000)
+    }
+  }
+
+  if (success) {
+    closeConnectorDialog()
+    refreshData()
+  }
+}
+
+const deleteConnector = (connector: any) => {
+  selectedConnectorForDelete.value = connector
+  connectorDeleteDialogOpen.value = true
+}
+
+const deleteConnectorConfirmed = async () => {
+  if (selectedConnectorForDelete.value?.id) {
+    try {
+      const success = await connectorsStore.deleteConnector(selectedConnectorForDelete.value.id)
+      if (success) {
+        successMessage.value = t('connectors.deleted', { id: selectedConnectorForDelete.value.id })
+        showSuccessAlert.value = true
+        setTimeout(() => {
+          showSuccessAlert.value = false
+        }, 5000)
+        connectorDeleteDialogOpen.value = false
+        selectedConnectorForDelete.value = null
+        refreshData()
+      } else {
+        connectorDeleteDialogOpen.value = false
+      }
+    } catch (error) {
+      console.error('Error deleting connector:', error)
+      connectorDeleteDialogOpen.value = false
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -1221,9 +1822,8 @@ watch(globalSearch, () => {
 }
 
 .search-container {
-  min-width:300px !important;
+  min-width: 300px !important;
 }
-
 
 .selected-indicator {
   margin-right: 16px;
@@ -1272,11 +1872,6 @@ th.k-header.customMenu.active > div > div > span.k-i-more-vertical::before {
 
 .k-columnmenu-item {
   display: none;
-}
-
-th.k-header.active > div > a {
-  color: #fff;
-  background-color: #ff6358;
 }
 
 /* Modern Detail Dialog Styles */
@@ -1343,13 +1938,13 @@ th.k-header.active > div > a {
 
 .detail-content {
   padding: 32px !important;
-   background-color: var(--dialog-content-bg);
+  background-color: var(--dialog-content-bg);
   min-height: 200px;
 }
 
 .detail-actions {
   padding: 20px 32px 24px !important;
-   background-color: var(--dialog-content-bg);
+  background-color: var(--dialog-content-bg);
   gap: 12px;
 }
 
@@ -1437,5 +2032,19 @@ th.k-header.active > div > a {
 .loading-text {
   color: rgba(0, 0, 0, 0.6);
   font-size: 0.875rem;
+}
+
+.charge-points-header,
+.connectors-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--v-border-color);
+  background-color: var(--v-theme-surface-variant);
+}
+
+.no-data-message {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 </style>
