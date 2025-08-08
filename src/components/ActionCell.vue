@@ -1,8 +1,8 @@
 <!-- ActionCell.vue -->
 <template>
-  <td style="text-align: center" @mouseleave="onCellFocusOut">
+  <td v-if="!isGroupHeader" style="text-align: center" @mouseleave="onCellFocusOut">
     <!-- Only show actions for regular data rows, not group headers -->
-    <div v-if="!isGroupHeader">
+    <div> 
       <button class="k-button" @click="onClick" ref="button">...</button>
       <Popup
         :anchor="'button'"

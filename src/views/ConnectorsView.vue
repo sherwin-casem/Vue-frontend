@@ -607,7 +607,8 @@ const allColumns = ref([
     cell: (h, td, props) => {
       const status = props.dataItem.status
       const translationKey = `status${status}`
-      return h(
+      if(status){
+        return h(
         VChip,
         {
           size: 'small',
@@ -615,6 +616,7 @@ const allColumns = ref([
         },
         () => t(`connectors.${translationKey}`)
       )
+      }
     }
   },
   {

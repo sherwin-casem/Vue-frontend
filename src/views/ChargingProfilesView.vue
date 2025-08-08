@@ -954,7 +954,12 @@ const allColumns = ref([
     headerClassName: 'customMenu',
     visible: true,
     cell: (h, td, props) => {
-      return h('td', {}, t(`chargingprofiles.kind${capitalizeFirst(props.dataItem?.charging_profile_kind)}`))
+     if(props.dataItem.charging_profile_kind){
+       return h('td', {}, t(`chargingprofiles.kind${capitalizeFirst(props.dataItem?.charging_profile_kind)}`))
+     }
+     else{
+      return ''
+     }
     }
   },
    {
@@ -965,7 +970,11 @@ const allColumns = ref([
     headerClassName: 'customMenu',
     visible: true,
     cell: (h, td, props) => {
-      return h ('td', {}, t(`chargingprofiles.recurrency${capitalizeFirst(props.dataItem?.recurrency_kind)}`))
+      if(props.dataItem.recurrency_kind) {
+        return h ('td', {}, t(`chargingprofiles.recurrency${capitalizeFirst(props.dataItem?.recurrency_kind)}`))
+      }else {
+        return ''
+      }
     }
   },
   {

@@ -357,14 +357,21 @@ body {
   border: none !important;
 }
 
+.k-grouping-header, .k-grouping-row, .k-table-row, .k-master-row{
+  min-width: 100% !important;
+}
 .k-cell-inner{
   border: 1px solid var(--kendo-border-color) !important;
 }
 
-
 .k-grid-content {
   background-color: var(--kendo-body-bg) !important;
   color: var(--kendo-text-color) !important;
+}
+
+
+.k-grouping-row td:last-child:empty, .k-grouping-row td:last-of-type:empty {
+  display: none;
 }
 
 .k-grid tbody tr, .k-grouping-row {
