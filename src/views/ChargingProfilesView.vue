@@ -1132,7 +1132,7 @@ function createAppState(dataState) {
   group.value = dataState.group
   take.value = dataState.take
   skip.value = dataState.skip
-  refreshData()
+  // refreshData()
 }
 
 // Focus management for pagination - handled via CSS and natural browser behavior

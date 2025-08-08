@@ -1510,7 +1510,7 @@ function createAppState(dataState) {
   group.value = dataState.group
   take.value = dataState.take
   skip.value = dataState.skip
-  refreshData()
+  // refreshData()
 }
 
 const columnReorder = (options: any) => {

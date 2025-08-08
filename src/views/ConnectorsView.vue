@@ -683,7 +683,7 @@ function createAppState(dataState) {
   group.value = dataState.group
   take.value = dataState.take
   skip.value = dataState.skip
-  refreshData()
+  // refreshData()
 }
 
 function expandChange(event) {
