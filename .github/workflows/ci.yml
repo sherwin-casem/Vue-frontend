@@ -8,6 +8,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -20,6 +21,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Generate .env.production
+        run: |
+          echo "VUE_APP_API_BASE_URL=${{ secrets.VUE_APP_API_BASE_URL }}" > .env.production
+          echo "VUE_APP_API_LOGIN_ENDPOINT=/auth/login" >> .env.production
+          echo "VUE_APP_API_LOGOUT_ENDPOINT=/auth/logout" >> .env.production
+          echo "VUE_APP_API_ME_ENDPOINT=/auth/me" >> .env.production
+          echo "NODE_ENV=production" >> .env.production
+
       - name: Activate Kendo UI license
         run: npx kendo-ui-license activate
         env:
@@ -31,26 +40,32 @@ jobs:
       - name: Build Docker image
         run: docker build -t ocpp-frontend .
 
-      - name: Save Docker image to tarball
+      - name: Save Docker image
         run: docker save ocpp-frontend > ocpp-frontend.tar
 
-      - name: Copy Docker image to VirtualBox VM
+      - name: Upload Docker image to VM
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           source: "ocpp-frontend.tar"
           target: "/home/${{ secrets.DEPLOY_USER }}/"
 
-      - name: SSH into VM and load & run Docker image
+      - name: Deploy Docker container on VM
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
-            docker load < /home/${{ secrets.DEPLOY_USER }}/ocpp-frontend.tar
+            docker load < ~/ocpp-frontend.tar
             docker stop ocpp-frontend || true
             docker rm ocpp-frontend || true
-            docker run -d -p 8080:80 --name ocpp-frontend ocpp-frontend
+            docker run -d \
+              --name ocpp-frontend \
+              -p 80:80 \
+              --restart=always \
+              ocpp-frontend

@@ -57,3 +57,5 @@ builder.config.json
 charging_profiles_en.md
 
 *-license.txt
+
+.env.production
