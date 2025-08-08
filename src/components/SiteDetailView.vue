@@ -39,7 +39,7 @@
 
     <div class="site-detail-row">
       <span class="site-detail-label">{{ $t('common.created') }}:</span>
-      <span class="site-detail-value">{{ formatDate(site.created_at) }}</span>
+      <span class="site-detail-value">{{ formatDateTime(site.created_at) }}</span>
     </div>
 
     <div
@@ -88,11 +88,10 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime } from '@/utils/dateUtils'
 import { defineProps } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
 
-const { formatDate } = useLocaleFormatting()
 const { t } = useI18n()
 
 defineProps({

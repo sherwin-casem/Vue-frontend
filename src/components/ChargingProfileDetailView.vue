@@ -17,24 +17,14 @@
 
     <div class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.purpose') }}:</span>
-      <v-chip
-        :color="getPurposeColor(chargingProfile.charging_profile_purpose)"
-        size="small"
-        variant="tonal"
-      >
-        {{ chargingProfile.charging_profile_purpose }}
-      </v-chip>
+      <span class="detail-value">{{ chargingProfile.charging_profile_purpose }}</span>
     </div>
 
     <div class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.kind') }}:</span>
-      <v-chip
-        :color="getKindColor(chargingProfile.charging_profile_kind)"
-        size="small"
-        variant="tonal"
-      >
-        {{ chargingProfile.charging_profile_kind }}
-      </v-chip>
+
+      <span class="detail-value">{{ chargingProfile.charging_profile_kind }}</span>
+
     </div>
 
     <div v-if="chargingProfile.recurrency_kind" class="detail-row">
@@ -135,7 +125,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { ChargingProfile } from '@/types/chargingprofiles'
-import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
 import { formatDateTime } from '@/utils/dateUtils'
 import { computed } from 'vue'
 
@@ -153,7 +142,6 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { formatDate } = useLocaleFormatting()
 
 const userLocale = computed(() => {
   const browserLocale = navigator.language || 'en-US'

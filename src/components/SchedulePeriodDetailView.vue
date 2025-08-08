@@ -39,7 +39,7 @@
       class="detail-row"
     >
       <span class="detail-label">{{ $t('common.created') }}:</span>
-      <span class="detail-value">{{ formatDate(schedulePeriod.created_at) }}</span>
+      <span class="detail-value">{{ formatDateTime(schedulePeriod.created_at) }}</span>
     </div>
 
     <div
@@ -47,7 +47,7 @@
       class="detail-row"
     >
       <span class="detail-label">{{ $t('common.updated') }}:</span>
-      <span class="detail-value">{{ formatDate(schedulePeriod.updated_at) }}</span>
+      <span class="detail-value">{{ formatDateTime(schedulePeriod.updated_at) }}</span>
     </div>
 
     <div
@@ -91,7 +91,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { SchedulePeriod } from '@/types/scheduleperiods'
-import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
+import { formatDateTime } from '@/utils/dateUtils'
 
 interface Props {
   schedulePeriod: SchedulePeriod
@@ -107,7 +107,6 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { formatDate } = useLocaleFormatting()
 
 const getPhaseColor = (phases: number) => {
   switch (phases) {

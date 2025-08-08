@@ -18,7 +18,7 @@
     
     <div class="detail-row">
       <span class="detail-label">{{ $t('sites.siteName') }}:</span>
-      <span class="detail-value">{{ chargePoint.site.name }}</span>
+      <span class="detail-value">{{ chargePoint.site?.name }}</span>
     </div>
 
     <div class="detail-row">
@@ -101,7 +101,6 @@
 // @ts-nocheck
 import { useI18n } from 'vue-i18n'
 import type { ChargePoint } from '@/types/chargepoints'
-import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
 import { formatDateTime } from '@/utils/dateUtils'
 import { computed } from 'vue'
 
@@ -119,7 +118,6 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { formatDate } = useLocaleFormatting()
 
 const userLocale = computed(() => {
   const browserLocale = navigator.language || 'en-US'
@@ -163,7 +161,7 @@ const getStatusLabel = (status: string) => {
     case 'faulty':
       return t('chargepoints.statusFaulty')
     default:
-      return status
+      return t(`chargePoints.status${status}`)
   }
 }
 </script>

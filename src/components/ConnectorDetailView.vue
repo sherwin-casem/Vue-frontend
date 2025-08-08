@@ -28,7 +28,7 @@
       <span class="detail-value">{{ connector.max_power_kw }} kW</span>
     </div>
 
-    <div class="detail-row">
+  <div class="detail-row">
       <span class="detail-label">{{ $t('connectors.status') }}:</span>
       <v-chip
         :color="getStatusColor(connector.status)"
@@ -39,12 +39,20 @@
       </v-chip>
     </div>
 
+        <div
+      v-if="connector.last_status_change"
+      class="detail-row"
+    >
+      <span class="detail-label">{{ $t('connectors.lastStatusChange') }}:</span>
+      <span class="detail-value">{{ formatDateTime(connector.last_status_change) }}</span>
+    </div>
+
     <div
       v-if="connector.created_at"
       class="detail-row"
     >
       <span class="detail-label">{{ $t('common.created') }}:</span>
-      <span class="detail-value">{{ formatDate(connector.created_at) }}</span>
+      <span class="detail-value">{{ formatDateTime(connector.created_at) }}</span>
     </div>
 
     <div
@@ -52,7 +60,7 @@
       class="detail-row"
     >
       <span class="detail-label">{{ $t('common.updated') }}:</span>
-      <span class="detail-value">{{ formatDate(connector.updated_at) }}</span>
+      <span class="detail-value">{{ formatDateTime(connector.updated_at) }}</span>
     </div>
 
     <div
@@ -96,7 +104,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { Connector } from '@/types/connectors'
-import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
+import { formatDateTime } from '@/utils/dateUtils'
 
 interface Props {
   connector: Connector
@@ -112,7 +120,6 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { formatDate } = useLocaleFormatting()
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -132,7 +139,7 @@ const getStatusLabel = (status: string) => {
     case 'faulted':
       return t('connectors.statusFaulted')
     default:
-      return status
+      return t(`connectors.status${status}`)
   }
 }
 </script>

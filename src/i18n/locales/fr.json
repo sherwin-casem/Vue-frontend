@@ -53,7 +53,7 @@
     "items": "éléments",
     "item": "élément",
     "columns": "Colonnes",
-    "selectColumns": "Sélectionner les colonnes",
+    "selectColumns": "colonnes",
     "operator": "Opérateur",
     "value": "Valeur",
     "enterValue": "Entrer une valeur",
@@ -69,7 +69,7 @@
     "showingItems": "Affichage de {start} à {end} sur {total} éléments",
     "selectedItems": "{count} sélectionné",
     "itemsPerPage": "Éléments par page",
-    "itemsSelected": "{count} sur {total} éléments sélectionnés",
+    "itemsSelected": "{count} sur {total} él��ments sélectionnés",
     "equals": "Égal à",
     "contains": "Contient",
     "startsWith": "Commence par",
@@ -96,7 +96,8 @@
     "selectColumnsToGroup": "Sélectionner les colonnes à grouper",
     "groupingByFields": "Groupé par {count} champ(s)",
     "noItems": "Aucun élément",
-    "noItemsDescription": "0 élément trouvé"
+    "noItemsDescription": "0 élément trouvé",
+    "details": "Détails"
   },
   "kendo": {
     "grid": {
@@ -246,7 +247,8 @@
       "pdfError": "Échec de l'exportation PDF. Veuillez réessayer.",
       "excelError": "Échec de l'exportation Excel. Veuillez réessayer.",
       "csvError": "Échec de l'exportation CSV. Veuillez réessayer."
-    }
+    },
+    "locationDetails": "Détails de Localisation"
   },
   "chargepoints": {
     "title": "Gestion des points de charge",
@@ -267,7 +269,7 @@
     "connectorCount": "Nombre de connecteurs",
     "connectors": "Connecteurs",
     "status": "Statut",
-    "statusActive": "Actif",
+    "statusactive": "Actif",
     "statusInactive": "Inactif",
     "statusFaulty": "Défectueux",
     "searchChargePoints": "Rechercher des points de charge",
@@ -309,6 +311,10 @@
     "maxPower": "Puissance max",
     "status": "Statut",
     "statusAvailable": "Disponible",
+    "statusOccupied": "Occupé",
+    "statusUnavailable": "Indisponible",
+    "statusCharging": "En charge",
+    "statusPreparing": "Préparation",
     "statusFaulted": "Défectueux",
     "searchConnectors": "Rechercher des connecteurs",
     "createConnector": "Créer un connecteur",
@@ -368,6 +374,11 @@
       "minChargingRateRange": "Le taux de charge min doit être entre 0 et 1000 kW",
       "durationRange": "La durée doit être entre 0 et 86400 secondes"
     },
+    "kindAbsolute": "Absolu",
+    "kindRecurring": "Récurrent",
+    "kindRelative": "Relatif",
+    "recurrencyDaily": "Quotidien",
+    "recurrencyWeekly": "Hebdomadaire",
     "noChargingProfiles": "Aucun profil de charge trouvé"
   },
   "scheduleperiods": {
@@ -446,7 +457,7 @@
     "dataNotAvailable": "Données non disponibles",
     "itemsSelected": "{count} sur {total} sélectionnés",
     "totalItems": "Total : {count} éléments",
-    "selectColumns": "Sélectionner les colonnes",
+    "selectColumns": "les colonnes",
     "globalSearch": "Recherche globale",
     "activeFilters": "Filtres actifs",
     "clearAll": "Tout effacer",

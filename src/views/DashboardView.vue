@@ -283,7 +283,7 @@
 
           <!-- Last Update column -->
           <template #item.lastUpdate="{ item }">
-            {{ item.lastUpdate ? formatDate(item.lastUpdate) : '-' }}
+            {{ item.lastUpdate ? formatDateTime(item.lastUpdate) : '-' }}
           </template>
         </v-data-table>
       </v-card-text>
@@ -299,9 +299,10 @@ import { useChargePointsStore } from '@/stores/chargepoints'
 import { useConnectorsStore } from '@/stores/connectors'
 import { useChargingProfilesStore } from '@/stores/chargingprofiles'
 import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
+import { formatDateTime } from '@/utils/dateUtils'
 
 const { t } = useI18n()
-const { formatDate, formatNumber, formatEnergy } = useLocaleFormatting()
+const {  formatEnergy } = useLocaleFormatting()
 const sitesStore = useSitesStore()
 const chargePointsStore = useChargePointsStore()
 const connectorsStore = useConnectorsStore()

@@ -53,7 +53,7 @@
     "items": "elementos",
     "item": "elemento",
     "columns": "Columnas",
-    "selectColumns": "Seleccionar columnas",
+    "selectColumns": "columnas",
     "operator": "Operador",
     "value": "Valor",
     "enterValue": "Introducir valor",
@@ -96,7 +96,8 @@
     "selectColumnsToGroup": "Seleccionar columnas para agrupar",
     "groupingByFields": "Agrupando por {count} campo(s)",
     "noItems": "Sin elementos",
-    "noItemsDescription": "0 elementos encontrados"
+    "noItemsDescription": "0 elementos encontrados",
+    "details": "Detalles"
   },
   "kendo": {
     "grid": {
@@ -246,7 +247,8 @@
       "pdfError": "Error al exportar PDF. Por favor, inténtelo de nuevo.",
       "excelError": "Error al exportar Excel. Por favor, inténtelo de nuevo.",
       "csvError": "Error al exportar CSV. Por favor, inténtelo de nuevo."
-    }
+    },
+    "locationDetails": "Detalles de Ubicación"
   },
   "chargepoints": {
     "title": "Gestión de puntos de carga",
@@ -267,7 +269,7 @@
     "connectorCount": "Cantidad de conectores",
     "connectors": "Conectores",
     "status": "Estado",
-    "statusActive": "Activo",
+    "statusactive": "Activo",
     "statusInactive": "Inactivo",
     "statusFaulty": "Defectuoso",
     "searchChargePoints": "Buscar puntos de carga",
@@ -311,6 +313,10 @@
     "maxPower": "Potencia máx",
     "status": "Estado",
     "statusAvailable": "Disponible",
+    "statusOccupied": "Ocupado",
+    "statusUnavailable": "No disponible",
+    "statusCharging": "Cargando",
+    "statusPreparing": "Preparando",
     "statusFaulted": "Defectuoso",
     "searchConnectors": "Buscar conectores",
     "createConnector": "Crear conector",
@@ -326,7 +332,7 @@
     "updateError": "Error al actualizar el conector. Por favor, inténtelo de nuevo.",
     "deleteError": "Error al eliminar el conector. Por favor, inténtelo de nuevo.",
     "validation": {
-      "chargePointIdNumeric": "El ID del punto de carga debe ser un número válido",
+      "chargePointIdNumeric": "El ID del punto de carga debe ser un n��mero válido",
       "connectorNumberRange": "El número del conector debe estar entre 1 y 20",
       "typeMinLength": "El tipo de conector debe tener al menos 2 caracteres",
       "maxPowerRange": "La potencia máx debe estar entre 0 y 1000 kW"
@@ -374,6 +380,11 @@
       "minChargingRateRange": "La tasa de carga mín debe estar entre 0 y 1000 kW",
       "durationRange": "La duración debe estar entre 0 y 86400 segundos"
     },
+    "kindAbsolute": "Absoluto",
+    "kindRecurring": "Recurrente",
+    "kindRelative": "Relativo",
+    "recurrencyDaily": "Diario",
+    "recurrencyWeekly": "Semanal",
     "noChargingProfiles": "No se encontraron perfiles de carga"
   },
   "scheduleperiods": {
@@ -462,7 +473,7 @@
     "dataNotAvailable": "Datos no disponibles",
     "itemsSelected": "{count} de {total} seleccionados",
     "totalItems": "Total: {count} elementos",
-    "selectColumns": "Seleccionar columnas",
+    "selectColumns": "columnas",
     "globalSearch": "Búsqueda global",
     "activeFilters": "Filtros activos",
     "clearAll": "Limpiar todo",

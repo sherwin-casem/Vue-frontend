@@ -137,96 +137,102 @@
         </v-alert>
 
         <div class="grid-container">
-          <Grid
-            ref="kendoGrid"
-            :key="gridKey"
-            :data-items="result.data || []"
-            :total="filteredSchedulePeriods.length"
-            :columns="columnsWithSelection"
-            :style="{ height: '500px' }"
-            :sortable="true"
-            :pageable="pageableConfig"
-            :groupable="true"
-            :group="group"
-            :take="take"
-            :skip="skip"
-            :reorderable="true"
-            :loading="schedulePeriodsStore.loading"
-            :selected-field="selectedField"
-            :filterable="false"
-            class="scheduleperiods-grid"
-            :filter="dataState.filter"
-            :messages="messages"
-            :sort="dataState.sort"
-            :detail="cellTemplate"
-            :expand-field="'expanded'"
-            @datastatechange="dataStateChange"
-            @selectionchange="onSelectionChange"
-            @headerselectionchange="onHeaderSelectionChange"
-            @rowclick="onRowClick"
-            @expandchange="expandChange"
-            @columnreorder="columnReorder"
-          >
-            <template #columnMenuTemplate="{ props }">
-              <ColumnMenu
-                :column="props.column"
-                :filterable="props.filterable"
-                :filter="props.filter"
-                :sortable="props.sortable"
-                :sort="props.sort"
-                :columns="columns"
-                @sortchange="(e) => props.onSortchange(e)"
-                @filterchange="(e) => props.onFilterchange(e)"
-                @closemenu="(e) => props.onClosemenu(e)"
-                @contentfocus="(e) => props.onContentfocus(e)"
-                @columnssubmit="onColumnsSubmit"
-              />
-            </template>
+          <KendoLocalizationProvider :language="kendoLocale">
+            <KendoIntlProvider :locale="kendoLocale.split('-')[0]">
+              <Grid
+                ref="kendoGrid"
+                :key="gridKey"
+                :data-items="result.data || []"
+                :total="result.total || 0"
+                :columns="columnsWithSelection"
+                :style="{ height: '500px' }"
+                :sortable="true"
+                :pageable="pageableConfig"
+                :groupable="true"
+                :group="group"
+                :take="take"
+                :skip="skip"
+                :reorderable="true"
+                :loading="schedulePeriodsStore.loading"
+                :disabled="schedulePeriodsStore.loading"
+                :selected-field="selectedField"
+                :filterable="false"
+                class="scheduleperiods-grid"
+                :filter="dataState.filter"
+                :sort="dataState.sort"
+                :detail="cellTemplate"
+                :expand-field="'expanded'"
+                @datastatechange="dataStateChange"
+                @selectionchange="onSelectionChange"
+                @headerselectionchange="onHeaderSelectionChange"
+                @rowclick="onRowClick"
+                @expandchange="expandChange"
+                @columnreorder="columnReorder"
+                  :loader="!result.data.length || schedulePeriodsStore.loading"
 
-            <template #detailTemplate="{ props }">
-              <SchedulePeriodDetailView
-                :schedule-period="props.dataItem"
-                @edit="openEditDialog"
-                @delete="confirmDelete"
-              />
-            </template>
-
-            <template #myTemplate="{ props }">
-              <div v-if="props.dataItem._loadingChargingProfile" class="loading-container">
-                <v-progress-circular indeterminate color="primary" size="24" />
-                <span class="loading-text">Loading charging profile...</span>
-              </div>
-              <TabStrip
-                v-else
-                :selected="getRowTabState(props.dataItem.id)"
-                :tabs="tabs"
-                @select="(e) => onSelect(e, props.dataItem.id)"
               >
-                <template #details>
+                <template #columnMenuTemplate="{ props }">
+                  <ColumnMenu
+                    :column="props.column"
+                    :filterable="props.filterable"
+                    :filter="props.filter"
+                    :sortable="props.sortable"
+                    :sort="props.sort"
+                    :columns="columns"
+                    @sortchange="(e) => props.onSortchange(e)"
+                    @filterchange="(e) => props.onFilterchange(e)"
+                    @closemenu="(e) => props.onClosemenu(e)"
+                    @contentfocus="(e) => props.onContentfocus(e)"
+                    @columnssubmit="onColumnsSubmit"
+                  />
+                </template>
+
+                <template #detailTemplate="{ props }">
                   <SchedulePeriodDetailView
                     :schedule-period="props.dataItem"
-                    :full-view="true"
                     @edit="openEditDialog"
                     @delete="confirmDelete"
                   />
                 </template>
-                <template #chargingprofile>
-                  <ChargingProfileDetailView
-                    v-if="props.dataItem._chargingProfile"
-                    :charging-profile="props.dataItem._chargingProfile"
-                    :full-view="true"
-                  />
-                  <div v-else class="no-data-message">
-                    {{ $t('scheduleperiods.noChargingProfileData') }}
-                  </div>
-                </template>
-              </TabStrip>
-            </template>
 
-            <template #actionTemplate="{ props }">
-              <ActionCell :data-item="props.dataItem" @actionselect="handleRowAction" />
-            </template>
-          </Grid>
+                <template #myTemplate="{ props }">
+                  <div v-if="props.dataItem._loadingChargingProfile" class="loading-container">
+                    <v-progress-circular indeterminate color="primary" size="24" />
+                    <span class="loading-text">Loading charging profile...</span>
+                  </div>
+                  <TabStrip
+                    v-else
+                    :selected="getRowTabState(props.dataItem.id)"
+                    :tabs="tabs"
+                    @select="(e) => onSelect(e, props.dataItem.id)"
+                  >
+                    <template #details>
+                      <SchedulePeriodDetailView
+                        :schedule-period="props.dataItem"
+                        :full-view="true"
+                        @edit="openEditDialog"
+                        @delete="confirmDelete"
+                      />
+                    </template>
+                    <template #chargingprofile>
+                      <ChargingProfileDetailView
+                        v-if="props.dataItem._chargingProfile"
+                        :charging-profile="props.dataItem._chargingProfile"
+                        :full-view="true"
+                      />
+                      <div v-else class="no-data-message">
+                        {{ $t('scheduleperiods.noChargingProfileData') }}
+                      </div>
+                    </template>
+                  </TabStrip>
+                </template>
+
+                <template #actionTemplate="{ props }">
+                  <ActionCell :data-item="props.dataItem" @actionselect="handleRowAction" />
+                </template>
+              </Grid>
+            </KendoIntlProvider>
+          </KendoLocalizationProvider>
 
           <div v-if="selectedGridSchedulePeriod" class="grid-row-actions">
             <v-chip class="selected-indicator" color="primary" variant="outlined">
@@ -435,6 +441,7 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
+import { useKendoGridGlobalization } from '@/composables/useKendoGridGlobalization'
 import { useSchedulePeriodsStore } from '@/stores/scheduleperiods'
 import { useChargingProfilesStore } from '@/stores/chargingprofiles'
 import type {
@@ -442,7 +449,6 @@ import type {
   CreateSchedulePeriodRequest,
   UpdateSchedulePeriodRequest
 } from '@/types/scheduleperiods'
-import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
 import { useKendoGridTranslations } from '@/composables/useKendoGridTranslations'
 import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
@@ -456,10 +462,12 @@ import '@/utils/resizeObserverFix'
 import { TabStrip } from '@progress/kendo-vue-layout'
 
 const { t, locale } = useI18n()
-const { formatDate } = useLocaleFormatting()
+const { kendoLocale, KendoLocalizationProvider, KendoIntlProvider } = useKendoGridGlobalization()
 const schedulePeriodsStore = useSchedulePeriodsStore()
 const { messages } = useKendoGridTranslations()
 const chargingProfilesStore = useChargingProfilesStore()
+
+// Grid messages are now handled by the globalization composable
 const selectedField = 'selected'
 const cellTemplate = ref('myTemplate')
 const rowTabStates = ref(new Map())
@@ -526,8 +534,8 @@ const pageableConfig = {
 }
 
 const tabs = ref([
-  { title: 'Schedule Period Details', content: 'details' },
-  { title: 'Charging Profile', content: 'chargingprofile' }
+  { title:t('scheduleperiods.schedulePeriodDetails'), content: 'details' },
+  { title: t('scheduleperiods.chargingProfile'), content: 'chargingprofile' }
 ])
 
 const phaseOptions = [
@@ -586,7 +594,7 @@ const allColumns = ref([
     headerClassName: 'customMenu',
     visible: true
   },
-  { title: 'Actions', cell: 'actionTemplate', width: '120px', visible: true }
+  { title: t('common.actions'), cell: 'actionTemplate', width: '120px', visible: true }
 ])
 
 // Default visible columns
@@ -693,7 +701,7 @@ const createDataState = (state) => {
   if (filteredSchedulePeriods.value && filteredSchedulePeriods.value.length > 0) {
     result.value = process(filteredSchedulePeriods.value.slice(0), state)
   } else {
-    result.value = []
+    result.value = { data: [], total: 0 }
   }
   dataState.value = state
 }

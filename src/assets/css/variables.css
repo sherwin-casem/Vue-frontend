@@ -342,12 +342,13 @@ body {
   color: var(--color-electric-teal);
 }
 
-
 .k-grid {
   background-color: var(--kendo-body-bg) !important;
   color: var(--kendo-text-color) !important;
   transition: background-color 0.3s, color 0.3s !important;
+  min-height: 70dvh !important;
 }
+
 
 .k-grid-header, .k-header, .k-grouping-header, .k-grid-header-wrap, .k-cell-inner {
   background-color: var(--kendo-header-bg) !important;

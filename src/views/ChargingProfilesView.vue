@@ -137,152 +137,147 @@
         </v-alert>
 
         <div class="grid-container">
-          <Grid
-            ref="kendoGrid"
-            :key="gridKey"
-            :data-items="result.data || []"
-            :total="filteredChargingProfiles.length"
-            :columns="columnsWithSelection"
-            :style="{ height: '500px' }"
-            :sortable="true"
-            :pageable="pageableConfig"
-            :groupable="true"
-            :group="group"
-            :take="take"
-            :skip="skip"
-            :reorderable="true"
-            :loading="chargingProfilesStore.loading"
-            :selected-field="selectedField"
-            :filterable="false"
-            class="chargingprofiles-grid"
-            :filter="dataState.filter"
-            :messages="messages"
-            :sort="dataState.sort"
-            :detail="cellTemplate"
-            :expand-field="'expanded'"
-            @datastatechange="dataStateChange"
-            @selectionchange="onSelectionChange"
-            @headerselectionchange="onHeaderSelectionChange"
-            @rowclick="onRowClick"
-            @expandchange="expandChange"
-            @columnreorder="columnReorder"
-          >
-            <template #columnMenuTemplate="{ props }">
-              <ColumnMenu
-                :column="props.column"
-                :filterable="props.filterable"
-                :filter="props.filter"
-                :sortable="props.sortable"
-                :sort="props.sort"
-                :columns="columns"
-                @sortchange="(e) => props.onSortchange(e)"
-                @filterchange="(e) => props.onFilterchange(e)"
-                @closemenu="(e) => props.onClosemenu(e)"
-                @contentfocus="(e) => props.onContentfocus(e)"
-                @columnssubmit="onColumnsSubmit"
-              />
-            </template>
+          <KendoLocalizationProvider :language="kendoLocale">
+            <KendoIntlProvider :locale="kendoLocale.split('-')[0]">
+              <Grid
+                ref="kendoGrid"
+                :key="gridKey"
+                :data-items="result.data || []"
+                :total="result.total || 0"
+                :columns="columnsWithSelection"
+                :style="{ height: '500px' }"
+                :sortable="true"
+                :pageable="pageableConfig"
+                :groupable="true"
+                :group="group"
+                :take="take"
+                :skip="skip"
+                :reorderable="true"
+                :loading="chargingProfilesStore.loading || schedulePeriodsStore.loading"
+                :disabled="chargingProfilesStore.loading || schedulePeriodsStore.loading"
+                :selected-field="selectedField"
+                :filterable="false"
+                class="chargingprofiles-grid"
+                :filter="dataState.filter"
+                :sort="dataState.sort"
+                :detail="cellTemplate"
+                :expand-field="'expanded'"
+                @datastatechange="dataStateChange"
+                @selectionchange="onSelectionChange"
+                @headerselectionchange="onHeaderSelectionChange"
+                @rowclick="onRowClick"
+                @expandchange="expandChange"
+                @columnreorder="columnReorder"
+                  :loader="!result.data.length || chargingProfilesStore.loading"
 
-            <template #detailTemplate="{ props }">
-              <div v-if="props.dataItem._loadingPeriods" class="loading-container">
-                <v-progress-circular indeterminate color="primary" size="24" />
-                <span class="loading-text">Loading ...</span>
-              </div>
-
-              <TabStrip
-                v-else
-                :selected="getRowTabState(props.dataItem.id)"
-                :tabs="tabs"
-                @select="(e) => onSelect(e, props.dataItem.id)"
               >
-                <template #details>
-                  <ChargingProfileDetailView
-                    :charging-profile="props.dataItem"
-                    :full-view="true"
-                    @edit="openEditDialog"
-                    @delete="confirmDelete"
+                <template #columnMenuTemplate="{ props }">
+                  <ColumnMenu
+                    :column="props.column"
+                    :filterable="props.filterable"
+                    :filter="props.filter"
+                    :sortable="props.sortable"
+                    :sort="props.sort"
+                    :columns="columns"
+                    @sortchange="(e) => props.onSortchange(e)"
+                    @filterchange="(e) => props.onFilterchange(e)"
+                    @closemenu="(e) => props.onClosemenu(e)"
+                    @contentfocus="(e) => props.onContentfocus(e)"
+                    @columnssubmit="onColumnsSubmit"
                   />
                 </template>
-                <template #chargepoint>
-                  <div v-if="props.dataItem._chargePoint" class="chargepoint-details">
-                    <ChargePointDetailView
-                      :charge-point="props.dataItem._chargePoint"
-                      :full-view="true"
-                    />
-                  </div>
-                  <div v-else class="no-data-message">
-                    {{ $t('chargingprofiles.noChargePointData') }}
-                  </div>
-                </template>
 
-                <template #scheduleperiods>
-                  <div class="schedule-periods-header">
-                    <v-btn
-                      size="small"
-                      color="primary"
-                      variant="elevated"
-                      prepend-icon="mdi-plus"
-                      @click="addSchedulePeriod(props.dataItem)"
-                    >
-                      {{ $t('scheduleperiods.addSchedulePeriod') }}
-                    </v-btn>
+                <template #detailTemplate="{ props }">
+                  <div v-if="props.dataItem._loadingPeriods" class="loading-container">
+                    <v-progress-circular indeterminate color="primary" size="24" />
                   </div>
-                  <div
-                    v-if="
-                      props.dataItem._schedulePeriods && props.dataItem._schedulePeriods.length > 0
-                    "
+
+                  <TabStrip
+                    v-else
+                    :selected="getRowTabState(props.dataItem.id)"
+                    :tabs="tabs"
+                    @select="(e) => onSelect(e, props.dataItem.id)"
                   >
-                    <Grid
-                      :columns="schedulePeriodsColumns"
-                      :data-items="props.dataItem._schedulePeriods"
-                      :sortable="true"
-                      :filterable="false"
-                      :messages="messages"
-                    >
-                      <template #schedulePeriodActionTemplate="{ props: periodProps }">
-                        <div class="action-buttons">
-                          <v-btn
-                            size="small"
-                            variant="outlined"
-                            prepend-icon="mdi-pencil"
-                            @click="editSchedulePeriod(periodProps.dataItem)"
-                          >
-                            {{ $t('common.edit') }}
-                          </v-btn>
-                          <v-btn
-                            size="small"
-                            variant="outlined"
-                            color="error"
-                            prepend-icon="mdi-delete"
-                            @click="deleteSchedulePeriod(periodProps.dataItem)"
-                          >
-                            {{ $t('common.delete') }}
-                          </v-btn>
-                        </div>
-                      </template>
-                    </Grid>
-                  </div>
-                  <div v-else class="no-data-message">
-                    {{ $t('chargingprofiles.noSchedulePeriodData') }}
-                  </div>
-                </template>
-                <template #connectors>
-                  <Grid
-                    :columns="connectorsColumns"
-                    :data-items="props.dataItem._connectors || []"
-                    :sortable="true"
-                    :groupable="false"
-                    :filterable="false"
-                    :messages="messages"
-                  />
-                </template>
-              </TabStrip>
-            </template>
+                    <template #details>
+                      <ChargingProfileDetailView
+                        :charging-profile="props.dataItem"
+                        :full-view="true"
+                        @edit="openEditDialog"
+                        @delete="confirmDelete"
+                      />
+                    </template>
+                    <template #chargepoint>
+                      <div v-if="props.dataItem._chargePoint" class="chargepoint-details">
+                        <ChargePointDetailView
+                          :charge-point="props.dataItem._chargePoint"
+                          :full-view="true"
+                        />
+                      </div>
+                      <div v-else class="no-data-message">
+                        {{ $t('chargingprofiles.noChargePointData') }}
+                      </div>
+                    </template>
 
-            <template #actionTemplate="{ props }">
-              <ActionCell :data-item="props.dataItem" @actionselect="handleRowAction" />
-            </template>
-          </Grid>
+                    <template #scheduleperiods>
+                      <div class="schedule-periods-header">
+                        <v-btn
+                          size="small"
+                          color="primary"
+                          variant="elevated"
+                          prepend-icon="mdi-plus"
+                          @click="addSchedulePeriod(props.dataItem)"
+                        >
+                          {{ $t('scheduleperiods.addSchedulePeriod') }}
+                        </v-btn>
+                      </div>
+                      <div
+                        v-if="
+                          props.dataItem._schedulePeriods &&
+                          props.dataItem._schedulePeriods.length > 0
+                        "
+                      >
+                        <Grid
+                          :columns="schedulePeriodsColumns"
+                          :data-items="props.dataItem._schedulePeriods"
+                          :sortable="true"
+                          :sort="schedulePeriodsSort"
+                          :filterable="false"
+                          :messages="messages"
+                          @sortchange="schedulePeriodsSortChangeHandler"
+                        >
+                          <template #schedulePeriodActionTemplate="{ props: periodProps }">
+                            <ActionCell
+                              :data-item="periodProps.dataItem"
+                              @actionselect="handleSchedulePeriodAction"
+                            />
+                          </template>
+                        </Grid>
+                      </div>
+                      <div v-else class="no-data-message">
+                        {{ $t('chargingprofiles.noSchedulePeriodData') }}
+                      </div>
+                    </template>
+                    <template #connectors>
+                      <Grid
+                        :columns="connectorsColumns"
+                        :data-items="props.dataItem._connectors || []"
+                        :sortable="true"
+                        :sort="connectorsSort"
+                        :groupable="false"
+                        :filterable="false"
+                        :messages="messages"
+                        @sortchange="connectorsSortChangeHandler"
+                      />
+                    </template>
+                  </TabStrip>
+                </template>
+
+                <template #actionTemplate="{ props }">
+                  <ActionCell :data-item="props.dataItem" @actionselect="handleRowAction" />
+                </template>
+              </Grid>
+            </KendoIntlProvider>
+          </KendoLocalizationProvider>
 
           <div v-if="selectedGridChargingProfile" class="grid-row-actions">
             <v-chip class="selected-indicator" color="primary" variant="outlined">
@@ -644,6 +639,64 @@
       @cancel="schedulePeriodDeleteDialogOpen = false"
     />
 
+    <!-- Schedule Period Detail Dialog -->
+    <v-dialog v-model="schedulePeriodDetailDialogOpen" max-width="900px" persistent>
+      <v-card v-if="viewedSchedulePeriodChild" class="modern-detail-card">
+        <v-card-title class="detail-card-header">
+          <div class="header-content">
+            <v-icon class="header-icon" size="28" color="primary"> mdi-calendar-clock </v-icon>
+            <div class="header-text">
+              <h2 class="header-title">
+                {{ $t('scheduleperiods.schedulePeriod') }} {{ viewedSchedulePeriodChild.id }}
+              </h2>
+            </div>
+          </div>
+          <v-btn
+            icon
+            variant="text"
+            size="small"
+            class="close-btn"
+            @click="schedulePeriodDetailDialogOpen = false"
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+
+        <v-divider class="header-divider" />
+
+        <v-card-text class="detail-content">
+          <SchedulePeriodDetailView
+            :schedule-period="viewedSchedulePeriodChild"
+            :full-view="true"
+          />
+        </v-card-text>
+
+        <v-divider />
+
+        <v-card-actions class="detail-actions">
+          <v-spacer />
+          <v-btn
+            variant="outlined"
+            color="error"
+            prepend-icon="mdi-delete"
+            class="action-btn"
+            @click="deleteSchedulePeriod(viewedSchedulePeriodChild)"
+          >
+            {{ $t('common.delete') }}
+          </v-btn>
+          <v-btn
+            variant="elevated"
+            color="primary"
+            prepend-icon="mdi-pencil"
+            class="action-btn"
+            @click="editSchedulePeriod(viewedSchedulePeriodChild)"
+          >
+            {{ $t('common.edit') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <SelectionToolbar
       :selected-count="selectedCount"
       :loading="chargingProfilesStore.loading"
@@ -660,6 +713,7 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
+import { useKendoGridGlobalization } from '@/composables/useKendoGridGlobalization'
 import { useChargingProfilesStore } from '@/stores/chargingprofiles'
 import { useChargePointsStore } from '@/stores/chargepoints'
 import { useSchedulePeriodsStore } from '@/stores/scheduleperiods'
@@ -668,24 +722,26 @@ import type {
   CreateChargingProfileRequest,
   UpdateChargingProfileRequest
 } from '@/types/chargingprofiles'
-import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
 import { useKendoGridTranslations } from '@/composables/useKendoGridTranslations'
 import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import ChargingProfileDetailView from '@/components/ChargingProfileDetailView.vue'
 import ChargePointDetailView from '@/components/ChargePointDetailView.vue'
+import SchedulePeriodDetailView from '@/components/SchedulePeriodDetailView.vue'
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import ActionCell from '@/components/ActionCell.vue'
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 import { TabStrip } from '@progress/kendo-vue-layout'
-import { formatDateTime, toDateInputValue, fromDateInputValue } from '@/utils/dateUtils'
+import { formatDateTime } from '@/utils/dateUtils'
+import { VChip } from 'vuetify/components'
 
 const { t, locale } = useI18n()
-const { formatDate } = useLocaleFormatting()
-const { messages } = useKendoGridTranslations()
+const { kendoLocale, KendoLocalizationProvider, KendoIntlProvider } = useKendoGridGlobalization()
+
+// Grid messages are now handled by the globalization composable
 const chargingProfilesStore = useChargingProfilesStore()
 const chargePointsStore = useChargePointsStore()
 const schedulePeriodsStore = useSchedulePeriodsStore()
@@ -718,6 +774,20 @@ const group = ref([])
 const result = ref([])
 const gridKey = ref(0)
 const globalSearch = ref('')
+const schedulePeriodsSort = ref([])
+const connectorsSort = ref([])
+
+// Child detail dialogs
+const schedulePeriodDetailDialogOpen = ref(false)
+const viewedSchedulePeriodChild = ref<any>(null)
+
+const schedulePeriodsSortChangeHandler = (e) => {
+  schedulePeriodsSort.value = e.sort
+}
+
+const connectorsSortChangeHandler = (e) => {
+  connectorsSort.value = e.sort
+}
 const successMessage = ref('')
 const showSuccessAlert = ref(false)
 const forceGridRefresh = () => gridKey.value++
@@ -782,9 +852,9 @@ const pageableConfig = {
 }
 
 const tabs = ref([
-  { title: 'Details', content: 'details' },
-  { title: 'Charge Point', content: 'chargepoint' },
-  { title: 'Schedule periods', content: 'scheduleperiods' }
+  { title: t('common.details'), content: 'details' },
+  { title: t('chargepoints.title'), content: 'chargepoint' },
+  { title: t('scheduleperiods.title'), content: 'scheduleperiods' }
 ])
 
 const purposeOptions = [
@@ -794,14 +864,14 @@ const purposeOptions = [
 ]
 
 const kindOptions = [
-  { value: 'Absolute', title: 'Absolute' },
-  { value: 'Recurring', title: 'Recurring' },
-  { value: 'Relative', title: 'Relative' }
+  { value: 'Absolute', title: t('chargingprofiles.kindAbsolute') },
+  { value: 'Recurring', title: t('chargingprofiles.kindRecurring') },
+  { value: 'Relative', title: t('chargingprofiles.kindRelative') }
 ]
 
 const recurrencyOptions = [
-  { value: 'Daily', title: 'Daily' },
-  { value: 'Weekly', title: 'Weekly' }
+  { value: 'Daily', title: t('chargingprofiles.recurrencyDaily') },
+  { value: 'Weekly', title: t('chargingprofiles.recurrencyWeekly') }
 ]
 
 const phaseOptions = [
@@ -854,7 +924,8 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    required: true
+    required: true,
+    width: '140px'
   },
   {
     field: 'charge_point.ocpp_charge_box_id',
@@ -871,7 +942,8 @@ const allColumns = ref([
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true
+    visible: true,
+    width: '120px'
   },
   {
     field: 'charging_profile_purpose',
@@ -879,7 +951,8 @@ const allColumns = ref([
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true
+    visible: true,
+    width:"100px"
   },
   {
     field: 'charging_profile_kind',
@@ -887,7 +960,8 @@ const allColumns = ref([
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true
+    visible: true,
+    width:"100px"
   },
   {
     field: 'valid_from',
@@ -896,6 +970,7 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
+    width: '180px',
     cell: (h, td, props) => {
       const userLocale = navigator.language || 'en-US'
       return h('td', {}, formatDateTime(props.dataItem.valid_from, userLocale))
@@ -913,8 +988,42 @@ const allColumns = ref([
       return h('td', {}, formatDateTime(props.dataItem.valid_to, userLocale))
     }
   },
-  { title: 'Actions', cell: 'actionTemplate', width: '120px', visible: true }
+  {
+    field: 'actions',
+    title: t('common.actions'),
+    cell: 'actionTemplate',
+    width: '80px',
+    visible: true,
+    filterable: false,
+    sortable: false
+  }
 ])
+
+const getPurposeColor = (purpose: string) => {
+  switch (purpose) {
+    case 'TxDefault':
+      return 'primary'
+    case 'TxProfile':
+      return 'success'
+    case 'TxMaxProfile':
+      return 'warning'
+    default:
+      return 'default'
+  }
+}
+
+const getKindColor = (kind: string) => {
+  switch (kind) {
+    case 'Absolute':
+      return 'info'
+    case 'Recurring':
+      return 'secondary'
+    case 'Relative':
+      return 'accent'
+    default:
+      return 'default'
+  }
+}
 
 // Default visible columns
 const defaultVisibleColumns = [
@@ -992,6 +1101,21 @@ function handleRowAction({ dataItem, action }) {
   }
 }
 
+function handleSchedulePeriodAction({ dataItem, action }) {
+  switch (action) {
+    case 'view':
+      viewedSchedulePeriodChild.value = dataItem
+      schedulePeriodDetailDialogOpen.value = true
+      break
+    case 'update':
+      editSchedulePeriod(dataItem)
+      break
+    case 'delete':
+      deleteSchedulePeriod(dataItem)
+      break
+  }
+}
+
 function createAppState(dataState) {
   group.value = dataState.group
   take.value = dataState.take
@@ -1049,7 +1173,7 @@ const createDataState = (state) => {
   if (filteredChargingProfiles.value && filteredChargingProfiles.value.length > 0) {
     result.value = process(filteredChargingProfiles.value.slice(0), state)
   } else {
-    result.value = []
+    result.value = { data: [], total: 0 }
   }
   dataState.value = state
 }
@@ -1430,9 +1554,22 @@ const deleteSchedulePeriodConfirmed = async () => {
           showSuccessAlert.value = false
         }, 5000)
         schedulePeriodDeleteDialogOpen.value = false
+
+        // Refresh the expanded row data
+        if (selectedChargingProfileForPeriod.value) {
+          try {
+            const periods = await schedulePeriodsStore.fetchSchedulePeriodsByChargingProfileId(
+              selectedChargingProfileForPeriod.value.id
+            )
+            selectedChargingProfileForPeriod.value._schedulePeriods = periods
+          } catch (error) {
+            console.error('Error refreshing schedule periods:', error)
+          }
+        }
+
         selectedSchedulePeriod.value = null
-        // Refresh the data to reflect changes
-        refreshData()
+        // Only refresh schedule periods data instead of entire grid
+        await schedulePeriodsStore.fetchSchedulePeriods()
       } else {
         schedulePeriodDeleteDialogOpen.value = false
       }
@@ -1509,7 +1646,8 @@ const saveSchedulePeriod = async () => {
         console.error('Error refreshing schedule periods:', error)
       }
     }
-    refreshData()
+    // Only refresh schedule periods data instead of entire grid
+    await schedulePeriodsStore.fetchSchedulePeriods()
   }
 }
 
@@ -1531,15 +1669,23 @@ onMounted(async () => {
 watch(
   filteredChargingProfiles,
   (newValue) => {
-    if (newValue.length > 0) {
-      createDataState(dataState.value)
+    // Reset pagination when filtered data changes
+    const newDataState = {
+      ...dataState.value,
+      skip: 0
     }
+    createDataState(newDataState)
   },
   { immediate: true }
 )
 
 watch(globalSearch, () => {
-  createDataState(dataState.value)
+  // Reset pagination when search changes
+  const newDataState = {
+    ...dataState.value,
+    skip: 0
+  }
+  createDataState(newDataState)
 })
 </script>
 

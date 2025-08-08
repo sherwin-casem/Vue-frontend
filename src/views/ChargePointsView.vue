@@ -136,209 +136,197 @@
         </v-alert>
 
         <div class="grid-container">
-          <Grid
-            ref="kendoGrid"
-            :key="gridKey"
-            :data-items="result.data || []"
-            :total="filteredChargePoints.length"
-            :columns="columnsWithSelection"
-            :style="{ height: '500px' }"
-            :sortable="true"
-            :pageable="pageableConfig"
-            :groupable="true"
-            :group="group"
-            :take="take"
-            :skip="skip"
-            :reorderable="true"
-            :loading="chargePointsStore.loading"
-            :selected-field="selectedField"
-            :filterable="false"
-            class="chargepoints-grid"
-            :filter="dataState.filter"
-            :messages="messages"
-            :sort="dataState.sort"
-            :detail="cellTemplate"
-            :expand-field="'expanded'"
-            @datastatechange="dataStateChange"
-            @selectionchange="onSelectionChange"
-            @headerselectionchange="onHeaderSelectionChange"
-            @rowclick="onRowClick"
-            @expandchange="expandChange"
-            @columnreorder="columnReorder"
-          >
-            <template #columnMenuTemplate="{ props }">
-              <ColumnMenu
-                :column="props.column"
-                :filterable="props.filterable"
-                :filter="props.filter"
-                :sortable="props.sortable"
-                :sort="props.sort"
-                :columns="columns"
-                @sortchange="(e) => props.onSortchange(e)"
-                @filterchange="(e) => props.onFilterchange(e)"
-                @closemenu="(e) => props.onClosemenu(e)"
-                @contentfocus="(e) => props.onContentfocus(e)"
-                @columnssubmit="onColumnsSubmit"
-              />
-            </template>
+          <KendoLocalizationProvider :language="kendoLocale">
+            <KendoIntlProvider :locale="kendoLocale.split('-')[0]">
+              <Grid
+                ref="kendoGrid"
+                :key="gridKey"
+                :data-items="result.data || []"
+                :total="result.total || 0"
+                :columns="columnsWithSelection"
+                :style="{ height: '500px' }"
+                :sortable="true"
+                :pageable="pageableConfig"
+                :groupable="true"
+                :group="group"
+                :take="take"
+                :skip="skip"
+                :reorderable="true"
+                :loading="
+                  chargePointsStore.loading ||
+                  chargingProfilesStore.loading ||
+                  connectorsStore.loading
+                "
+                :disabled="
+                  chargePointsStore.loading ||
+                  chargingProfilesStore.loading ||
+                  connectorsStore.loading
+                "
+                :selected-field="selectedField"
+                :filterable="false"
+                class="chargepoints-grid"
+                :filter="dataState.filter"
+                :sort="dataState.sort"
+                :detail="cellTemplate"
+                :expand-field="'expanded'"
+                @datastatechange="dataStateChange"
+                @selectionchange="onSelectionChange"
+                @headerselectionchange="onHeaderSelectionChange"
+                @rowclick="onRowClick"
+                @expandchange="expandChange"
+                @columnreorder="columnReorder"
+                  :loader="!result.data.length || chargePointsStore.loading"
 
-            <template #detailTemplate="{ props }">
-              <ChargePointDetailView
-                :charge-point="props.dataItem"
-                @edit="openEditDialog"
-                @delete="confirmDelete"
-              />
-            </template>
-
-            <template #myTemplate="{ props }">
-              <div v-if="props.dataItem._loadingProfiles" class="loading-container">
-                <v-progress-circular indeterminate color="primary" size="24" />
-                <span class="loading-text">Loading charging profiles...</span>
-              </div>
-              <TabStrip
-                v-else
-                :selected="getRowTabState(props.dataItem.id)"
-                :tabs="tabs"
-                @select="(e) => onSelect(e, props.dataItem.id)"
               >
-                <template #details>
+                <template #columnMenuTemplate="{ props }">
+                  <ColumnMenu
+                    :column="props.column"
+                    :filterable="props.filterable"
+                    :filter="props.filter"
+                    :sortable="props.sortable"
+                    :sort="props.sort"
+                    :columns="columns"
+                    @sortchange="(e) => props.onSortchange(e)"
+                    @filterchange="(e) => props.onFilterchange(e)"
+                    @closemenu="(e) => props.onClosemenu(e)"
+                    @contentfocus="(e) => props.onContentfocus(e)"
+                    @columnssubmit="onColumnsSubmit"
+                  />
+                </template>
+
+                <template #detailTemplate="{ props }">
                   <ChargePointDetailView
                     :charge-point="props.dataItem"
-                    :full-view="true"
                     @edit="openEditDialog"
                     @delete="confirmDelete"
                   />
                 </template>
-                <template #site>
-                  <div v-if="props.dataItem.site" class="site-details">
-                    <div class="detail-row">
-                      <span class="detail-label">{{ $t('sites.siteName') }}:</span>
-                      <span class="detail-value">{{ props.dataItem.site.name }}</span>
-                    </div>
-                    <div class="detail-row">
-                      <span class="detail-label">{{ $t('sites.address') }}:</span>
-                      <span class="detail-value">{{ props.dataItem.site.address }}</span>
-                    </div>
-                    <div class="detail-row">
-                      <span class="detail-label">{{ $t('sites.city') }}:</span>
-                      <span class="detail-value">{{ props.dataItem.site.city }}</span>
-                    </div>
-                    <div class="detail-row">
-                      <span class="detail-label">{{ $t('sites.country') }}:</span>
-                      <span class="detail-value">{{ props.dataItem.site.country }}</span>
-                    </div>
-                  </div>
-                  <div v-else class="no-data-message">
-                    {{ $t('chargepoints.noSiteData') }}
-                  </div>
-                </template>
 
-                <template #chargingprofiles>
-                  <div class="charging-profiles-header">
-                    <v-btn
-                      size="small"
-                      color="primary"
-                      variant="elevated"
-                      prepend-icon="mdi-plus"
-                      @click="addChargingProfile(props.dataItem)"
-                    >
-                      {{ $t('chargingprofiles.addChargingProfile') }}
-                    </v-btn>
+                <template #myTemplate="{ props }">
+                  <div v-if="props.dataItem._loadingProfiles" class="loading-container">
+                    <v-progress-circular indeterminate color="primary" size="24" />
                   </div>
-                  <div
-                    v-if="
-                      props.dataItem._chargingProfiles &&
-                      props.dataItem._chargingProfiles.length > 0
-                    "
+                  <TabStrip
+                    v-else
+                    :selected="getRowTabState(props.dataItem.id)"
+                    :tabs="tabs"
+                    @select="(e) => onSelect(e, props.dataItem.id)"
                   >
-                    <Grid
-                      :columns="chargingProfilesColumns"
-                      :data-items="props.dataItem._chargingProfiles"
-                      :sortable="true"
-                      :filterable="false"
-                      :messages="messages"
-                    >
-                      <template #chargingProfileActionTemplate="{ props: profileProps }">
-                        <div class="action-buttons">
-                          <v-btn
-                            size="small"
-                            variant="outlined"
-                            prepend-icon="mdi-pencil"
-                            @click="editChargingProfile(profileProps.dataItem)"
-                          >
-                            {{ $t('common.edit') }}
-                          </v-btn>
-                          <v-btn
-                            size="small"
-                            variant="outlined"
-                            color="error"
-                            prepend-icon="mdi-delete"
-                            @click="deleteChargingProfile(profileProps.dataItem)"
-                          >
-                            {{ $t('common.delete') }}
-                          </v-btn>
+                    <template #details>
+                      <ChargePointDetailView
+                        :charge-point="props.dataItem"
+                        :full-view="true"
+                        @edit="openEditDialog"
+                        @delete="confirmDelete"
+                      />
+                    </template>
+                    <template #site>
+                      <div v-if="props.dataItem.site" class="site-details">
+                        <div class="detail-row">
+                          <span class="detail-label">{{ $t('sites.siteName') }}:</span>
+                          <span class="detail-value">{{ props.dataItem.site.name }}</span>
                         </div>
-                      </template>
-                    </Grid>
-                  </div>
-                  <div v-else class="no-data-message">
-                    {{ $t('chargepoints.noChargingProfileData') }}
-                  </div>
-                </template>
-                <template #connectors>
-                  <div class="connectors-header">
-                    <v-btn
-                      size="small"
-                      color="primary"
-                      variant="elevated"
-                      prepend-icon="mdi-plus"
-                      @click="addConnector(props.dataItem)"
-                    >
-                      {{ $t('connectors.addConnector') }}
-                    </v-btn>
-                  </div>
-                  <div v-if="props.dataItem._connectors && props.dataItem._connectors.length > 0">
-                    <Grid
-                      :columns="connectorsColumns"
-                      :data-items="props.dataItem._connectors"
-                      :sortable="true"
-                      :filterable="false"
-                      :messages="messages"
-                    >
-                      <template #connectorActionTemplate="{ props: connectorProps }">
-                        <div class="action-buttons">
-                          <v-btn
-                            size="small"
-                            variant="outlined"
-                            prepend-icon="mdi-pencil"
-                            @click="editConnector(connectorProps.dataItem)"
-                          >
-                            {{ $t('common.edit') }}
-                          </v-btn>
-                          <v-btn
-                            size="small"
-                            variant="outlined"
-                            color="error"
-                            prepend-icon="mdi-delete"
-                            @click="deleteConnector(connectorProps.dataItem)"
-                          >
-                            {{ $t('common.delete') }}
-                          </v-btn>
+                        <div class="detail-row">
+                          <span class="detail-label">{{ $t('sites.address') }}:</span>
+                          <span class="detail-value">{{ props.dataItem.site.address }}</span>
                         </div>
-                      </template>
-                    </Grid>
-                  </div>
-                  <div v-else class="no-data-message">
-                    {{ $t('chargepoints.noConnectorData') }}
-                  </div>
-                </template>
-              </TabStrip>
-            </template>
+                        <div class="detail-row">
+                          <span class="detail-label">{{ $t('sites.city') }}:</span>
+                          <span class="detail-value">{{ props.dataItem.site.city }}</span>
+                        </div>
+                        <div class="detail-row">
+                          <span class="detail-label">{{ $t('sites.country') }}:</span>
+                          <span class="detail-value">{{ props.dataItem.site.country }}</span>
+                        </div>
+                      </div>
+                      <div v-else class="no-data-message">
+                        {{ $t('chargepoints.noSiteData') }}
+                      </div>
+                    </template>
 
-            <template #actionTemplate="{ props }">
-              <ActionCell :data-item="props.dataItem" @actionselect="handleRowAction" />
-            </template>
-          </Grid>
+                    <template #chargingprofiles>
+                      <div class="charging-profiles-header">
+                        <v-btn
+                          size="small"
+                          color="primary"
+                          variant="elevated"
+                          prepend-icon="mdi-plus"
+                          @click="addChargingProfile(props.dataItem)"
+                        >
+                          {{ $t('chargingprofiles.addChargingProfile') }}
+                        </v-btn>
+                      </div>
+                      <div
+                        v-if="
+                          props.dataItem._chargingProfiles &&
+                          props.dataItem._chargingProfiles.length > 0
+                        "
+                      >
+                        <Grid
+                          :columns="chargingProfilesColumns"
+                          :data-items="props.dataItem._chargingProfiles"
+                          :sortable="true"
+                          :sort="chargingProfilesSort"
+                          :filterable="false"
+                          :messages="messages"
+                          @sortchange="chargingProfilesSortChangeHandler"
+                        >
+                          <template #chargingProfileActionTemplate="{ props: profileProps }">
+                            <ActionCell
+                              :data-item="profileProps.dataItem"
+                              @actionselect="handleChargingProfileAction"
+                            />
+                          </template>
+                        </Grid>
+                      </div>
+                      <div v-else class="no-data-message">
+                        {{ $t('chargepoints.noChargingProfileData') }}
+                      </div>
+                    </template>
+                    <template #connectors>
+                      <div class="connectors-header">
+                        <v-btn
+                          size="small"
+                          color="primary"
+                          variant="elevated"
+                          @click="addConnector(props.dataItem)"
+                        >
+                          {{ $t('connectors.addConnector') }}
+                        </v-btn>
+                      </div>
+                      <div
+                        v-if="props.dataItem._connectors && props.dataItem._connectors.length > 0"
+                      >
+                        <Grid
+                          :columns="connectorsColumns"
+                          :data-items="props.dataItem._connectors"
+                          :sortable="true"
+                          :sort="connectorsSort"
+                          :filterable="false"
+                          :messages="messages"
+                          @sortchange="connectorsSortChangeHandler"
+                        >
+                          <template #connectorActionTemplate="{ props: connectorProps }">
+                            <ActionCell
+                              :data-item="connectorProps.dataItem"
+                              @actionselect="handleConnectorActionInChargePoints"
+                            />
+                          </template>
+                        </Grid>
+                      </div>
+                      <div v-else class="no-data-message">
+                        {{ $t('chargepoints.noConnectorData') }}
+                      </div>
+                    </template>
+                  </TabStrip>
+                </template>
+
+                <template #actionTemplate="{ props }">
+                  <ActionCell :data-item="props.dataItem" @actionselect="handleRowAction" />
+                </template>
+              </Grid>
+            </KendoIntlProvider>
+          </KendoLocalizationProvider>
 
           <div v-if="selectedGridChargePoint" class="grid-row-actions">
             <v-chip class="selected-indicator" color="primary" variant="outlined">
@@ -824,6 +812,120 @@
       @cancel="connectorDeleteDialogOpen = false"
     />
 
+    <!-- Charging Profile Detail Dialog -->
+    <v-dialog v-model="chargingProfileDetailDialogOpen" max-width="900px" persistent>
+      <v-card v-if="viewedChargingProfileChild" class="modern-detail-card">
+        <v-card-title class="detail-card-header">
+          <div class="header-content">
+            <v-icon class="header-icon" size="28" color="primary"> mdi-chart-line </v-icon>
+            <div class="header-text">
+              <h2 class="header-title">
+                {{ $t('chargingprofiles.chargingProfile') }} {{ viewedChargingProfileChild.id }}
+              </h2>
+            </div>
+          </div>
+          <v-btn
+            icon
+            variant="text"
+            size="small"
+            class="close-btn"
+            @click="chargingProfileDetailDialogOpen = false"
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+
+        <v-divider class="header-divider" />
+
+        <v-card-text class="detail-content">
+          <ChargingProfileDetailView
+            :charging-profile="viewedChargingProfileChild"
+            :full-view="true"
+          />
+        </v-card-text>
+
+        <v-divider />
+
+        <v-card-actions class="detail-actions">
+          <v-spacer />
+          <v-btn
+            variant="outlined"
+            color="error"
+            prepend-icon="mdi-delete"
+            class="action-btn"
+            @click="deleteChargingProfile(viewedChargingProfileChild)"
+          >
+            {{ $t('common.delete') }}
+          </v-btn>
+          <v-btn
+            variant="elevated"
+            color="primary"
+            prepend-icon="mdi-pencil"
+            class="action-btn"
+            @click="editChargingProfile(viewedChargingProfileChild)"
+          >
+            {{ $t('common.edit') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Connector Detail Dialog in ChargePoints -->
+    <v-dialog v-model="connectorDetailDialogInChargePointsOpen" max-width="900px" persistent>
+      <v-card v-if="viewedConnectorInChargePointsChild" class="modern-detail-card">
+        <v-card-title class="detail-card-header">
+          <div class="header-content">
+            <v-icon class="header-icon" size="28" color="primary"> mdi-power-plug </v-icon>
+            <div class="header-text">
+              <h2 class="header-title">
+                {{ $t('connectors.connector') }}
+                {{ viewedConnectorInChargePointsChild.connector_number }}
+              </h2>
+            </div>
+          </div>
+          <v-btn
+            icon
+            variant="text"
+            size="small"
+            class="close-btn"
+            @click="connectorDetailDialogInChargePointsOpen = false"
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+
+        <v-divider class="header-divider" />
+
+        <v-card-text class="detail-content">
+          <ConnectorDetailView :connector="viewedConnectorInChargePointsChild" :full-view="true" />
+        </v-card-text>
+
+        <v-divider />
+
+        <v-card-actions class="detail-actions">
+          <v-spacer />
+          <v-btn
+            variant="outlined"
+            color="error"
+            prepend-icon="mdi-delete"
+            class="action-btn"
+            @click="deleteConnector(viewedConnectorInChargePointsChild)"
+          >
+            {{ $t('common.delete') }}
+          </v-btn>
+          <v-btn
+            variant="elevated"
+            color="primary"
+            prepend-icon="mdi-pencil"
+            class="action-btn"
+            @click="editConnector(viewedConnectorInChargePointsChild)"
+          >
+            {{ $t('common.edit') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <SelectionToolbar
       :selected-count="selectedCount"
       :loading="chargePointsStore.loading"
@@ -840,6 +942,7 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
+import { useKendoGridGlobalization } from '@/composables/useKendoGridGlobalization'
 import { useChargePointsStore } from '@/stores/chargepoints'
 import { useSitesStore } from '@/stores/sites'
 import { useChargingProfilesStore } from '@/stores/chargingprofiles'
@@ -849,12 +952,13 @@ import type {
   CreateChargePointRequest,
   UpdateChargePointRequest
 } from '@/types/chargepoints'
-import { useLocaleFormatting } from '@/composables/useLocaleFormatting'
 import { useKendoGridTranslations } from '@/composables/useKendoGridTranslations'
 import { ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import ChargePointDetailView from '@/components/ChargePointDetailView.vue'
+import ChargingProfileDetailView from '@/components/ChargingProfileDetailView.vue'
+import ConnectorDetailView from '@/components/ConnectorDetailView.vue'
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import ActionCell from '@/components/ActionCell.vue'
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue'
@@ -862,10 +966,12 @@ import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 import { TabStrip } from '@progress/kendo-vue-layout'
 import { formatDateTime } from '@/utils/dateUtils'
+import { VChip } from 'vuetify/components'
 
 const { t, locale } = useI18n()
-const { formatDate } = useLocaleFormatting()
-const { messages } = useKendoGridTranslations()
+const { kendoLocale, KendoLocalizationProvider, KendoIntlProvider } = useKendoGridGlobalization()
+
+// Grid messages are now handled by the globalization composable
 const chargePointsStore = useChargePointsStore()
 const sitesStore = useSitesStore()
 const selected = ref(0)
@@ -919,6 +1025,22 @@ const dataState = ref({
 })
 const skip = ref(0)
 const take = ref(10)
+const chargingProfilesSort = ref([])
+const connectorsSort = ref([])
+
+// Child detail dialogs
+const chargingProfileDetailDialogOpen = ref(false)
+const viewedChargingProfileChild = ref<any>(null)
+const connectorDetailDialogInChargePointsOpen = ref(false)
+const viewedConnectorInChargePointsChild = ref<any>(null)
+
+const chargingProfilesSortChangeHandler = (e) => {
+  chargingProfilesSort.value = e.sort
+}
+
+const connectorsSortChangeHandler = (e) => {
+  connectorsSort.value = e.sort
+}
 
 const currentChargePoint = reactive<Partial<ChargePoint>>({
   ocpp_charge_box_id: '',
@@ -982,10 +1104,10 @@ const pageableConfig = {
 }
 
 const tabs = ref([
-  { title: 'Chargepoint Details', content: 'details' },
-  { title: 'Location details', content: 'site' },
-  { title: 'Connectors', content: 'connectors' },
-  { title: 'Charging Profiles', content: 'chargingprofiles' }
+  { title: t('chargepoints.details'), content: 'details' },
+  { title: t('sites.locationDetails'), content: 'site' },
+  { title: t('connectors.title'), content: 'connectors' },
+  { title: t('chargingprofiles.title'), content: 'chargingprofiles' }
 ])
 
 const statusOptions = [
@@ -1001,14 +1123,14 @@ const purposeOptions = [
 ]
 
 const kindOptions = [
-  { value: 'Absolute', title: 'Absolute' },
-  { value: 'Recurring', title: 'Recurring' },
-  { value: 'Relative', title: 'Relative' }
+  { value: 'Absolute', title: t('chargingprofiles.kindAbsolute') },
+  { value: 'Recurring', title: t('chargingprofiles.kindRecurring') },
+  { value: 'Relative', title: t('chargingprofiles.kindRelative') }
 ]
 
 const recurrencyOptions = [
-  { value: 'Daily', title: 'Daily' },
-  { value: 'Weekly', title: 'Weekly' }
+  { value: 'Daily', title: t('chargingprofiles.recurrencyDaily') },
+  { value: 'Weekly', title: t('chargingprofiles.recurrencyWeekly') }
 ]
 
 const connectorStatusOptions = [
@@ -1040,12 +1162,24 @@ const connectorsColumns = [
   },
   {
     field: 'status',
-    title: t('connectors.status')
+    title: t('connectors.status'),
+    cell: (h, td, props) => {
+      const status = props.dataItem.status
+      return h(
+        VChip,
+        {
+          size: 'small',
+          color: getConnectorStatusColor(status),
+          variant: 'tonal'
+        },
+        () => t(`connectors.status${status.charAt(0).toUpperCase() + status.slice(1)}`)
+      )
+    }
   },
   {
     title: t('common.actions'),
     cell: 'connectorActionTemplate',
-    width: '180px'
+    width: '120px'
   }
 ]
 const chargePointsColumns = [
@@ -1113,7 +1247,7 @@ const chargingProfilesColumns = [
   {
     title: t('common.actions'),
     cell: 'chargingProfileActionTemplate',
-    width: '180px'
+    width: '120px'
   }
 ]
 
@@ -1170,7 +1304,7 @@ const allColumns = ref([
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true
+    visible: false
   },
   {
     field: 'connector_count',
@@ -1178,15 +1312,30 @@ const allColumns = ref([
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true
+    visible: false
   },
   {
     field: 'status',
-    title: t('chargepoints.status'),
+    title: t('chargePoints.status'),
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true
+    visible: true,
+    cell: (h, td, props) => {
+      const status = props.dataItem.status
+      const translationKey = `status${status}`
+      if(!translationKey.includes('undefined') || status !== undefined){
+         return h(
+        VChip,
+        {
+          size: 'small',
+          color: getStatusColor(status),
+          variant: 'tonal'
+        },
+        () => t(`chargePoints.${translationKey}`)
+      )
+      }
+    }
   },
   {
     field: 'created_at',
@@ -1200,7 +1349,7 @@ const allColumns = ref([
       return h('td', {}, formatDateTime(props.dataItem.created_at, userLocale))
     }
   },
-  { title: 'Actions', cell: 'actionTemplate', width: '120px', visible: true }
+  { title: t('common.actions'), cell: 'actionTemplate', width: '120px', visible: true }
 ])
 
 // Default visible columns
@@ -1212,7 +1361,33 @@ const defaultVisibleColumns = [
   'connector_count',
   'status'
 ]
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'active':
+      return 'success'
+    case 'inactive':
+      return 'warning'
+    case 'faulty':
+      return 'error'
+    default:
+      return 'default'
+  }
+}
 
+const getConnectorStatusColor = (status: string) => {
+  switch (status) {
+    case 'available':
+      return 'success'
+    case 'occupied':
+      return 'info'
+    case 'faulted':
+      return 'error'
+    case 'unavailable':
+      return 'warning'
+    default:
+      return 'default'
+  }
+}
 // Computed visible columns
 const staticColumns = computed(() => {
   return allColumns.value.filter((col) => col.visible)
@@ -1296,6 +1471,36 @@ function handleRowAction({ dataItem, action }) {
   }
 }
 
+function handleChargingProfileAction({ dataItem, action }) {
+  switch (action) {
+    case 'view':
+      viewedChargingProfileChild.value = dataItem
+      chargingProfileDetailDialogOpen.value = true
+      break
+    case 'update':
+      editChargingProfile(dataItem)
+      break
+    case 'delete':
+      deleteChargingProfile(dataItem)
+      break
+  }
+}
+
+function handleConnectorActionInChargePoints({ dataItem, action }) {
+  switch (action) {
+    case 'view':
+      viewedConnectorInChargePointsChild.value = dataItem
+      connectorDetailDialogInChargePointsOpen.value = true
+      break
+    case 'update':
+      editConnector(dataItem)
+      break
+    case 'delete':
+      deleteConnector(dataItem)
+      break
+  }
+}
+
 function createAppState(dataState) {
   group.value = dataState.group
   take.value = dataState.take
@@ -1353,7 +1558,7 @@ const createDataState = (state) => {
   if (filteredChargePoints.value && filteredChargePoints.value.length > 0) {
     result.value = process(filteredChargePoints.value.slice(0), state)
   } else {
-    result.value = []
+    result.value = { data: [], total: 0 }
   }
   dataState.value = state
 }
@@ -1694,15 +1899,23 @@ onMounted(async () => {
 watch(
   filteredChargePoints,
   (newValue) => {
-    if (newValue.length > 0) {
-      createDataState(dataState.value)
+    // Reset pagination when filtered data changes
+    const newDataState = {
+      ...dataState.value,
+      skip: 0
     }
+    createDataState(newDataState)
   },
   { immediate: true }
 )
 
 watch(globalSearch, () => {
-  createDataState(dataState.value)
+  // Reset pagination when search changes
+  const newDataState = {
+    ...dataState.value,
+    skip: 0
+  }
+  createDataState(newDataState)
 })
 
 // Charging Profile Management Functions
@@ -1832,7 +2045,8 @@ const saveChargingProfileInChargePoints = async () => {
         console.error('Error refreshing charging profiles:', error)
       }
     }
-    refreshData()
+    // Only refresh charging profiles data instead of entire grid
+    await chargingProfilesStore.fetchChargingProfiles()
   }
 }
 
@@ -1856,8 +2070,22 @@ const deleteChargingProfileConfirmed = async () => {
           showSuccessAlert.value = false
         }, 5000)
         chargingProfileDeleteDialogOpen.value = false
+
+        // Refresh the expanded row data
+        if (selectedChargePointForProfile.value) {
+          try {
+            const profiles = await chargingProfilesStore.fetchChargingProfilesByChargePointId(
+              selectedChargePointForProfile.value.id
+            )
+            selectedChargePointForProfile.value._chargingProfiles = profiles
+          } catch (error) {
+            console.error('Error refreshing charging profiles:', error)
+          }
+        }
+
         selectedChargingProfileForDelete.value = null
-        refreshData()
+        // Only refresh charging profiles data instead of entire grid
+        await chargingProfilesStore.fetchChargingProfiles()
       } else {
         chargingProfileDeleteDialogOpen.value = false
       }
@@ -1956,7 +2184,8 @@ const saveConnectorInChargePoints = async () => {
         console.error('Error refreshing connectors:', error)
       }
     }
-    refreshData()
+    // Only refresh connectors data instead of entire grid
+    await connectorsStore.fetchConnectors()
   }
 }
 
@@ -1976,8 +2205,22 @@ const deleteConnectorConfirmed = async () => {
           showSuccessAlert.value = false
         }, 5000)
         connectorDeleteDialogOpen.value = false
+
+        // Refresh the expanded row data
+        if (selectedChargePointForConnector.value) {
+          try {
+            const connectors = await connectorsStore.getConnectorsByChargePointId(
+              selectedChargePointForConnector.value.id
+            )
+            selectedChargePointForConnector.value._connectors = connectors
+          } catch (error) {
+            console.error('Error refreshing connectors:', error)
+          }
+        }
+
         selectedConnectorForDelete.value = null
-        refreshData()
+        // Only refresh connectors data instead of entire grid
+        await connectorsStore.fetchConnectors()
       } else {
         connectorDeleteDialogOpen.value = false
       }
