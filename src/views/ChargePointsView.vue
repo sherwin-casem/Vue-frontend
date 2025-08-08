@@ -175,7 +175,7 @@
                 @rowclick="onRowClick"
                 @expandchange="expandChange"
                 @columnreorder="columnReorder"
-                :loader="!result.data.length || chargePointsStore.loading"
+                :loader="chargePointsStore.loading"
               >
                 <template #columnMenuTemplate="{ props }">
                   <ColumnMenu

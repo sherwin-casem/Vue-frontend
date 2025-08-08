@@ -168,7 +168,7 @@
                 @rowclick="onRowClick"
                 @expandchange="expandChange"
                 @columnreorder="columnReorder"
-                :loader="!result.data.length || connectorsStore.loading"
+                :loader="connectorsStore.loading"
               >
                 <template #columnMenuTemplate="{ props }">
                   <ColumnMenu

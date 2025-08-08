@@ -168,7 +168,7 @@
                 @rowclick="onRowClick"
                 @expandchange="expandChange"
                 @columnreorder="columnReorder"
-                :loader="!result.data.length || chargingProfilesStore.loading"
+                :loader="chargingProfilesStore.loading"
               >
                 <template #columnMenuTemplate="{ props }">
                   <ColumnMenu

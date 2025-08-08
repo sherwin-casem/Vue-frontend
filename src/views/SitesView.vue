@@ -175,7 +175,7 @@
                   @expandchange="expandChange"
                   @columnreorder="columnReorder"
                   @custom="customHandler"
-                  :loader="!result.data.length || sitesStore.loading"
+                  :loader="sitesStore.loading"
                 >
                   <template #columnMenuTemplate="{ props }">
                     <ColumnMenu
