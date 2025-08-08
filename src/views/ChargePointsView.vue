@@ -1260,7 +1260,6 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    width: '50px'
   },
   {
     field: 'ocpp_charge_box_id',
@@ -1270,7 +1269,6 @@ const allColumns = ref([
     headerClassName: 'customMenu',
     visible: true,
     required: true,
-    width: '200px'
   },
   {
     field: 'site_id',
@@ -1278,7 +1276,7 @@ const allColumns = ref([
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true
+    visible: false,
   },
   {
     field: 'site.name',
@@ -1287,7 +1285,6 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    width: '150px'
   },
   {
     field: 'manufacturer',
@@ -1296,7 +1293,6 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    width: '150px'
   },
   {
     field: 'model',
@@ -1571,7 +1567,7 @@ const dataStateChange = (e) => {
     if (changedColumn) {
       changedColumn.headerClassName = isColumnActive ? 'customMenu active' : ''
     }
-    createAppState(e.data)
+    // createAppState(e.data)
   }
   createDataState(e.data)
 }

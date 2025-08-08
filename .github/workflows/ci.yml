@@ -64,8 +64,4 @@ jobs:
             docker load < ~/ocpp-frontend.tar
             docker stop ocpp-frontend || true
             docker rm ocpp-frontend || true
-            docker run -d \
-              --name ocpp-frontend \
-              -p 80:80 \
-              --restart=always \
-              ocpp-frontend
+            docker run -d -it -p 80:80 ocpp-frontend

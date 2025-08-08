@@ -5,7 +5,10 @@
 /**
  * Formats a date string to dd/mm/yyyy format
  */
-export function formatDateTime(value: string | Date | null, locale = 'en-US') {
+export function formatDateTime(
+  value: string | Date | null,
+  locale = 'de-DE'
+): string {
   if (!value) return '';
   const date = typeof value === 'string' ? new Date(value) : value;
 
@@ -15,11 +18,9 @@ export function formatDateTime(value: string | Date | null, locale = 'en-US') {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
-    hour12: locale === 'en-US',
+    hour12: false,
   }).format(date);
 }
-
 
 /**
  * Converts date string to ISO date string for date inputs

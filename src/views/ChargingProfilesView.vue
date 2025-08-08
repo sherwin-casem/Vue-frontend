@@ -1186,7 +1186,7 @@ const dataStateChange = (e) => {
     if (changedColumn) {
       changedColumn.headerClassName = isColumnActive ? 'customMenu active' : ''
     }
-    createAppState(e.data)
+    // createAppState(e.data)
   }
   createDataState(e.data)
 }

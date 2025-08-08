@@ -168,7 +168,7 @@
                 @rowclick="onRowClick"
                 @expandchange="expandChange"
                 @columnreorder="columnReorder"
-                  :loader="!result.data.length || schedulePeriodsStore.loading"
+                  :loader="!result.data?.length || schedulePeriodsStore.loading"
 
               >
                 <template #columnMenuTemplate="{ props }">
@@ -714,7 +714,7 @@ const dataStateChange = (e) => {
     if (changedColumn) {
       changedColumn.headerClassName = isColumnActive ? 'customMenu active' : ''
     }
-    createAppState(e.data)
+    // createAppState(e.data)
   }
   createDataState(e.data)
 }
