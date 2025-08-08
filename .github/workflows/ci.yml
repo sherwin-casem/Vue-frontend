@@ -1,4 +1,4 @@
-name: CI Build
+name: CI Build and Deploy
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -28,12 +28,29 @@ jobs:
       - name: Build app
         run: npm run build
 
+      - name: Build Docker image
+        run: docker build -t ocpp-frontend .
 
-      # - name: Copy files to VirtualBox VM
-      #   uses: appleboy/scp-action@v0.1.7
-      #   with:
-      #     host: ${{ secrets.DEPLOY_HOST }}
-      #     username: ${{ secrets.DEPLOY_USER }}
-      #     key: ${{ secrets.DEPLOY_KEY }}
-      #     source: "dist/*"
-      #     target: "/home/${{ secrets.DEPLOY_USER }}/ocpp-frontend"
+      - name: Save Docker image to tarball
+        run: docker save ocpp-frontend > ocpp-frontend.tar
+
+      - name: Copy Docker image to VirtualBox VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: "ocpp-frontend.tar"
+          target: "/home/${{ secrets.DEPLOY_USER }}/"
+
+      - name: SSH into VM and load & run Docker image
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            docker load < /home/${{ secrets.DEPLOY_USER }}/ocpp-frontend.tar
+            docker stop ocpp-frontend || true
+            docker rm ocpp-frontend || true
+            docker run -d -p 8080:80 --name ocpp-frontend ocpp-frontend
