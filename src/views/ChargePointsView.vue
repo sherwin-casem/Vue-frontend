@@ -1453,6 +1453,8 @@ const connectorRules = {
     (value > 0 && value <= 1000) || t('connectors.validation.maxPowerRange')
 }
 
+
+
 function handleRowAction({ dataItem, action }) {
   switch (action) {
     case 'view':

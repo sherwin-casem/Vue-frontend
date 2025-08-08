@@ -399,7 +399,7 @@
                   :label="$t('chargingprofiles.validFrom')"
                   :rules="[rules.required]"
                   variant="outlined"
-                  type="datetime-local"
+                  type="datetime"
                   required
                 />
               </v-col>
@@ -410,7 +410,7 @@
                   :label="$t('chargingprofiles.validTo')"
                   :rules="[rules.required]"
                   variant="outlined"
-                  type="datetime-local"
+                  type="datetime"
                   required
                 />
               </v-col>
@@ -915,7 +915,6 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    width: '50px'
   },
   {
     field: 'charge_point_id',
@@ -925,16 +924,14 @@ const allColumns = ref([
     headerClassName: 'customMenu',
     visible: true,
     required: true,
-    width: '140px'
   },
   {
     field: 'charge_point.ocpp_charge_box_id',
-    title: t('chargepoints.chargePointId'),
+    title: t('chargepoints.ocppChargeBoxId'),
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    width: '200px'
   },
   {
     field: 'stack_level',
@@ -943,7 +940,6 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    width: '120px'
   },
   {
     field: 'charging_profile_purpose',
@@ -952,7 +948,6 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    width:"100px"
   },
   {
     field: 'charging_profile_kind',
@@ -961,7 +956,6 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    width:"100px"
   },
   {
     field: 'valid_from',
@@ -970,7 +964,6 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    width: '180px',
     cell: (h, td, props) => {
       const userLocale = navigator.language || 'en-US'
       return h('td', {}, formatDateTime(props.dataItem.valid_from, userLocale))
@@ -992,7 +985,6 @@ const allColumns = ref([
     field: 'actions',
     title: t('common.actions'),
     cell: 'actionTemplate',
-    width: '80px',
     visible: true,
     filterable: false,
     sortable: false
