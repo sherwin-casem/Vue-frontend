@@ -168,8 +168,7 @@
                 @rowclick="onRowClick"
                 @expandchange="expandChange"
                 @columnreorder="columnReorder"
-                  :loader="!result.data.length || chargingProfilesStore.loading"
-
+                :loader="!result.data.length || chargingProfilesStore.loading"
               >
                 <template #columnMenuTemplate="{ props }">
                   <ColumnMenu
@@ -394,23 +393,21 @@
               </v-col>
 
               <v-col cols="6">
-                <v-text-field
+                <FormattedDateTimeInput
                   v-model="currentChargingProfile.valid_from"
                   :label="$t('chargingprofiles.validFrom')"
                   :rules="[rules.required]"
                   variant="outlined"
-                  type="datetime"
                   required
                 />
               </v-col>
 
               <v-col cols="6">
-                <v-text-field
+                <FormattedDateTimeInput
                   v-model="currentChargingProfile.valid_to"
                   :label="$t('chargingprofiles.validTo')"
                   :rules="[rules.required]"
                   variant="outlined"
-                  type="datetime"
                   required
                 />
               </v-col>
@@ -427,11 +424,10 @@
               </v-col>
 
               <v-col cols="6">
-                <v-text-field
+                <FormattedDateTimeInput
                   v-model="currentChargingProfile.start_schedule"
                   :label="$t('chargingprofiles.startSchedule')"
                   variant="outlined"
-                  type="datetime-local"
                 />
               </v-col>
 
@@ -710,7 +706,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { ref, computed, onMounted, reactive, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
 import { useKendoGridGlobalization } from '@/composables/useKendoGridGlobalization'
@@ -723,7 +719,7 @@ import type {
   UpdateChargingProfileRequest
 } from '@/types/chargingprofiles'
 import { useKendoGridTranslations } from '@/composables/useKendoGridTranslations'
-import { ExportUtils } from '@/utils/exportUtils'
+import { capitalizeFirst, ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import ChargingProfileDetailView from '@/components/ChargingProfileDetailView.vue'
@@ -732,6 +728,7 @@ import SchedulePeriodDetailView from '@/components/SchedulePeriodDetailView.vue'
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import ActionCell from '@/components/ActionCell.vue'
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue'
+import FormattedDateTimeInput from '@/components/FormattedDateTimeInput.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 import { TabStrip } from '@progress/kendo-vue-layout'
@@ -914,7 +911,7 @@ const allColumns = ref([
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true,
+    visible: true
   },
   {
     field: 'charge_point_id',
@@ -923,7 +920,7 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    required: true,
+    required: true
   },
   {
     field: 'charge_point.ocpp_charge_box_id',
@@ -931,7 +928,7 @@ const allColumns = ref([
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true,
+    visible: true
   },
   {
     field: 'stack_level',
@@ -939,7 +936,7 @@ const allColumns = ref([
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true,
+    visible: true
   },
   {
     field: 'charging_profile_purpose',
@@ -947,7 +944,7 @@ const allColumns = ref([
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true,
+    visible: true
   },
   {
     field: 'charging_profile_kind',
@@ -956,6 +953,20 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
+    cell: (h, td, props) => {
+      return h('td', {}, t(`chargingprofiles.kind${capitalizeFirst(props.dataItem?.charging_profile_kind)}`))
+    }
+  },
+   {
+    field: 'recurrency_kind',
+    title: t('chargingprofiles.recurrencyKind'),
+    filter: 'text',
+    columnMenu: 'columnMenuTemplate',
+    headerClassName: 'customMenu',
+    visible: true,
+    cell: (h, td, props) => {
+      return h ('td', {}, t(`chargingprofiles.recurrency${capitalizeFirst(props.dataItem?.recurrency_kind)}`))
+    }
   },
   {
     field: 'valid_from',
@@ -1115,6 +1126,8 @@ function createAppState(dataState) {
   refreshData()
 }
 
+// Focus management for pagination - handled via CSS and natural browser behavior
+
 const columnReorder = (options: any) => {
   // Handle column reordering while maintaining visibility state
   const newColumnOrder = options.columns.filter((col: any) => col.field !== 'selected')
@@ -1171,6 +1184,10 @@ const createDataState = (state) => {
 }
 
 const dataStateChange = (e) => {
+  // Check if this is a filter change (not pagination or sorting)
+  const isFilterChange =
+    e.event && (e.event.type === 'filter' || e.data.filter !== dataState.value.filter)
+
   if (e.event) {
     const isColumnActive = filterGroupByField(e.event.field, e.data.filter)
     const changedColumn = columns.value.find((column) => column.field === e.event.field)
@@ -1178,8 +1195,13 @@ const dataStateChange = (e) => {
     if (changedColumn) {
       changedColumn.headerClassName = isColumnActive ? 'customMenu active' : ''
     }
-    // createAppState(e.data)
+
+    // Clear selection only for filter changes, not pagination/sorting
+    if (isFilterChange) {
+      clearSelection()
+    }
   }
+  createAppState(e.data)
   createDataState(e.data)
 }
 
@@ -1220,12 +1242,10 @@ const openEditDialog = (profile: ChargingProfile) => {
   isEditing.value = true
   Object.assign(currentChargingProfile, {
     ...profile,
-    // Convert dates to datetime-local format for inputs
-    valid_from: profile.valid_from ? new Date(profile.valid_from).toISOString().slice(0, 16) : '',
-    valid_to: profile.valid_to ? new Date(profile.valid_to).toISOString().slice(0, 16) : '',
-    start_schedule: profile.start_schedule
-      ? new Date(profile.start_schedule).toISOString().slice(0, 16)
-      : ''
+    // Keep dates as ISO strings for FormattedDateTimeInput
+    valid_from: profile.valid_from || '',
+    valid_to: profile.valid_to || '',
+    start_schedule: profile.start_schedule || ''
   })
   dialogOpen.value = true
 }
@@ -1270,8 +1290,12 @@ const saveChargingProfile = async () => {
       | 'Recurring'
       | 'Relative',
     recurrency_kind: currentChargingProfile.recurrency_kind as 'Daily' | 'Weekly' | undefined,
-    valid_from: new Date(currentChargingProfile.valid_from!),
-    valid_to: new Date(currentChargingProfile.valid_to!),
+    valid_from: currentChargingProfile.valid_from
+      ? new Date(currentChargingProfile.valid_from)
+      : new Date(),
+    valid_to: currentChargingProfile.valid_to
+      ? new Date(currentChargingProfile.valid_to)
+      : new Date(),
     duration_in_seconds: currentChargingProfile.duration_in_seconds
       ? Number(currentChargingProfile.duration_in_seconds)
       : undefined,
@@ -1418,9 +1442,13 @@ const exportSelectedChargingProfiles = async (format: 'pdf' | 'excel' | 'csv') =
 
 function onHeaderSelectionChange(event) {
   const checked = event.event.target.checked
+  // Get the IDs of filtered/visible items
+  const filteredIds = new Set(filteredChargingProfiles.value.map((item) => item.id))
+
+  // Only update selection for filtered items
   chargingProfilesStore.chargingProfiles = chargingProfilesStore.chargingProfiles.map((item) => ({
     ...item,
-    selected: checked
+    selected: filteredIds.has(item.id) ? checked : item.selected
   }))
 }
 function onSelectionChange(event) {
@@ -1672,7 +1700,8 @@ watch(
 )
 
 watch(globalSearch, () => {
-  // Reset pagination when search changes
+  // Reset pagination and selection when search changes
+  clearSelection()
   const newDataState = {
     ...dataState.value,
     skip: 0

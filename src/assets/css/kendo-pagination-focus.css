@@ -1,0 +1,35 @@
+/* Kendo Grid Pagination Focus Enhancement */
+
+/* Ensure active page button has proper focus styling */
+.k-pager-numbers .k-state-selected {
+  background-color: #1976d2 !important;
+  color: white !important;
+  border-color: #1976d2 !important;
+}
+
+/* Enhanced focus ring for current page */
+.k-pager-numbers .k-state-selected:focus,
+.k-pager-numbers .k-state-selected.k-state-focused {
+  outline: 2px solid #42a5f5 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2) !important;
+}
+
+/* Ensure focus is visible on page buttons */
+.k-pager-numbers .k-link:focus {
+  outline: 2px solid #42a5f5 !important;
+  outline-offset: 1px !important;
+  z-index: 1;
+}
+
+/* Better hover state for pagination buttons */
+.k-pager-numbers .k-link:hover {
+  background-color: rgba(25, 118, 210, 0.08) !important;
+  border-color: rgba(25, 118, 210, 0.3) !important;
+}
+
+/* Active page button should remain highlighted */
+.k-pager-numbers .k-state-selected:hover {
+  background-color: #1565c0 !important;
+  border-color: #1565c0 !important;
+}

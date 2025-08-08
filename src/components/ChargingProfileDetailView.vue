@@ -23,13 +23,13 @@
     <div class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.kind') }}:</span>
 
-      <span class="detail-value">{{ chargingProfile.charging_profile_kind }}</span>
+      <span class="detail-value">{{ t(`chargingprofiles.kind${capitalizeFirst(chargingProfile?.charging_profile_kind)}`) }}</span>
 
     </div>
 
     <div v-if="chargingProfile.recurrency_kind" class="detail-row">
       <span class="detail-label">{{ $t('chargingprofiles.recurrencyKind') }}:</span>
-      <span class="detail-value">{{ chargingProfile.recurrency_kind }}</span>
+      <span class="detail-value">{{t(`chargingprofiles.recurrency${capitalizeFirst(chargingProfile?.recurrency_kind)}`) }}</span>
     </div>
 
     <div class="detail-row">
@@ -127,6 +127,7 @@ import { useI18n } from 'vue-i18n'
 import type { ChargingProfile } from '@/types/chargingprofiles'
 import { formatDateTime } from '@/utils/dateUtils'
 import { computed } from 'vue'
+import { capitalizeFirst } from '@/utils/exportUtils'
 
 interface Props {
   chargingProfile: ChargingProfile

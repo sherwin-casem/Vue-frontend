@@ -8,6 +8,7 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import './assets/css/variables.css'
+import './assets/css/kendo-pagination-focus.css'
 import '@progress/kendo-theme-default/dist/all.css'
 import { translationDevPlugin, vTranslatable } from './plugins/translationDev'
 

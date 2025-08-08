@@ -582,7 +582,7 @@
     "kindRecurring": "Recurring",
     "kindRelative": "Relative",
     "purposeTxProfile": "Transaction Profile",
-    "purposeChargingStationProfile": "Station Profile",
+  "purposeChargingStationProfile": "Station Profile",
     "recurrencyDaily": "Daily",
     "recurrencyWeekly": "Weekly",
     "chargePoint": "Charge Point",

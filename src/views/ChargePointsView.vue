@@ -175,8 +175,7 @@
                 @rowclick="onRowClick"
                 @expandchange="expandChange"
                 @columnreorder="columnReorder"
-                  :loader="!result.data.length || chargePointsStore.loading"
-
+                :loader="!result.data.length || chargePointsStore.loading"
               >
                 <template #columnMenuTemplate="{ props }">
                   <ColumnMenu
@@ -623,23 +622,21 @@
               </v-col>
 
               <v-col cols="6">
-                <v-text-field
+                <FormattedDateTimeInput
                   v-model="currentChargingProfileInChargePoints.valid_from"
                   :label="$t('chargingprofiles.validFrom')"
                   :rules="[chargingProfileRules.required]"
                   variant="outlined"
-                  type="datetime-local"
                   required
                 />
               </v-col>
 
               <v-col cols="6">
-                <v-text-field
+                <FormattedDateTimeInput
                   v-model="currentChargingProfileInChargePoints.valid_to"
                   :label="$t('chargingprofiles.validTo')"
                   :rules="[chargingProfileRules.required]"
                   variant="outlined"
-                  type="datetime-local"
                   required
                 />
               </v-col>
@@ -656,11 +653,10 @@
               </v-col>
 
               <v-col cols="6">
-                <v-text-field
+                <FormattedDateTimeInput
                   v-model="currentChargingProfileInChargePoints.start_schedule"
                   :label="$t('chargingprofiles.startSchedule')"
                   variant="outlined"
-                  type="datetime-local"
                 />
               </v-col>
 
@@ -939,7 +935,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { ref, computed, onMounted, reactive, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
 import { useKendoGridGlobalization } from '@/composables/useKendoGridGlobalization'
@@ -953,7 +949,7 @@ import type {
   UpdateChargePointRequest
 } from '@/types/chargepoints'
 import { useKendoGridTranslations } from '@/composables/useKendoGridTranslations'
-import { ExportUtils } from '@/utils/exportUtils'
+import { capitalizeFirst, ExportUtils } from '@/utils/exportUtils'
 import type { ExportColumn } from '@/utils/exportUtils'
 import ColumnMenu from '@/components/columnMenu.vue'
 import ChargePointDetailView from '@/components/ChargePointDetailView.vue'
@@ -962,6 +958,7 @@ import ConnectorDetailView from '@/components/ConnectorDetailView.vue'
 import SelectionToolbar from '@/components/SelectionToolbar.vue'
 import ActionCell from '@/components/ActionCell.vue'
 import ConfirmationDialog from '@/components/ConfirmationDialog.vue'
+import FormattedDateTimeInput from '@/components/FormattedDateTimeInput.vue'
 import { process } from '@progress/kendo-data-query'
 import '@/utils/resizeObserverFix'
 import { TabStrip } from '@progress/kendo-vue-layout'
@@ -1041,6 +1038,8 @@ const chargingProfilesSortChangeHandler = (e) => {
 const connectorsSortChangeHandler = (e) => {
   connectorsSort.value = e.sort
 }
+
+// Focus management for pagination - handled via CSS and natural browser behavior
 
 const currentChargePoint = reactive<Partial<ChargePoint>>({
   ocpp_charge_box_id: '',
@@ -1224,9 +1223,19 @@ const chargingProfilesColumns = [
     field: 'charging_profile_purpose',
     title: t('chargingprofiles.purpose')
   },
-  {
+    {
     field: 'charging_profile_kind',
-    title: t('chargingprofiles.kind')
+    title: t('chargingprofiles.kind'),
+    cell: (h, td, props) => {
+      return h('td', {}, t(`chargingprofiles.kind${capitalizeFirst(props.dataItem?.charging_profile_kind)}`))
+    }
+  },
+   {
+    field: 'recurrency_kind',
+    title: t('chargingprofiles.recurrencyKind'),
+    cell: (h, td, props) => {
+      return h ('td', {}, t(`chargingprofiles.recurrency${capitalizeFirst(props.dataItem?.recurrency_kind)}`))
+    }
   },
   {
     field: 'valid_from',
@@ -1259,7 +1268,7 @@ const allColumns = ref([
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true,
+    visible: true
   },
   {
     field: 'ocpp_charge_box_id',
@@ -1268,7 +1277,7 @@ const allColumns = ref([
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
     visible: true,
-    required: true,
+    required: true
   },
   {
     field: 'site_id',
@@ -1276,7 +1285,7 @@ const allColumns = ref([
     filter: 'numeric',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: false,
+    visible: false
   },
   {
     field: 'site.name',
@@ -1284,7 +1293,7 @@ const allColumns = ref([
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true,
+    visible: true
   },
   {
     field: 'manufacturer',
@@ -1292,7 +1301,7 @@ const allColumns = ref([
     filter: 'text',
     columnMenu: 'columnMenuTemplate',
     headerClassName: 'customMenu',
-    visible: true,
+    visible: true
   },
   {
     field: 'model',
@@ -1320,16 +1329,16 @@ const allColumns = ref([
     cell: (h, td, props) => {
       const status = props.dataItem.status
       const translationKey = `status${status}`
-      if(!translationKey.includes('undefined') || status !== undefined){
-         return h(
-        VChip,
-        {
-          size: 'small',
-          color: getStatusColor(status),
-          variant: 'tonal'
-        },
-        () => t(`chargePoints.${translationKey}`)
-      )
+      if (!translationKey.includes('undefined') || status !== undefined) {
+        return h(
+          VChip,
+          {
+            size: 'small',
+            color: getStatusColor(status),
+            variant: 'tonal'
+          },
+          () => t(`chargePoints.${translationKey}`)
+        )
       }
     }
   },
@@ -1453,8 +1462,6 @@ const connectorRules = {
     (value > 0 && value <= 1000) || t('connectors.validation.maxPowerRange')
 }
 
-
-
 function handleRowAction({ dataItem, action }) {
   switch (action) {
     case 'view':
@@ -1562,6 +1569,10 @@ const createDataState = (state) => {
 }
 
 const dataStateChange = (e) => {
+  // Check if this is a filter change (not pagination or sorting)
+  const isFilterChange =
+    e.event && (e.event.type === 'filter' || e.data.filter !== dataState.value.filter)
+
   if (e.event) {
     const isColumnActive = filterGroupByField(e.event.field, e.data.filter)
     const changedColumn = columns.value.find((column) => column.field === e.event.field)
@@ -1569,8 +1580,13 @@ const dataStateChange = (e) => {
     if (changedColumn) {
       changedColumn.headerClassName = isColumnActive ? 'customMenu active' : ''
     }
-    // createAppState(e.data)
+
+    // Clear selection only for filter changes, not pagination/sorting
+    if (isFilterChange) {
+      clearSelection()
+    }
   }
+  createAppState(e.data)
   createDataState(e.data)
 }
 
@@ -1780,9 +1796,13 @@ const exportSelectedChargePoints = async (format: 'pdf' | 'excel' | 'csv') => {
 
 function onHeaderSelectionChange(event) {
   const checked = event.event.target.checked
+  // Get the IDs of filtered/visible items
+  const filteredIds = new Set(filteredChargePoints.value.map((item) => item.id))
+
+  // Only update selection for filtered items
   chargePointsStore.chargePoints = chargePointsStore.chargePoints.map((item) => ({
     ...item,
-    selected: checked
+    selected: filteredIds.has(item.id) ? checked : item.selected
   }))
 }
 function onSelectionChange(event) {
@@ -1908,7 +1928,8 @@ watch(
 )
 
 watch(globalSearch, () => {
-  // Reset pagination when search changes
+  // Reset pagination and selection when search changes
+  clearSelection()
   const newDataState = {
     ...dataState.value,
     skip: 0

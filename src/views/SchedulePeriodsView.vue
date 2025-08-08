@@ -168,8 +168,7 @@
                 @rowclick="onRowClick"
                 @expandchange="expandChange"
                 @columnreorder="columnReorder"
-                  :loader="!result.data?.length || schedulePeriodsStore.loading"
-
+                :loader="!result.data?.length || schedulePeriodsStore.loading"
               >
                 <template #columnMenuTemplate="{ props }">
                   <ColumnMenu
@@ -438,7 +437,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { ref, computed, onMounted, reactive, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
 import { useKendoGridGlobalization } from '@/composables/useKendoGridGlobalization'
@@ -534,7 +533,7 @@ const pageableConfig = {
 }
 
 const tabs = ref([
-  { title:t('scheduleperiods.schedulePeriodDetails'), content: 'details' },
+  { title: t('scheduleperiods.schedulePeriodDetails'), content: 'details' },
   { title: t('scheduleperiods.chargingProfile'), content: 'chargingprofile' }
 ])
 
@@ -707,6 +706,10 @@ const createDataState = (state) => {
 }
 
 const dataStateChange = (e) => {
+  // Check if this is a filter change (not pagination or sorting)
+  const isFilterChange =
+    e.event && (e.event.type === 'filter' || e.data.filter !== dataState.value.filter)
+
   if (e.event) {
     const isColumnActive = filterGroupByField(e.event.field, e.data.filter)
     const changedColumn = columns.value.find((column) => column.field === e.event.field)
@@ -714,8 +717,13 @@ const dataStateChange = (e) => {
     if (changedColumn) {
       changedColumn.headerClassName = isColumnActive ? 'customMenu active' : ''
     }
-    // createAppState(e.data)
+
+    // Clear selection only for filter changes, not pagination/sorting
+    if (isFilterChange) {
+      clearSelection()
+    }
   }
+  createAppState(e.data)
   createDataState(e.data)
 }
 
@@ -924,9 +932,13 @@ const exportSelectedSchedulePeriods = async (format: 'pdf' | 'excel' | 'csv') =>
 
 function onHeaderSelectionChange(event) {
   const checked = event.event.target.checked
+  // Get the IDs of filtered/visible items
+  const filteredIds = new Set(filteredSchedulePeriods.value.map((item) => item.id))
+
+  // Only update selection for filtered items
   schedulePeriodsStore.schedulePeriods = schedulePeriodsStore.schedulePeriods.map((item) => ({
     ...item,
-    selected: checked
+    selected: filteredIds.has(item.id) ? checked : item.selected
   }))
 }
 
@@ -990,6 +1002,8 @@ const exportToExcel = async () => {
   }
 }
 
+// Focus management for pagination - handled via CSS and natural browser behavior
+
 const exportToCsv = async () => {
   try {
     const columns: ExportColumn[] = [
@@ -1041,6 +1055,8 @@ watch(
 )
 
 watch(globalSearch, () => {
+  // Reset selection when search changes
+  clearSelection()
   createDataState(dataState.value)
 })
 </script>

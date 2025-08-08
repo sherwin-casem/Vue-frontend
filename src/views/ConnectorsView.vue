@@ -168,8 +168,7 @@
                 @rowclick="onRowClick"
                 @expandchange="expandChange"
                 @columnreorder="columnReorder"
-                  :loader="!result.data.length || connectorsStore.loading"
-
+                :loader="!result.data.length || connectorsStore.loading"
               >
                 <template #columnMenuTemplate="{ props }">
                   <ColumnMenu
@@ -444,7 +443,7 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { ref, computed, onMounted, reactive, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
 import { useKendoGridGlobalization } from '@/composables/useKendoGridGlobalization'
@@ -716,6 +715,10 @@ const createDataState = (state) => {
 }
 
 const dataStateChange = (e) => {
+  // Check if this is a filter change (not pagination or sorting)
+  const isFilterChange =
+    e.event && (e.event.type === 'filter' || e.data.filter !== dataState.value.filter)
+
   if (e.event) {
     const isColumnActive = filterGroupByField(e.event.field, e.data.filter)
     const changedColumn = columns.value.find((column) => column.field === e.event.field)
@@ -723,8 +726,13 @@ const dataStateChange = (e) => {
     if (changedColumn) {
       changedColumn.headerClassName = isColumnActive ? 'customMenu active' : ''
     }
-    // createAppState(e.data)
+
+    // Clear selection only for filter changes, not pagination/sorting
+    if (isFilterChange) {
+      clearSelection()
+    }
   }
+  createAppState(e.data)
   createDataState(e.data)
 }
 
@@ -929,9 +937,13 @@ const exportSelectedConnectors = async (format: 'pdf' | 'excel' | 'csv') => {
 
 function onHeaderSelectionChange(event) {
   const checked = event.event.target.checked
+  // Get the IDs of filtered/visible items
+  const filteredIds = new Set(filteredConnectors.value.map((item) => item.id))
+
+  // Only update selection for filtered items
   connectorsStore.connectors = connectorsStore.connectors.map((item) => ({
     ...item,
-    selected: checked
+    selected: filteredIds.has(item.id) ? checked : item.selected
   }))
 }
 const columnReorder = (options: any) => {
@@ -999,6 +1011,8 @@ const exportToExcel = async () => {
   }
 }
 
+// Focus management for pagination - handled via CSS and natural browser behavior
+
 const exportToCsv = async () => {
   try {
     const columns: ExportColumn[] = [
@@ -1051,7 +1065,8 @@ watch(
 )
 
 watch(globalSearch, () => {
-  // Reset pagination when search changes
+  // Reset pagination and selection when search changes
+  clearSelection()
   const newDataState = {
     ...dataState.value,
     skip: 0

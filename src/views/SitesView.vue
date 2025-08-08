@@ -847,7 +847,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 
-import { ref, computed, onMounted, reactive, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, reactive, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Grid, filterGroupByField } from '@progress/kendo-vue-grid'
 import { useKendoGridGlobalization } from '@/composables/useKendoGridGlobalization'
@@ -899,7 +899,7 @@ const selectedChargePointForDelete = ref<any>(null)
 const selectedChargePointForEdit = ref<any>(null)
 const chargePointForm = ref()
 
-const loader = ref(false);
+const loader = ref(false)
 // Connector dialog state
 const connectorDialogOpen = ref(false)
 const connectorDeleteDialogOpen = ref(false)
@@ -1251,6 +1251,8 @@ const customHandler = (e) => {
   console.log('customHandler', e)
 }
 
+// Focus management for pagination - handled via CSS and natural browser behavior
+
 const rules = {
   required: (value: string) => !!value || t('validation.fieldRequired'),
   nameMinLength: (value: string) => value.length >= 3 || t('sites.validation.nameMinLength'),
@@ -1389,6 +1391,10 @@ const createDataState = (state) => {
 }
 
 const dataStateChange = (e) => {
+  // Check if this is a filter change (not pagination or sorting)
+  const isFilterChange =
+    e.event && (e.event.type === 'filter' || e.data.filter !== dataState.value.filter)
+
   if (e.event) {
     const isColumnActive = filterGroupByField(e.event.field, e.data.filter)
     const changedColumn = columns.value.find((column) => column.field === e.event.field)
@@ -1396,8 +1402,13 @@ const dataStateChange = (e) => {
     if (changedColumn) {
       changedColumn.headerClassName = isColumnActive ? 'customMenu active' : ''
     }
-    // createAppState(e.data)
+
+    // Clear selection only for filter changes, not pagination/sorting
+    if (isFilterChange) {
+      clearSelection()
+    }
   }
+  createAppState(e.data)
   createDataState(e.data)
 }
 
@@ -1601,9 +1612,13 @@ const exportSelectedSites = async (format: 'pdf' | 'excel' | 'csv') => {
 
 function onHeaderSelectionChange(event) {
   const checked = event.event.target.checked
+  // Get the IDs of filtered/visible items
+  const filteredIds = new Set(filteredSites.value.map((item) => item.site_id))
+
+  // Only update selection for filtered items
   sitesStore.sites = sitesStore.sites.map((item) => ({
     ...item,
-    selected: checked
+    selected: filteredIds.has(item.site_id) ? checked : item.selected
   }))
 }
 
@@ -1772,7 +1787,8 @@ watch(
 )
 
 watch(globalSearch, () => {
-  // Reset pagination when search changes
+  // Reset pagination and selection when search changes
+  clearSelection()
   const newDataState = {
     ...dataState.value,
     skip: 0
