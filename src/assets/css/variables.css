@@ -368,11 +368,18 @@ body {
   background-color: var(--kendo-body-bg) !important;
   color: var(--kendo-text-color) !important;
 }
-
+.v-chip {
+  margin-top:15px !important;
+}
 
 .k-grouping-row td:last-child:empty, .k-grouping-row td:last-of-type:empty {
   display: none;
 }
+
+.v-card-title{
+  padding-top: 20px !important;
+}
+
 
 .k-grid tbody tr, .k-grouping-row {
   background-color: var(--kendo-row-hover-bg) !important;

@@ -79,8 +79,9 @@ const internalValue = ref('')
 const displayField = ref()
 
 const displayValue = computed(() => {
+  const userLocale = navigator.language || 'en-US'
   if (!props.modelValue) return ''
-  return formatDateTime(props.modelValue, props.locale)
+  return formatDateTime(props.modelValue, userLocale)
 })
 
 const openDateTimeDialog = () => {

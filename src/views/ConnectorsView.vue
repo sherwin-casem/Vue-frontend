@@ -612,7 +612,7 @@ const allColumns = ref([
         VChip,
         {
           size: 'small',
-          variant: 'tonal'
+          variant: 'tonal',
         },
         () => t(`connectors.${translationKey}`)
       )
